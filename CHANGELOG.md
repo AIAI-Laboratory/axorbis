@@ -4,6 +4,12 @@ Workspace lab notebook for long-running or resumable research work.
 
 Use this file to track chronology, not release notes. Keep entries short, factual, and operational.
 
+### 2026-09-17 — axorbis-readme
+
+- Objective: Make the repository landing page describe Axorbis instead of the upstream Feynman release and installer.
+- Changed: Replaced the legacy feature catalogue with an Axorbis overview, source quick start, actual UI scope, development commands, current limitations, and upstream attribution.
+- Verified: `git diff --check` passed; all local README links resolve and documented npm scripts exist. This documentation-only unit did not change runtime behavior. Next: continue adapting the specialized research views listed in `.ai/STATE.md`.
+
 ### 2026-09-17 — axorbis-redesign
 
 - Objective: Replace the complex served workbench design with a simpler Axorbis research workspace using `#FF3B30`, white, and black; publish the source to the new Axorbis repository.
