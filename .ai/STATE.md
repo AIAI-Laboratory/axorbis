@@ -11,12 +11,11 @@ Axorbis researcher-first workspace, redesigned V1 vertical slice
 - Typecheck, build, architecture check, and targeted HTTP/React shell tests pass. Live localhost browser displayed the Axorbis Home after rebuilding and restarting the server.
 
 ## In Progress
-- Publish this source tree to `https://github.com/AIAI-Laboratory/axorbis.git` on `main` (repository is new, per user).
+- No code unit in progress. `main` was first pushed to `https://github.com/AIAI-Laboratory/axorbis.git` at `4f52c8e`; this state update follows it.
 
 ## Next
-1. Complete Git commit and push; verify remote branch commit.
-2. Adapt specialized paper readers, notes, notebooks/compute, and detailed provenance views into the new UI in subsequent units.
-3. Introduce a dedicated question record only when session-backed titles/plans cannot express scope or status.
+1. Adapt specialized paper readers, notes, notebooks/compute, and detailed provenance views into the new UI in subsequent units.
+2. Introduce a dedicated question record only when session-backed titles/plans cannot express scope or status.
 
 ## Changed Files
 - `.ai/STATE.md`, `.ai/DECISIONS.md`, `CHANGELOG.md`, README and public workbench docs/release notes/CLI metadata
@@ -29,6 +28,7 @@ Axorbis researcher-first workspace, redesigned V1 vertical slice
 - The underlying CLI/package still carries Feynman technical identity; `axorbis` is a source package bin alias. No Axorbis npm or native release has been published.
 - Specialized control-plane viewers are not yet adapted to the simplified UI. Research tools and records remain in the backend.
 - A configured model is required for live AI research; this workspace has no completed model setup.
+- Upstream GitHub Actions workflows were removed from this new repository because they target Feynman publishing/deployment and the available token cannot push workflow changes. Axorbis CI can be added separately.
 
 ## Run / Test
 - `npm run typecheck`
