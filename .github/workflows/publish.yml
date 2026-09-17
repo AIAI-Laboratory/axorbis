@@ -4,8 +4,6 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -14,6 +12,7 @@ concurrency:
 
 jobs:
   version-check:
+    if: github.repository == 'advaitpaliwal/feynman'
     runs-on: ubuntu-latest
     permissions:
       contents: read
