@@ -165,7 +165,7 @@ test("LiteParse 2.14 release identity and all native locks are exact", () => {
 	assert.doesNotThrow(() => verifyLiteparseRootManifestContract(manifest, fail));
 	assert.doesNotThrow(() => verifyLiteparseRootLockContract(lock, fail));
 	const runtimeLock = JSON.parse(
-		readFileSync(resolve(".feynman/runtime-package-lock.json"), "utf8"),
+		readFileSync(resolve(".axorbis/runtime-package-lock.json"), "utf8"),
 	);
 	assert.doesNotThrow(() => verifyLiteparseRuntimeLockContract(runtimeLock, fail));
 	assert.doesNotThrow(() =>
@@ -194,7 +194,7 @@ test("LiteParse contracts reject missing or extra native package sets", () => {
 	const manifest = JSON.parse(readFileSync(resolve("package.json"), "utf8"));
 	const lock = JSON.parse(readFileSync(resolve("package-lock.json"), "utf8"));
 	const runtimeLock = JSON.parse(
-		readFileSync(resolve(".feynman/runtime-package-lock.json"), "utf8"),
+		readFileSync(resolve(".axorbis/runtime-package-lock.json"), "utf8"),
 	);
 	const fail = (message: string): never => {
 		throw new Error(message);

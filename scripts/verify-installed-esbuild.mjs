@@ -24,7 +24,7 @@ const json = (path) => JSON.parse(readFileSync(path, "utf8"));
 export function installedCompilerSurfaces(packageRoot) {
 	return [
 		["root", resolve(packageRoot, "node_modules")],
-		["runtime", resolve(packageRoot, ".feynman/npm/node_modules")],
+		["runtime", resolve(packageRoot, ".axorbis/npm/node_modules")],
 	].flatMap(([label, modules]) => [
 		{ label, modules },
 		{ label: `${label}-pi`, modules: join(modules, "@earendil-works/pi-coding-agent/node_modules") },

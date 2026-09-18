@@ -214,7 +214,7 @@ test("buildPiEnv wires Feynman paths into the Pi environment", () => {
 		assert.equal(env.FEYNMAN_SESSION_DIR, "/sessions");
 		assert.equal(env.FEYNMAN_BIN_PATH, "/repo/feynman/bin/feynman.js");
 		assert.equal(env.FEYNMAN_PI_CLI_PATH, "/repo/feynman/node_modules/@earendil-works/pi-coding-agent/dist/cli.js");
-		assert.equal(env.FEYNMAN_MEMORY_DIR, "/home/.feynman/memory");
+		assert.equal(env.FEYNMAN_MEMORY_DIR, "/home/.axorbis/memory");
 		assert.equal(env.FEYNMAN_NPM_PREFIX, "/home/.axorbis/npm-global");
 		assert.equal(env.NPM_CONFIG_PREFIX, "/home/.axorbis/npm-global");
 		assert.equal(env.npm_config_prefix, "/home/.axorbis/npm-global");
