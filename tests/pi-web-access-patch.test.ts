@@ -1053,7 +1053,7 @@ test("patchPiWebAccessSource keeps current fetched PDF scratch files inside the 
 	const patched = patchPiWebAccessSource("pdf-extract.ts", source);
 
 	assert.match(patched, /AXORBIS_FETCH_CACHE_DIR/);
-	assert.match(patched, /process\.cwd\(\).*\.feynman.*cache.*fetch-content/);
+	assert.match(patched, /process\.cwd\(\).*\.axorbis.*cache.*fetch-content/);
 	assert.doesNotMatch(patched, /tmpdir|pi-web-pdf/);
 	assert.equal(patchPiWebAccessSource("pdf-extract.ts", patched), patched);
 });

@@ -458,6 +458,6 @@ test("runtime manifests preserve separate workspace and archive tree hashes", ()
 
 test("runtime input hashes use only files shipped in installed packages", () => {
 	assert.equal(RUNTIME_INPUT_FILES.includes("package-lock.json"), false);
-	assert.equal(RUNTIME_INPUT_FILES.includes(".feynman/runtime-package-lock.json"), true);
+	assert.equal(RUNTIME_INPUT_FILES.includes(".axorbis/runtime-package-lock.json"), true);
 	assert.equal(RUNTIME_INPUT_FILES.includes("package.json"), true);
 });

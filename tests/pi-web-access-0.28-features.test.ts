@@ -13,7 +13,7 @@ import {
 } from "../scripts/lib/pi-web-access-patch.mjs";
 
 const fixtureRoot = resolve(import.meta.dirname, "../fixtures/pi-web-access-0.28.0");
-const webRoot = resolve(process.cwd(), ".feynman/npm/node_modules/pi-web-access");
+const webRoot = resolve(process.cwd(), ".axorbis/npm/node_modules/pi-web-access");
 const moduleUrl = (file: string) => pathToFileURL(join(webRoot, file)).href;
 const reviewed = () => new Map(PI_WEB_ACCESS_PATCH_TARGETS.map(
 	(file) => [file, readFileSync(join(fixtureRoot, file), "utf8")],
