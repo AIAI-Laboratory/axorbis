@@ -517,7 +517,7 @@ test("patched GitHub issue and PR gh calls inherit the per-call proxy and bypass
 					...process.env,
 					PATH: `${bin}${delimiter}${process.env.PATH ?? ""}`,
 					FEYNMAN_GH_PROXY_LOG: logPath,
-					FEYNMAN_WEB_SEARCH_CONFIG: resolve(root, "web-search.json"),
+					AXORBIS_WEB_SEARCH_CONFIG: resolve(root, "web-search.json"),
 					NO_PROXY: "",
 					no_proxy: "",
 					HTTP_PROXY: "http://inherited.invalid:1",
@@ -686,7 +686,7 @@ test("patched GitHub clones propagate explicit, bypassed, and forced-direct prox
 						FEYNMAN_CLONE_PROXY_LOG: logPath,
 						FEYNMAN_SCENARIO: scenario.name,
 						FEYNMAN_GH_AVAILABLE: scenario.ghAvailable ? "1" : "0",
-						FEYNMAN_WEB_SEARCH_CONFIG: configPath,
+						AXORBIS_WEB_SEARCH_CONFIG: configPath,
 						NO_PROXY: scenario.noProxy,
 						no_proxy: scenario.noProxy,
 						HTTP_PROXY: "http://inherited.invalid:1",
@@ -823,7 +823,7 @@ test("pi-web-access 0.25 loads explicit Gemini ADC project and location config",
 			encoding: "utf8",
 			env: {
 				...process.env,
-				FEYNMAN_WEB_SEARCH_CONFIG: configPath,
+				AXORBIS_WEB_SEARCH_CONFIG: configPath,
 			},
 			input: `
 				const adc = await import(${JSON.stringify(moduleUrl)});

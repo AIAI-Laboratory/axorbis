@@ -38,7 +38,7 @@ function probe(config: unknown, source: string): any {
 				HOME: root,
 				USERPROFILE: root,
 				PI_CODING_AGENT_DIR: root,
-				FEYNMAN_WEB_SEARCH_CONFIG: configPath,
+				AXORBIS_WEB_SEARCH_CONFIG: configPath,
 			},
 		});
 		assert.equal(child.status, 0, child.stderr || child.error?.message || "Child process failed");
@@ -147,7 +147,7 @@ test("0.28 configured page answer defaults and explicit overrides obey the live 
 		await answerFromPage(input, ctx);
 		ctx.scopedModels = [{model: models[2]}];
 		await assert.rejects(() => answerFromPage(input, ctx), /not enabled/);
-		writeFileSync(process.env.FEYNMAN_WEB_SEARCH_CONFIG, "{");
+		writeFileSync(process.env.AXORBIS_WEB_SEARCH_CONFIG, "{");
 		await answerFromPage({...input, model:"test/override"}, ctx);
 		await assert.rejects(() => answerFromPage({...input, model:"test/current"}, ctx), /not enabled/);
 		console.log(JSON.stringify(calls));
@@ -159,10 +159,10 @@ test("0.28 direct/Jina timeout config keeps bounded defaults and explicit overri
 	assert.deepEqual(probe({ fetch: { timeout: 1.2345 } }, `
 		const { resolveFetchTimeoutMs } = await import(${JSON.stringify(moduleUrl("extract.ts"))});
 		const configured = resolveFetchTimeoutMs({});
-		writeFileSync(process.env.FEYNMAN_WEB_SEARCH_CONFIG, JSON.stringify({fetch:{timeout:0}}));
+		writeFileSync(process.env.AXORBIS_WEB_SEARCH_CONFIG, JSON.stringify({fetch:{timeout:0}}));
 		assert.throws(() => resolveFetchTimeoutMs({}), /Invalid fetch.timeout/);
 		const explicit = resolveFetchTimeoutMs({timeoutMs: 2000});
-		writeFileSync(process.env.FEYNMAN_WEB_SEARCH_CONFIG, "{}");
+		writeFileSync(process.env.AXORBIS_WEB_SEARCH_CONFIG, "{}");
 		const fallback = resolveFetchTimeoutMs({});
 		console.log(JSON.stringify({configured, explicit, fallback}));
 	`), { configured: 1235, explicit: 2000, fallback: 30000 });

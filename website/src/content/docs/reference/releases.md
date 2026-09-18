@@ -524,7 +524,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ### Reliability
 
-- Kept the fetched-content cache beside Feynman's exact web-search configuration, including custom `FEYNMAN_WEB_SEARCH_CONFIG` paths.
+- Kept the fetched-content cache beside Feynman's exact web-search configuration, including custom `AXORBIS_WEB_SEARCH_CONFIG` paths.
 - Preserved Feynman's project-local PDF scratch files, session model scope, browser-cookie opt-in, raw-result default, and bounded primary search deadline.
 - Restored automatic package reconciliation for workspaces that retained the `0.3.15` core package pins.
 
@@ -600,7 +600,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 - Fixed `feynman alpha ask` sending obsolete `urls`/`url` arguments to alphaXiv. Paper Q&A now sends the current `paper` plus `queries` schema.
 - Kept PDF scratch Markdown in the active project's `.feynman/cache/fetch-content`, kept browser-cookie access opt-in, retained the bounded primary search deadline, and adopted upstream's per-call curator isolation and no-browser timeout rather than carrying superseded local patches.
 - Bound page-answer, search-rewrite, and curator summary model selection to Pi's resolved session model scope, including `--models` overrides, instead of rereading an adjacent settings file.
-- Bound web-search configuration reads and writes to the same Feynman-managed path, including custom `FEYNMAN_WEB_SEARCH_CONFIG` locations, and create that file's parent before saving.
+- Bound web-search configuration reads and writes to the same Feynman-managed path, including custom `AXORBIS_WEB_SEARCH_CONFIG` locations, and create that file's parent before saving.
 - Updated Feynman's direct, nested Pi, and packaged runtime copies of Undici to `8.10.0` for current idle-connection, readable-body, retry, HTTP/2, proxy IPv6, and DNS-origin fixes.
 - Updated PDF.js to `6.2.108` and the website's audited JS-YAML and Nano ID trees to close current malicious-document and denial-of-service advisories.
 - Removed macOS ACL, file-flag, Apple metadata, and extended-attribute records from bundled runtime archives so those host records no longer change package bytes.
@@ -693,7 +693,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 - Fixed workbench state switching between newly minted local organizations when concurrent processes read `active-org.json` during a rewrite. Valid manifests are no longer rewritten, and required writes are atomic.
 - Option+Enter now inserts a newline in Feynman's REPL input. Shift+Enter preserves Pi's follow-up action in terminals that report modified Enter keys, Ctrl+J remains a portable newline alternative, and existing user-modified keybindings remain untouched.
 - Added `/thinking [level]` so reasoning effort is discoverable and directly adjustable inside the REPL while Shift+Tab remains available. The picker follows the active model's supported levels, including `max` where Pi exposes it.
-- `fetch_content` now writes extracted PDF scratch Markdown under the active project's `.feynman/cache/fetch-content` instead of `~/Downloads`. Set `FEYNMAN_FETCH_CACHE_DIR` to override the location.
+- `fetch_content` now writes extracted PDF scratch Markdown under the active project's `.feynman/cache/fetch-content` instead of `~/Downloads`. Set `AXORBIS_FETCH_CACHE_DIR` to override the location.
 - Unknown CLI flags now point to `feynman help`, and `feynman update` help clarifies that extensions update with their packages rather than through a separate `--extensions` flag.
 
 ### Package Stack

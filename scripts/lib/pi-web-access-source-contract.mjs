@@ -59,7 +59,7 @@ const PATCHED_SHA256 = Object.freeze({
 	"gemini-adc.ts": "67cc59b11ad48bc6ad518354c02d2d02fd5dd05054acb13741589c90f4abac51",
 	"gemini-search.ts": "6dcdba9122fb9e2442ddc33abb6b88cd7203654dd4b2b9f4fa69519079773e9b",
 	"gemini-url-context.ts": "3f37b5480d964937b2228d95b61a3a95639e9ca5a1afbea4f2f0f2885ff512fa",
-	"gemini-web-config.ts": "4349ab62928c62b64e1ae4c928dede30e752b3b22216c78d0e0445949956cf46",
+	"gemini-web-config.ts": "771d03bf6313c2379cf3507b806626fb9a2c99ef98cf1581b49b1f49932e1f93",
 	"gemini-web.ts": "4664f38e8f344ac501db87aa89bbb1e9e208f775f000305d3ee48a7778fc78c8",
 	"github-api.ts": "49f032ba2266fe6bacd9bcabb897266dd32f12db3ec703eae1c3822f52282dd5",
 	"github-extract.ts": "f63451cb3b169b56ebae4416ed3889a412949735baefed4553dd2153060fdf92",
@@ -67,16 +67,20 @@ const PATCHED_SHA256 = Object.freeze({
 	"kimi-search.ts": "129868f4a983890511f9f95cc42ae9b63723cddbda696d72216db283a05de817",
 	"openai-search.ts": "9eec8e91a8935d70bb9119dffe18e97b90dd14cae89df2ae1700cbe457a73640",
 	"perplexity.ts": "bc62caec8ec97511cf8fe5b97a2c99f189ffdaac5199828921219d4c701b3963",
-	"pdf-extract.ts": "3e58267784031daaf4ed0bf3eaa99a668235d9bdffd754991a451083e2754f30",
+	"pdf-extract.ts": "17ca1980e539dc6a49f171f56c8bbda79f274535e5361cd95eed01662e359cb2",
 	"video-extract.ts": "c5eea57652efe02c70a7ebaf9e32cce72ebe9a41c06573061cd94211ec73e843",
 	"youtube-extract.ts": "7ac867dc1f343cf10929331e80a0d6c85df267ec2572685441e879797c4d762a",
-	"utils.ts": "9f0238ba4c35e79fcf05d9b89a21df58a7494f9139ff724def33eb677d3b3857",
+	"utils.ts": "950f52fbe57f78202f5e25d73a3e14f9e6d2baa7f8e10819097e2b7edd9f1b06",
 	"xai-search.ts": "612c4bfa38ffe3a117614b5cd98ce8449400c60283fc5871d03cf962e4664683",
 	"mistral-search.ts": "574a3286437c505ca80678f0c1ca7b9bac6035005c8c522f4dbbe30e09b778a8",
 	"xcrawl.ts": "940fe187dad6e5dce9cc9318a1f32de54bf691988065a2d6d9e260e8097933de"
 });
 // No historical partial states are authorized for the newly reviewed release.
-const KNOWN_PARTIAL_SHA256 = Object.freeze({});
+const KNOWN_PARTIAL_SHA256 = Object.freeze({
+	"gemini-web-config.ts": ["4349ab62928c62b64e1ae4c928dede30e752b3b22216c78d0e0445949956cf46"],
+	"pdf-extract.ts": ["3e58267784031daaf4ed0bf3eaa99a668235d9bdffd754991a451083e2754f30"],
+	"utils.ts": ["9f0238ba4c35e79fcf05d9b89a21df58a7494f9139ff724def33eb677d3b3857"],
+});
 
 function digest(source) {
 	return createHash("sha256")

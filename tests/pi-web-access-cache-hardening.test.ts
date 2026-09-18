@@ -80,8 +80,8 @@ test("external fetched-content cache follows Feynman's exact web-search config p
 	const fixtureRoot = mkdtempSync(join(tmpdir(), "feynman-web-content-cache-"));
 	const configPath = join(fixtureRoot, "custom-config", "research-web.json");
 	const cacheDir = join(fixtureRoot, "custom-config", "web-search-cache");
-	const originalConfigPath = process.env.FEYNMAN_WEB_SEARCH_CONFIG;
-	process.env.FEYNMAN_WEB_SEARCH_CONFIG = configPath;
+	const originalConfigPath = process.env.AXORBIS_WEB_SEARCH_CONFIG;
+	process.env.AXORBIS_WEB_SEARCH_CONFIG = configPath;
 
 	try {
 		const storage = await loadPatchedStorageFixture(
@@ -128,9 +128,9 @@ test("external fetched-content cache follows Feynman's exact web-search config p
 		);
 	} finally {
 		if (originalConfigPath === undefined) {
-			delete process.env.FEYNMAN_WEB_SEARCH_CONFIG;
+			delete process.env.AXORBIS_WEB_SEARCH_CONFIG;
 		} else {
-			process.env.FEYNMAN_WEB_SEARCH_CONFIG = originalConfigPath;
+			process.env.AXORBIS_WEB_SEARCH_CONFIG = originalConfigPath;
 		}
 		rmSync(fixtureRoot, { recursive: true, force: true });
 	}
@@ -140,8 +140,8 @@ test("fetched-content cache evicts oldest entries and removes only stale owned t
 	const fixtureRoot = mkdtempSync(join(tmpdir(), "feynman-web-cache-limits-"));
 	const configPath = join(fixtureRoot, "config", "web-search.json");
 	const cacheDir = join(fixtureRoot, "config", "web-search-cache");
-	const originalConfigPath = process.env.FEYNMAN_WEB_SEARCH_CONFIG;
-	process.env.FEYNMAN_WEB_SEARCH_CONFIG = configPath;
+	const originalConfigPath = process.env.AXORBIS_WEB_SEARCH_CONFIG;
+	process.env.AXORBIS_WEB_SEARCH_CONFIG = configPath;
 
 	try {
 		const storage = await loadPatchedStorageFixture(
@@ -187,9 +187,9 @@ test("fetched-content cache evicts oldest entries and removes only stale owned t
 		assert.equal(remaining.includes("foreign.tmp"), true);
 	} finally {
 		if (originalConfigPath === undefined) {
-			delete process.env.FEYNMAN_WEB_SEARCH_CONFIG;
+			delete process.env.AXORBIS_WEB_SEARCH_CONFIG;
 		} else {
-			process.env.FEYNMAN_WEB_SEARCH_CONFIG = originalConfigPath;
+			process.env.AXORBIS_WEB_SEARCH_CONFIG = originalConfigPath;
 		}
 		rmSync(fixtureRoot, { recursive: true, force: true });
 	}
@@ -200,8 +200,8 @@ test("fetched-content cache rejects directory and entry symlinks", { skip: proce
 	const configPath = join(fixtureRoot, "config", "web-search.json");
 	const cacheDir = join(fixtureRoot, "config", "web-search-cache");
 	const outsideDir = join(fixtureRoot, "outside");
-	const originalConfigPath = process.env.FEYNMAN_WEB_SEARCH_CONFIG;
-	process.env.FEYNMAN_WEB_SEARCH_CONFIG = configPath;
+	const originalConfigPath = process.env.AXORBIS_WEB_SEARCH_CONFIG;
+	process.env.AXORBIS_WEB_SEARCH_CONFIG = configPath;
 
 	try {
 		const storage = await loadPatchedStorageFixture(
@@ -273,9 +273,9 @@ test("fetched-content cache rejects directory and entry symlinks", { skip: proce
 		assert.equal(readFileSync(targetPath, "utf8"), JSON.stringify(linkedData));
 	} finally {
 		if (originalConfigPath === undefined) {
-			delete process.env.FEYNMAN_WEB_SEARCH_CONFIG;
+			delete process.env.AXORBIS_WEB_SEARCH_CONFIG;
 		} else {
-			process.env.FEYNMAN_WEB_SEARCH_CONFIG = originalConfigPath;
+			process.env.AXORBIS_WEB_SEARCH_CONFIG = originalConfigPath;
 		}
 		rmSync(fixtureRoot, { recursive: true, force: true });
 	}

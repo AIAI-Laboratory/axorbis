@@ -413,7 +413,7 @@ export async function verifyWebAccessRegistrationGates() {
 		"pi-web-access",
 		"index.ts",
 	);
-	const previousConfigPath = process.env.FEYNMAN_WEB_SEARCH_CONFIG;
+	const previousConfigPath = process.env.AXORBIS_WEB_SEARCH_CONFIG;
 	let session;
 
 	assert.ok(existsSync(extensionPath), "Installed pi-web-access extension is missing");
@@ -438,7 +438,7 @@ export async function verifyWebAccessRegistrationGates() {
 		}, null, 2) + "\n",
 		"utf8",
 	);
-	process.env.FEYNMAN_WEB_SEARCH_CONFIG = configPath;
+	process.env.AXORBIS_WEB_SEARCH_CONFIG = configPath;
 
 	try {
 		const settingsManager = SettingsManager.inMemory({
@@ -489,9 +489,9 @@ export async function verifyWebAccessRegistrationGates() {
 	} finally {
 		session?.dispose();
 		if (previousConfigPath === undefined) {
-			delete process.env.FEYNMAN_WEB_SEARCH_CONFIG;
+			delete process.env.AXORBIS_WEB_SEARCH_CONFIG;
 		} else {
-			process.env.FEYNMAN_WEB_SEARCH_CONFIG = previousConfigPath;
+			process.env.AXORBIS_WEB_SEARCH_CONFIG = previousConfigPath;
 		}
 		rmSync(root, { recursive: true, force: true });
 	}

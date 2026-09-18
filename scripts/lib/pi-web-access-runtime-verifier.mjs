@@ -23,7 +23,7 @@ function runModelAwareRoutingProbe({
 }) {
 	const env = {
 		...process.env,
-		FEYNMAN_WEB_SEARCH_CONFIG: configPath,
+		AXORBIS_WEB_SEARCH_CONFIG: configPath,
 		HOME: home,
 		PI_CODING_AGENT_DIR: home,
 		USERPROFILE: home,
@@ -248,7 +248,7 @@ function runGitHubProbe({
 		encoding: "utf8",
 		env: {
 			...process.env,
-			FEYNMAN_WEB_SEARCH_CONFIG: configPath,
+			AXORBIS_WEB_SEARCH_CONFIG: configPath,
 		},
 		input: `
 			import { createJiti } from ${JSON.stringify(jitiModuleUrl)};

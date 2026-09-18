@@ -63,7 +63,7 @@ export async function verifyPdfPageLimits(packageRoot) {
 			"DATALAB_API_KEY",
 			"DATALAB_API_BASE",
 			"DATALAB_MODE",
-			"FEYNMAN_WEB_SEARCH_CONFIG",
+			"AXORBIS_WEB_SEARCH_CONFIG",
 			"GEMINI_API_KEY",
 			"GOOGLE_GEMINI_BASE_URL",
 		].map((name) => [name, process.env[name]]),
@@ -79,7 +79,7 @@ export async function verifyPdfPageLimits(packageRoot) {
 			JSON.stringify({ pdf: { provider: "unpdf", maxPages: 1.9 } }),
 			"utf8",
 		);
-		process.env.FEYNMAN_WEB_SEARCH_CONFIG = configPath;
+		process.env.AXORBIS_WEB_SEARCH_CONFIG = configPath;
 		process.env.DATALAB_API_KEY = "synthetic-datalab-key";
 		process.env.GEMINI_API_KEY = "synthetic-gemini-key";
 		delete process.env.DATALAB_API_BASE;

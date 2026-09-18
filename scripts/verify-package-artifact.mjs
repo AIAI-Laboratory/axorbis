@@ -1036,7 +1036,7 @@ requireMarkers(
 		"npm/node_modules/pi-web-access/utils.ts",
 	),
 	"runtime pi-web-access config helper",
-	["FEYNMAN_WEB_SEARCH_CONFIG", "PI_WEB_SEARCH_CONFIG", "configuredPath || join(getWebSearchConfigDir()"],
+	["AXORBIS_WEB_SEARCH_CONFIG", "PI_WEB_SEARCH_CONFIG", "configuredPath || join(getWebSearchConfigDir()"],
 );
 requireMarkers(
 	readArchivedText(
@@ -1045,7 +1045,7 @@ requireMarkers(
 	),
 	"runtime pi-web-access PDF extraction",
 	[
-		"FEYNMAN_FETCH_CACHE_DIR",
+		"AXORBIS_FETCH_CACHE_DIR",
 		'join(process.cwd(), ".axorbis", "cache", "fetch-content")',
 		"const enabled = pdf.enabled !== false;",
 		'import {',

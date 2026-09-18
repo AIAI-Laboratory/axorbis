@@ -133,7 +133,7 @@ The web search tool supports several capabilities that the researcher agent leve
 - **Passage lookup** -- Use `get_search_content` with `findText` and exact, case-insensitive, or fuzzy `findMode` matching to locate a passage in stored content without paging through the entire page
 - **Clean continuation** -- Every single-page fetch reports its stored response ID, and long pages also report character, byte, line, and next-offset details
 
-Fetched page bodies live for one hour in `~/.feynman/web-search-cache/`, beside `web-search.json`. The cache keeps at most 128 entries and 128 MiB, evicting the oldest entries first. On macOS and Linux, Feynman keeps its directory at mode `0700` and files at `0600`. Session JSONL stores only bounded URL metadata and a private cache reference. Custom `FEYNMAN_WEB_SEARCH_CONFIG` paths move the cache beside that exact file.
+Fetched page bodies live for one hour in `~/.feynman/web-search-cache/`, beside `web-search.json`. The cache keeps at most 128 entries and 128 MiB, evicting the oldest entries first. On macOS and Linux, Feynman keeps its directory at mode `0700` and files at `0600`. Session JSONL stores only bounded URL metadata and a private cache reference. Custom `AXORBIS_WEB_SEARCH_CONFIG` paths move the cache beside that exact file.
 
 For `get_search_content`, `offset` and `limit` are ignored when `findText` is supplied, which keeps bridge-injected pagination defaults from blocking passage lookup. `findMode` requires `findText`. Use one of `url`, `urlIndex`, `query`, or `queryIndex` to select stored content when the response contains multiple items.
 

@@ -139,7 +139,7 @@ test("patchPiWebAccessSource rewrites legacy Pi web-search config paths", () => 
 
 	const patched = patchPiWebAccessSource("perplexity.ts", input);
 
-	assert.match(patched, /FEYNMAN_WEB_SEARCH_CONFIG/);
+	assert.match(patched, /AXORBIS_WEB_SEARCH_CONFIG/);
 	assert.match(patched, /PI_WEB_SEARCH_CONFIG/);
 });
 
@@ -158,7 +158,7 @@ test("patchPiWebAccessSource keeps current upstream config helpers on Feynman's 
 
 	const patched = patchPiWebAccessSource("utils.ts", input);
 
-	assert.match(patched, /process\.env\.FEYNMAN_WEB_SEARCH_CONFIG\?\.trim\(\)/);
+	assert.match(patched, /process\.env\.AXORBIS_WEB_SEARCH_CONFIG\?\.trim\(\)/);
 	assert.match(patched, /process\.env\.PI_WEB_SEARCH_CONFIG\?\.trim\(\)/);
 	assert.match(patched, /configuredPath \|\| join\(getWebSearchConfigDir\(\), "web-search\.json"\)/);
 	assert.equal(patchPiWebAccessSource("utils.ts", patched), patched);
@@ -378,7 +378,7 @@ test("runtime 0.28.0 normalizes PDF limits and honors OpenAI search provider pri
 				encoding: "utf8",
 				env: {
 					...process.env,
-					FEYNMAN_WEB_SEARCH_CONFIG: configPath,
+					AXORBIS_WEB_SEARCH_CONFIG: configPath,
 				},
 				input: `
 					const { loadPDFConfig } = await import(${JSON.stringify(pdfUrl)});
@@ -635,7 +635,7 @@ test("patchPiWebAccessSources rejects unreviewed partial config-path patch state
 		{
 			label: "environment expression",
 			binding:
-				'const WEB_SEARCH_CONFIG_PATH = process.env.FEYNMAN_WEB_SEARCH_CONFIG ?? process.env.PI_WEB_SEARCH_CONFIG ?? join(homedir(), ".pi", "web-search.json");',
+				'const WEB_SEARCH_CONFIG_PATH = process.env.AXORBIS_WEB_SEARCH_CONFIG ?? process.env.PI_WEB_SEARCH_CONFIG ?? join(homedir(), ".pi", "web-search.json");',
 			directory: "const dir = getWebSearchConfigDir();",
 			helperImport:
 				'import { formatSeconds, getWebSearchConfigDir, getWebSearchConfigPath, resolveCuratorNetworkConfig } from "./utils.ts";',
@@ -1052,7 +1052,7 @@ test("patchPiWebAccessSource keeps current fetched PDF scratch files inside the 
 
 	const patched = patchPiWebAccessSource("pdf-extract.ts", source);
 
-	assert.match(patched, /FEYNMAN_FETCH_CACHE_DIR/);
+	assert.match(patched, /AXORBIS_FETCH_CACHE_DIR/);
 	assert.match(patched, /process\.cwd\(\).*\.feynman.*cache.*fetch-content/);
 	assert.doesNotMatch(patched, /tmpdir|pi-web-pdf/);
 	assert.equal(patchPiWebAccessSource("pdf-extract.ts", patched), patched);

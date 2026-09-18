@@ -233,7 +233,7 @@ export function buildPiEnv(
 		FEYNMAN_VERSION: options.feynmanVersion,
 		FEYNMAN_SESSION_DIR: options.sessionDir,
 		FEYNMAN_MEMORY_DIR: resolve(dirname(options.feynmanAgentDir), "memory"),
-		FEYNMAN_WEB_SEARCH_CONFIG: feynmanWebSearchConfigPath,
+		AXORBIS_WEB_SEARCH_CONFIG: feynmanWebSearchConfigPath,
 		FEYNMAN_NODE_EXECUTABLE: process.execPath,
 		FEYNMAN_BIN_PATH: feynmanBinPath,
 		FEYNMAN_PI_CLI_PATH: paths.piCliPath,

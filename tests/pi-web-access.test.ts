@@ -24,8 +24,8 @@ test("getPiWebSearchConfigPath respects AXORBIS_HOME semantics", () => {
 });
 
 test("getPiWebSearchConfigPath honors an exact custom Feynman config path", () => {
-	const previousConfigPath = process.env.FEYNMAN_WEB_SEARCH_CONFIG;
-	process.env.FEYNMAN_WEB_SEARCH_CONFIG = "/tmp/custom-web/research-web.json";
+	const previousConfigPath = process.env.AXORBIS_WEB_SEARCH_CONFIG;
+	process.env.AXORBIS_WEB_SEARCH_CONFIG = "/tmp/custom-web/research-web.json";
 
 	try {
 		assert.equal(getPiWebSearchConfigPath(), "/tmp/custom-web/research-web.json");
@@ -35,9 +35,9 @@ test("getPiWebSearchConfigPath honors an exact custom Feynman config path", () =
 		);
 	} finally {
 		if (previousConfigPath === undefined) {
-			delete process.env.FEYNMAN_WEB_SEARCH_CONFIG;
+			delete process.env.AXORBIS_WEB_SEARCH_CONFIG;
 		} else {
-			process.env.FEYNMAN_WEB_SEARCH_CONFIG = previousConfigPath;
+			process.env.AXORBIS_WEB_SEARCH_CONFIG = previousConfigPath;
 		}
 	}
 });

@@ -507,14 +507,15 @@ export function patchPiWebAccessSources(sources, surface = "source tree") {
 
 const LEGACY_CONFIG_EXPR = 'join(homedir(), ".pi", "web-search.json")';
 const PATCHED_CONFIG_EXPR =
-	'process.env.FEYNMAN_WEB_SEARCH_CONFIG ?? process.env.PI_WEB_SEARCH_CONFIG ?? join(homedir(), ".pi", "web-search.json")';
+	'process.env.AXORBIS_WEB_SEARCH_CONFIG ?? process.env.PI_WEB_SEARCH_CONFIG ?? join(homedir(), ".pi", "web-search.json")';
 const LEGACY_PDF_OUTPUT_DIRS = [
 	'const DEFAULT_OUTPUT_DIR = join(homedir(), "Downloads");',
 	'const DEFAULT_OUTPUT_DIR = join(tmpdir(), "pi-web-pdf");',
+	"const DEFAULT_OUTPUT_DIR =\n  process.env.FEYNMAN_FETCH_CACHE_DIR?.trim() || join(process.cwd(), \".feynman\", \"cache\", \"fetch-content\");",
 ];
 const PATCHED_PDF_OUTPUT_DIR = [
 	"const DEFAULT_OUTPUT_DIR =",
-	'  process.env.FEYNMAN_FETCH_CACHE_DIR?.trim() || join(process.cwd(), ".axorbis", "cache", "fetch-content");',
+	'  process.env.AXORBIS_FETCH_CACHE_DIR?.trim() || join(process.cwd(), ".axorbis", "cache", "fetch-content");',
 ].join("\n");
 const CONFIG_PATH_HELPER = [
 	"export function getWebSearchConfigPath(): string {",
@@ -523,7 +524,7 @@ const CONFIG_PATH_HELPER = [
 ].join("\n");
 const PATCHED_CONFIG_PATH_HELPER = [
 	"export function getWebSearchConfigPath(): string {",
-	"\tconst configuredPath = process.env.FEYNMAN_WEB_SEARCH_CONFIG?.trim() || process.env.PI_WEB_SEARCH_CONFIG?.trim();",
+	"\tconst configuredPath = process.env.AXORBIS_WEB_SEARCH_CONFIG?.trim() || process.env.PI_WEB_SEARCH_CONFIG?.trim();",
 	'\treturn configuredPath || join(getWebSearchConfigDir(), "web-search.json");',
 	"}",
 ].join("\n");
@@ -1117,6 +1118,16 @@ export function patchPiWebAccessSource(relativePath, source) {
 
 	if (relativePath === "ssrf-protection.ts") {
 		patched = patchSsrfNoProxySource(patched);
+	}
+
+	// For any upstreamed Feynman string, replace it with Axorbis.
+	patched = patched.replaceAll("FEYNMAN_WEB_SEARCH_CONFIG", "AXORBIS_WEB_SEARCH_CONFIG");
+	patched = patched.replaceAll("FEYNMAN_FETCH_CACHE_DIR", "AXORBIS_FETCH_CACHE_DIR");
+	patched = patched.replaceAll("FEYNMAN_ALLOW_BROWSER_COOKIES", "AXORBIS_ALLOW_BROWSER_COOKIES");
+	patched = patched.replaceAll("\".feynman\"", "\".axorbis\"");
+
+	if (patched !== source) {
+		changed = true;
 	}
 
 	if (relativePath === "github-api.ts") {
