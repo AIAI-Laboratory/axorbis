@@ -167,7 +167,7 @@ export function patchPiUndiciProxyTree(nodeModulesPath, fallbackPackagePath, req
 			if (!safePackagePath) {
 				throw new Error(`Undici ${FEYNMAN_UNDICI_VERSION} package tree is unavailable`);
 			}
-			const temporaryPath = `${nestedPackagePath}.feynman-proxy-${process.pid}`;
+			const temporaryPath = `${nestedPackagePath}.axorbis-proxy-${process.pid}`;
 			rmSync(temporaryPath, { recursive: true, force: true });
 			mkdirSync(dirname(temporaryPath), { recursive: true });
 			cpSync(safePackagePath, temporaryPath, { recursive: true });

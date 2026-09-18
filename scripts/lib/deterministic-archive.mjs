@@ -130,7 +130,7 @@ export async function createDeterministicTarGz(rootPath, archivePath) {
 	normalizeArchiveTreeTimestamps(resolvedRoot);
 
 	const tempRoot = mkdtempSync(join(tmpdir(), "feynman-tar-"));
-	const outputTempRoot = mkdtempSync(join(dirname(resolvedArchive), ".feynman-tar-output-"));
+	const outputTempRoot = mkdtempSync(join(dirname(resolvedArchive), ".axorbis-tar-output-"));
 	const listPath = resolve(tempRoot, "entries.txt");
 	const tarPath = resolve(tempRoot, `${basename(resolvedArchive)}.tar`);
 	const completedArchivePath = resolve(outputTempRoot, basename(resolvedArchive));

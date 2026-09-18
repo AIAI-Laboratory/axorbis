@@ -190,7 +190,7 @@ function runModelAwareRoutingProbe({
 }
 
 export function verifyModelAwareSearchRouting(packageRoot) {
-	const runtimeRoot = resolve(packageRoot, ".feynman", "npm");
+	const runtimeRoot = resolve(packageRoot, ".axorbis", "npm");
 	const jitiModuleUrl = pathToFileURL(createRequire(resolve(runtimeRoot, "node_modules", "@earendil-works", "pi-coding-agent", "package.json")).resolve("jiti")).href;
 	const webRoot = resolve(runtimeRoot, "node_modules", "pi-web-access");
 	const indexModulePath = resolve(webRoot, "index.ts");
@@ -261,7 +261,7 @@ function runGitHubProbe({
 }
 
 export function verifyGitHubCloneSafety(packageRoot) {
-	const runtimeRoot = resolve(packageRoot, ".feynman", "npm");
+	const runtimeRoot = resolve(packageRoot, ".axorbis", "npm");
 	const jitiModuleUrl = pathToFileURL(createRequire(resolve(runtimeRoot, "node_modules", "@earendil-works", "pi-coding-agent", "package.json")).resolve("jiti")).href;
 	const githubModulePath = resolve(
 		runtimeRoot,

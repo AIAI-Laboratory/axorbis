@@ -47,8 +47,8 @@ export const RUNTIME_WORKSPACE_COMPLETION_VERSION = 2;
 export const RUNTIME_WORKSPACE_RESTORE_STALE_MS = 24 * 60 * 60 * 1000;
 export const RUNTIME_WORKSPACE_RESTORE_JOURNAL_VERSION = 1;
 
-const RUNTIME_WORKSPACE_RESTORE_OWNER = ".feynman-runtime-restore-owner.json";
-const RUNTIME_WORKSPACE_RESTORE_JOURNAL = ".feynman-runtime-restore-journal.json";
+const RUNTIME_WORKSPACE_RESTORE_OWNER = ".axorbis-runtime-restore-owner.json";
+const RUNTIME_WORKSPACE_RESTORE_JOURNAL = ".axorbis-runtime-restore-journal.json";
 function computeSourceSha256(source) {
 	return createHash("sha256").update(source).digest("hex");
 }

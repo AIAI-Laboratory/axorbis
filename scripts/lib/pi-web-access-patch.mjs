@@ -514,7 +514,7 @@ const LEGACY_PDF_OUTPUT_DIRS = [
 ];
 const PATCHED_PDF_OUTPUT_DIR = [
 	"const DEFAULT_OUTPUT_DIR =",
-	'  process.env.FEYNMAN_FETCH_CACHE_DIR?.trim() || join(process.cwd(), ".feynman", "cache", "fetch-content");',
+	'  process.env.FEYNMAN_FETCH_CACHE_DIR?.trim() || join(process.cwd(), ".axorbis", "cache", "fetch-content");',
 ].join("\n");
 const CONFIG_PATH_HELPER = [
 	"export function getWebSearchConfigPath(): string {",

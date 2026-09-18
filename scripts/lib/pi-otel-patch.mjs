@@ -89,7 +89,7 @@ export function patchPiOtelSource(relativePath, source) {
 		}
 		const misplacedSignalReset =
 			'        if (typeof override.endpoint === "string" || typeof override.protocol === "string")\n' +
-			"            delete cfg.feynmanOtlpSignals;\n" +
+			"            delete cfg.axorbisOtlpSignals;\n" +
 			"        await shutdownSdk();";
 		const dashboardOverrideEnd =
 			'        if (typeof override.protocol === "string" && override.protocol) {\n' +
@@ -101,13 +101,13 @@ export function patchPiOtelSource(relativePath, source) {
 			"            cfg.protocol = override.protocol;\n" +
 			"        }\n" +
 			'        if (typeof override.endpoint === "string" || typeof override.protocol === "string")\n' +
-			"            delete cfg.feynmanOtlpSignals;\n" +
+			"            delete cfg.axorbisOtlpSignals;\n" +
 			"        await shutdownSdk();";
 		// A pre-release candidate inserted the dashboard-only reset into the
 		// earlier session_shutdown handler. Repair that exact shape before
 		// placing the reset beside the dashboard override that owns cfg/override.
 		patched = patched.replace(misplacedSignalReset, "        await shutdownSdk();");
-		if (!patched.includes("delete cfg.feynmanOtlpSignals")) {
+		if (!patched.includes("delete cfg.axorbisOtlpSignals")) {
 			patched = patched.replace(dashboardOverrideEnd, dashboardSignalReset);
 		}
 	}
@@ -143,7 +143,7 @@ export function resolveFeynmanOtlpSignalUrl(endpoint, signal) {
     return parsed.toString();
 }
 export function resolveFeynmanOtlpSignalConfig(cfg, signal) {
-    const configured = cfg.feynmanOtlpSignals?.[signal];
+    const configured = cfg.axorbisOtlpSignals?.[signal];
     const endpoint = configured?.endpoint ?? cfg.endpoint;
     const protocol = configured?.protocol ?? cfg.protocol;
     const headers = configured?.headers ?? cfg.headers;
@@ -258,19 +258,19 @@ function pickByProtocol(cfg, signal, ctors) {
             explicitEndpoint: explicitEndpoint !== undefined,
         };
     };
-    const feynmanOtlpSignals = {
+    const axorbisOtlpSignals = {
         traces: createFeynmanSignalConfig("traces"),
         metrics: createFeynmanSignalConfig("metrics"),
         logs: createFeynmanSignalConfig("logs"),
     };
-    const { endpoint, protocol, headers } = feynmanOtlpSignals.traces;`;
+    const { endpoint, protocol, headers } = axorbisOtlpSignals.traces;`;
 		patched = patched
 			.replace(previousConfig, signalConfig)
 			.replace(baselineConfig, signalConfig);
-		if (!patched.includes("        feynmanOtlpSignals,")) {
+		if (!patched.includes("        axorbisOtlpSignals,")) {
 			patched = patched.replace(
 				"        headers,\n        serviceName,",
-				"        headers,\n        feynmanOtlpSignals,\n        serviceName,",
+				"        headers,\n        axorbisOtlpSignals,\n        serviceName,",
 			);
 		}
 	}
@@ -326,7 +326,7 @@ export function patchPiOtelPackageRoot(packageRoot) {
 export async function verifyInstalledPiOtel(installedPackageRoot) {
 	const piOtelRoot = resolve(
 		installedPackageRoot,
-		".feynman",
+		".axorbis",
 		"npm",
 		"node_modules",
 		"pi-otel",
@@ -365,7 +365,7 @@ export async function verifyInstalledPiOtel(installedPackageRoot) {
 	}
 	const explicit = sdk.resolveFeynmanOtlpSignalConfig({
 		...shared,
-		feynmanOtlpSignals: {
+		axorbisOtlpSignals: {
 			metrics: {
 				endpoint: "https://metrics.example/custom-ingest",
 				protocol: "grpc",

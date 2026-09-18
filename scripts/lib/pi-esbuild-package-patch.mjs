@@ -243,13 +243,13 @@ function planRootHostRecovery(nodeModulesPath, hostName) {
 	} catch (error) {
 		if (error.code !== "MODULE_NOT_FOUND") throw error;
 	}
-	const appRoot = dirname(nodeModulesPath), runtime = resolve(appRoot, ".feynman", "npm");
+	const appRoot = dirname(nodeModulesPath), runtime = resolve(appRoot, ".axorbis", "npm");
 	const source = resolve(runtime, "node_modules", hostName);
 	if (!existsSync(source)) return;
 	// Only this installation's owned runtime can supply recovery bytes. No
 	// ancestor package, NODE_PATH, cache search or download is a repair source.
 	for (const path of [
-		resolve(appRoot, ".feynman"), runtime, resolve(runtime, "node_modules"),
+		resolve(appRoot, ".axorbis"), runtime, resolve(runtime, "node_modules"),
 		resolve(runtime, "node_modules", "@esbuild"), source,
 	]) { assertContained(path, appRoot); assertPlainDirectory(path); }
 	const runtimeManifest = resolve(runtime, "package.json");
@@ -370,7 +370,7 @@ function treeMatches(root, files) {
 
 function replacePortableTree(destination, files, validateInstalled) {
 	mkdirSync(dirname(destination), { recursive: true });
-	const stage = mkdtempSync(resolve(dirname(destination), ".feynman-esbuild-stage-"));
+	const stage = mkdtempSync(resolve(dirname(destination), ".axorbis-esbuild-stage-"));
 	const backup = stage + ".backup";
 	let moved = false;
 	try {

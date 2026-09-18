@@ -7,7 +7,7 @@ import { assertPiBtwModelRuntimePatchedSource } from "./pi-btw-model-runtime-pat
 export function verifyPiBtwModelRuntime(packageDirectory) {
 	const sourcePath = resolve(
 		packageDirectory,
-		".feynman",
+		".axorbis",
 		"npm",
 		"node_modules",
 		"pi-btw",

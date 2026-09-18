@@ -112,14 +112,14 @@ export async function verifyInstalledPiStateFilePermissions(packageRoot) {
 
 	const runtimeArchivePath = resolve(
 		packageRoot,
-		".feynman",
+		".axorbis",
 		"runtime-workspace.tgz",
 	);
 	if (!existsSync(runtimeArchivePath)) {
 		let embeddedRuntimePiRoot;
 		try {
 			embeddedRuntimePiRoot = resolvePiPackageRoot(
-				resolve(packageRoot, ".feynman", "npm", "node_modules"),
+				resolve(packageRoot, ".axorbis", "npm", "node_modules"),
 			);
 		} catch (error) {
 			throw new Error(
@@ -136,7 +136,7 @@ export async function verifyInstalledPiStateFilePermissions(packageRoot) {
 			: "fresh-0600-managed-modes-preserved";
 	}
 
-	const runtimeArchiveRoot = resolve(packageRoot, ".feynman");
+	const runtimeArchiveRoot = resolve(packageRoot, ".axorbis");
 	const extractionRoot = mkdtempSync(
 		join(runtimeArchiveRoot, ".state-verification-"),
 	);

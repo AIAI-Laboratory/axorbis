@@ -47,7 +47,7 @@ function restoreEnvironment(name, value) {
 }
 
 export async function verifyPdfPageLimits(packageRoot) {
-	const runtimeRoot = resolve(packageRoot, ".feynman", "npm");
+	const runtimeRoot = resolve(packageRoot, ".axorbis", "npm");
 	const jitiModule = await import(pathToFileURL(createRequire(resolve(runtimeRoot, "node_modules", "@earendil-works", "pi-coding-agent", "package.json")).resolve("jiti")).href);
 	const jiti = jitiModule.createJiti(import.meta.url, { moduleCache: false });
 	const webRoot = resolve(runtimeRoot, "node_modules", "pi-web-access");

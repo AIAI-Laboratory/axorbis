@@ -1150,7 +1150,7 @@ async function verifyLogicalToolFailureBehavior(runtimeRoot, jiti) {
 }
 
 export async function verifyPiSubagentUsageLimitFallbackBehavior(packageRoot) {
-	const runtimeRoot = resolve(packageRoot, ".feynman", "npm");
+	const runtimeRoot = resolve(packageRoot, ".axorbis", "npm");
 	const runtimeRequire = createRequire(resolve(runtimeRoot, "package.json"));
 	const jitiEntryPath = runtimeRequire.resolve("jiti");
 	const jitiModule = await import(pathToFileURL(jitiEntryPath).href);

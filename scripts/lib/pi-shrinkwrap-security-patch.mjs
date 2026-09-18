@@ -103,7 +103,7 @@ export function patchPiBraceExpansionTree(nodeModulesPath, fallbackSafePackagePa
 			if (!safePackagePath) {
 				throw new Error(`Safe brace-expansion ${SAFE_BRACE_EXPANSION.version} package tree is unavailable`);
 			}
-			const temporaryPath = `${nestedPackagePath}.feynman-safe-${process.pid}`;
+			const temporaryPath = `${nestedPackagePath}.axorbis-safe-${process.pid}`;
 			rmSync(temporaryPath, { recursive: true, force: true });
 			mkdirSync(dirname(temporaryPath), { recursive: true });
 			cpSync(safePackagePath, temporaryPath, { recursive: true });

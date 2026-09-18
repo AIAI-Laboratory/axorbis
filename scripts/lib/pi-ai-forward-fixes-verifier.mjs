@@ -299,7 +299,7 @@ export function resolvePiAiForwardFixVerificationTargets({ prunedNative = false 
 export async function verifyRuntimeForwardFixBehavior(packageRoot, { prunedNative = false } = {}) {
 	assertPiSubagentPatchedSources(
 		(relativePath) => readFileSync(
-			resolve(packageRoot, ".feynman", "npm", "node_modules", "pi-subagents", ...relativePath.split("/")),
+			resolve(packageRoot, ".axorbis", "npm", "node_modules", "pi-subagents", ...relativePath.split("/")),
 			"utf8",
 		),
 		"installed runtime pi-subagents",
