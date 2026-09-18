@@ -1,0 +1,31 @@
+{
+  "productName": "Axorbis",
+  "version": "0.3.49",
+  "identifier": "com.axorbis.feynman",
+  "build": {
+    "beforeDevCommand": "npm run build --prefix ..",
+    "beforeBuildCommand": "npm run build --prefix ..",
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Axorbis",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 760,
+        "minHeight": 600
+      }
+    ],
+    "withGlobalTauri": true,
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost; style-src 'self'; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "resources": {
+      "../runtime/": "runtime/"
+    }
+  }
+}

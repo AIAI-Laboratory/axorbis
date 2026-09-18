@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Axorbis</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="desktop-app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-icon" aria-hidden="true">A</span>
+          <strong>AXORBIS</strong>
+          <span class="brand-subtitle">Research workspace</span>
+        </div>
+        <div class="topbar-placeholder" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <span>Search anything</span>
+          <kbd>⌘ K</kbd>
+        </div>
+        <div class="topbar-end">
+          <span class="local-indicator"><i></i> Local workspace</span>
+          <button id="theme" class="icon-button" type="button" aria-label="Theme: system. Change theme" title="Change theme">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="body-grid">
+        <aside class="sidebar" aria-label="Workspace navigation">
+          <span class="sidebar-heading">WORKSPACE</span>
+          <nav aria-hidden="true">
+            <span class="nav-item active">
+              <svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"></path><path d="M5 9v11h14V9"></path></svg>
+              Home
+            </span>
+            <span class="nav-item">
+              <svg viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"></path></svg>
+              Projects
+            </span>
+          </nav>
+          <span class="sidebar-section">RECENT PROJECTS</span>
+          <div class="project-placeholder"><span></span><i></i></div>
+          <div class="project-placeholder"><span></span><i></i></div>
+          <div class="sidebar-footer"><i></i> Axorbis desktop</div>
+        </aside>
+
+        <main>
+          <div class="page-intro">
+            <span class="kicker">DESKTOP SETUP</span>
+            <h1>Open your research workspace</h1>
+            <p>Choose the folder where Axorbis will keep research questions, evidence, papers, outputs, and notes.</p>
+          </div>
+
+          <section class="setup-note" aria-label="Local workspace information">
+            <span class="setup-symbol">A</span>
+            <span>The desktop app runs the same authenticated, local-first research workspace as the web interface.</span>
+          </section>
+
+          <section class="workspace-section" aria-labelledby="workspace-title">
+            <div class="section-head">
+              <h2 id="workspace-title">Workspace folder</h2>
+              <span>Stored locally</span>
+            </div>
+            <div class="workspace-row">
+              <span class="folder-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"></path></svg>
+              </span>
+              <span class="workspace-copy">
+                <strong id="workspace">Loading…</strong>
+                <small>Outputs, papers, notes, and session state</small>
+              </span>
+              <button id="choose" class="text-action" type="button">Choose folder</button>
+            </div>
+          </section>
+
+          <div id="feedback" class="feedback">
+            <span id="status" class="status" role="status" aria-live="polite">Preparing the desktop app…</span>
+            <p id="error" class="error" role="alert" hidden></p>
+          </div>
+
+          <button id="launch" class="primary" type="button" disabled>
+            Open workspace
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
+          </button>
+        </main>
+      </div>
+
+      <span id="version" class="version">Axorbis Desktop</span>
+    </div>
+    <script src="./main.js"></script>
+  </body>
+</html>

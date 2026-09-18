@@ -1,0 +1,15 @@
+[package]
+name = "feynman-desktop"
+version = "0.3.49"
+description = "Native desktop launcher for the Feynman research workspace"
+authors = ["Advait Paliwal"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2.0.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0.0", features = ["tray-icon"] }
+tauri-plugin-dialog = "2.0.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
