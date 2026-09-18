@@ -1,9 +1,60 @@
 import type { WorkbenchChatSession, WorkbenchState } from "../../app/types.js";
 import { isTerminalChatStreamEvent, parseStreamChunk, patchLastAssistant, upsertAssistantTool, type WorkbenchChatStreamEvent } from "../chat/stream.js";
 
-export type ResearchMode = "ask" | "deep";
+export type ResearchMode = "ask" | "deep" | "lit" | "review" | "summarize" | "compare" | "audit" | "draft" | "recipe" | "replicate" | "autoresearch" | "watch";
 
-export async function apiJson<T>(url: string, body?: Record<string, string>): Promise<T> {
+export const MODE_LABELS: Record<ResearchMode, string> = {
+	ask: "Ask",
+	deep: "Deep research",
+	lit: "Literature review",
+	review: "Review",
+	summarize: "Summarize",
+	compare: "Compare",
+	audit: "Audit",
+	draft: "Draft",
+	recipe: "Recipe",
+	replicate: "Replicate",
+	autoresearch: "Auto research",
+	watch: "Watch",
+};
+
+const MODE_COMMANDS: Record<ResearchMode, string | null> = {
+	ask: null,
+	deep: "deepresearch",
+	lit: "lit",
+	review: "review",
+	summarize: "summarize",
+	compare: "compare",
+	audit: "audit",
+	draft: "draft",
+	recipe: "recipe",
+	replicate: "replicate",
+	autoresearch: "autoresearch",
+	watch: "watch",
+};
+
+/** The reply after a Deep Research plan is a continuation, not a new /deepresearch topic. */
+export function awaitingDeepResearchApproval(session: WorkbenchChatSession | null): boolean {
+	const messages = session?.messages ?? [];
+	const latest = messages.at(-1);
+	const isApprovalPrompt = (content: string | undefined) => Boolean(content &&
+		(/Review the plan, then reply [‘'"]?yes/iu.test(content)
+			|| /Proceed with this deep research plan\?/iu.test(content)));
+	if (latest?.role === "assistant" && latest.status === "complete" && isApprovalPrompt(latest.content)) return true;
+	return latest?.role === "assistant" && latest.status === "complete"
+		&& /The topic ["“]?yes["”]? is too vague for deep research/iu.test(latest.content)
+		&& /^\/deepresearch\s+yes\s*$/iu.test(messages.at(-2)?.content ?? "")
+		&& isApprovalPrompt(messages.at(-3)?.content);
+}
+
+export function researchMessageForSubmission(text: string, mode: ResearchMode, continuePlan: boolean): string {
+	if (continuePlan) return text.replace(/^\/deepresearch\s+(?=(?:yes|y|ok|proceed|đồng ý)\s*$)/iu, "");
+	if (text.startsWith("/")) return text;
+	const command = MODE_COMMANDS[mode];
+	return command ? `/${command} ${text}` : text;
+}
+
+export async function apiJson<T>(url: string, body?: Record<string, unknown>): Promise<T> {
 	const response = await fetch(url, body ? {
 		method: "POST",
 		headers: { "content-type": "application/json" },
@@ -20,12 +71,10 @@ type SessionCallbacks = {
 };
 
 export async function streamResearchMessage(
-	input: { sessionId: string; projectId: string; title: string; text: string; mode: ResearchMode },
+	input: { sessionId: string; projectId: string; title: string; text: string; mode: ResearchMode; continuePlan?: boolean },
 	callbacks: SessionCallbacks,
 ): Promise<void> {
-	const message = input.mode === "deep" && !input.text.startsWith("/")
-		? `/deepresearch ${input.text}`
-		: input.text;
+	const message = researchMessageForSubmission(input.text, input.mode, input.continuePlan === true);
 	const response = await fetch("/api/chat/message/stream", {
 		method: "POST",
 		headers: { accept: "text/event-stream", "content-type": "application/json" },
