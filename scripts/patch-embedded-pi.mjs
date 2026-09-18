@@ -78,7 +78,7 @@ import { preflightPiOtelPackageRoot } from "./lib/pi-otel-patch.mjs";
 import { patchPiSessionSearchSource } from "./lib/pi-session-search-patch.mjs";
 const here = dirname(fileURLToPath(import.meta.url));
 const appRoot = resolve(here, "..");
-const feynmanHome = resolve(process.env.FEYNMAN_HOME ?? homedir(), ".feynman");
+const feynmanHome = resolve(process.env.AXORBIS_HOME ?? homedir(), ".axorbis");
 const feynmanNpmPrefix = resolve(feynmanHome, "npm-global");
 process.env.FEYNMAN_NPM_PREFIX = feynmanNpmPrefix;
 process.env.NPM_CONFIG_PREFIX = feynmanNpmPrefix;
@@ -167,7 +167,7 @@ const editorPath = piTuiRoot ? resolve(piTuiRoot, "dist", "components", "editor.
 const nestedTuiPaths = resolveNestedPiFiles(piPackageRoot, "pi-tui", "dist", "tui.js");
 const nestedTuiMainScreenPaths = resolveNestedPiFiles(piPackageRoot, "pi-tui", "dist", "tui-main-screen.js");
 const nestedEditorPaths = resolveNestedPiFiles(piPackageRoot, "pi-tui", "dist", "components", "editor.js");
-const workspaceRoot = resolve(appRoot, ".feynman", "npm", "node_modules");
+const workspaceRoot = resolve(appRoot, ".axorbis", "npm", "node_modules");
 function resolveWorkspacePiFile(packageName, ...segments) {
 	const candidates = [
 		resolve(workspaceRoot, "@earendil-works", packageName, ...segments),
@@ -312,11 +312,11 @@ const sessionSearchIndexerPath = resolve(
 	"indexer.ts",
 );
 const piMemoryPath = resolve(workspaceRoot, "@samfp", "pi-memory", "src", "index.ts");
-const settingsPath = resolve(appRoot, ".feynman", "settings.json");
-const workspaceDir = resolve(appRoot, ".feynman", "npm");
-const workspaceArchivePath = resolve(appRoot, ".feynman", "runtime-workspace.tgz");
-const workspaceArchiveDigestPath = resolve(appRoot, ".feynman", "runtime-workspace.sha256");
-const workspaceSetupLockDir = resolve(appRoot, ".feynman", ".workspace-setup.lock");
+const settingsPath = resolve(appRoot, ".axorbis", "settings.json");
+const workspaceDir = resolve(appRoot, ".axorbis", "npm");
+const workspaceArchivePath = resolve(appRoot, ".axorbis", "runtime-workspace.tgz");
+const workspaceArchiveDigestPath = resolve(appRoot, ".axorbis", "runtime-workspace.sha256");
+const workspaceSetupLockDir = resolve(appRoot, ".axorbis", ".workspace-setup.lock");
 const globalNodeModulesRoot = process.platform === "win32"
 	? resolve(feynmanNpmPrefix, "node_modules")
 	: resolve(feynmanNpmPrefix, "lib", "node_modules");
@@ -841,11 +841,11 @@ patchPiDocparserRuntimeRoots({
 
 if (packageJsonPath && existsSync(packageJsonPath)) {
 	const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-	if (pkg.piConfig?.name !== "feynman" || pkg.piConfig?.configDir !== ".feynman") {
+	if (pkg.piConfig?.name !== "feynman" || pkg.piConfig?.configDir !== ".axorbis") {
 		pkg.piConfig = {
 			...(pkg.piConfig || {}),
 			name: "feynman",
-			configDir: ".feynman",
+			configDir: ".axorbis",
 		};
 		writeFileSync(packageJsonPath, JSON.stringify(pkg, null, "\t") + "\n", "utf8");
 	}

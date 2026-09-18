@@ -48,7 +48,7 @@ function frontmatter(text: string): Record<string, string> {
 }
 
 function directAgentFiles(workingDir: string): string[] {
-	const dir = resolve(workingDir, ".feynman", "agents");
+	const dir = resolve(workingDir, ".axorbis", "agents");
 	if (!existsSync(dir)) return [];
 	return readdirSync(dir, { withFileTypes: true })
 		.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))

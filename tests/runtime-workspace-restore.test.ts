@@ -129,7 +129,7 @@ async function createRuntimeFixture({
 	unsafeSymlinkTarget?: string;
 } = {}) {
 	const root = mkdtempSync(join(tmpdir(), "feynman-runtime-restore-"));
-	const feynmanDir = join(root, ".feynman");
+	const feynmanDir = join(root, ".axorbis");
 	const sourceWorkspaceDir = join(root, "source", "npm");
 	const runtimePackageDir = join(
 		sourceWorkspaceDir,
@@ -1039,7 +1039,7 @@ test("package-manager fallback starts from a clean archive-derived seed", async 
 
 test("transactional package fallback preserves or recovers the previous workspace on failure", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-runtime-transaction-"));
-	const feynmanDir = join(root, ".feynman");
+	const feynmanDir = join(root, ".axorbis");
 	const workspaceDir = join(feynmanDir, "npm");
 	try {
 		mkdirSync(workspaceDir, { recursive: true });

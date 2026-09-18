@@ -41,7 +41,7 @@ test("research extension source and direct locks use Pi's coordinated TypeBox pa
 
 	const manifest = readJson(join(repoRoot, "package.json"));
 	const rootLock = readJson(join(repoRoot, "package-lock.json"));
-	const runtimeLock = readJson(join(repoRoot, ".feynman", "runtime-package-lock.json"));
+	const runtimeLock = readJson(join(repoRoot, ".axorbis", "runtime-package-lock.json"));
 
 	assert.equal(manifest.dependencies.typebox, coordinatedTypeboxVersion);
 	assert.equal(manifest.dependencies["@sinclair/typebox"], undefined);

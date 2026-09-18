@@ -14,8 +14,8 @@ function makeWorkspace(): string {
 	mkdirSync(join(root, "outputs"), { recursive: true });
 	mkdirSync(join(root, "papers"), { recursive: true });
 	mkdirSync(join(root, "notes"), { recursive: true });
-	mkdirSync(join(root, ".feynman", "agents"), { recursive: true });
-	writeFileSync(join(root, ".feynman", "agents", "researcher.md"), [
+	mkdirSync(join(root, ".axorbis", "agents"), { recursive: true });
+	writeFileSync(join(root, ".axorbis", "agents", "researcher.md"), [
 		"---",
 		"name: researcher",
 		"description: Gather primary evidence.",
@@ -28,7 +28,7 @@ function makeWorkspace(): string {
 		"# Researcher",
 		"",
 	].join("\n"));
-	writeFileSync(join(root, ".feynman", "agents", "reviewer.md"), [
+	writeFileSync(join(root, ".axorbis", "agents", "reviewer.md"), [
 		"---",
 		"name: reviewer",
 		"description: Audit research claims.",

@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { getFeynmanHome } from "../config/paths.js";
+import { getAxorbisHome } from "../config/paths.js";
 
 export type PiWebSearchProvider = "auto" | "perplexity" | "exa" | "gemini";
 export type PiWebSearchWorkflow = "none" | "summary-review";
@@ -39,7 +39,7 @@ export function getPiWebSearchConfigPath(home?: string): string {
 		const configuredPath = process.env.FEYNMAN_WEB_SEARCH_CONFIG?.trim();
 		if (configuredPath) return resolve(configuredPath);
 	}
-	const feynmanHome = home ? resolve(home, ".feynman") : getFeynmanHome();
+	const feynmanHome = home ? resolve(home, ".axorbis") : getAxorbisHome();
 	return resolve(feynmanHome, "web-search.json");
 }
 

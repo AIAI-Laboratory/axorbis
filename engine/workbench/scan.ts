@@ -619,7 +619,7 @@ function countFiles(root: string, predicate: (name: string) => boolean): number 
 }
 
 function buildSpecialistResources(workingDir: string): WorkbenchResource[] {
-	return directMarkdownFiles(resolve(workingDir, ".feynman", "agents"))
+	return directMarkdownFiles(resolve(workingDir, ".axorbis", "agents"))
 		.map((path) => markdownResource(workingDir, path, {
 			source: "Feynman specialist",
 			command: (name) => `/run ${name} <task>`,
@@ -709,7 +709,7 @@ function buildPermissionResources(workingDir: string): WorkbenchResource[] {
 
 function buildStorageResources(workingDir: string, artifacts: WorkbenchArtifact[]): WorkbenchResource[] {
 	const chatCount = countFiles(migratedWorkbenchDataPath(workingDir, "sessions"), (name) => name.endsWith(".json"));
-	const piSessionCount = countFiles(resolve(workingDir, ".feynman", "sessions"), (name) => name.endsWith(".jsonl"));
+	const piSessionCount = countFiles(resolve(workingDir, ".axorbis", "sessions"), (name) => name.endsWith(".jsonl"));
 	return [
 		{
 			id: "research-artifact-roots",

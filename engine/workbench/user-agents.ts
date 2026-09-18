@@ -21,7 +21,7 @@ function timestampFromMs(ms: number): { iso: string; ms: number } {
 }
 
 function readSystemPrompt(workingDir: string): { prompt: string; createdAtMs: number; updatedAtMs: number } {
-	const path = resolve(workingDir, ".feynman", "SYSTEM.md");
+	const path = resolve(workingDir, ".axorbis", "SYSTEM.md");
 	if (!existsSync(path)) return { prompt: DEFAULT_SYSTEM_PROMPT, createdAtMs: 0, updatedAtMs: 0 };
 	const stat = statSync(path);
 	return {

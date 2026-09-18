@@ -26,7 +26,7 @@ function makeWorkspace(): string {
 	mkdirSync(join(root, "outputs", ".drafts"), { recursive: true });
 	mkdirSync(join(root, "papers"), { recursive: true });
 	mkdirSync(join(root, "notes"), { recursive: true });
-	mkdirSync(join(root, ".feynman", "agents"), { recursive: true });
+	mkdirSync(join(root, ".axorbis", "agents"), { recursive: true });
 	mkdirSync(join(root, "skills", "literature-review"), { recursive: true });
 	mkdirSync(join(root, "prompts"), { recursive: true });
 	mkdirSync(join(root, "extensions"), { recursive: true });
@@ -45,7 +45,7 @@ function makeWorkspace(): string {
 	writeFileSync(join(root, "outputs", "scaling-laws.provenance.md"), "# Scaling Laws Provenance\n");
 	writeFileSync(join(root, "notes", "scaling-laws-verification.md"), "# Scaling Laws Verification\n");
 	writeFileSync(join(root, "papers", "scaling-laws.pdf"), "%PDF fixture\n");
-	writeFileSync(join(root, ".feynman", "agents", "researcher.md"), [
+	writeFileSync(join(root, ".axorbis", "agents", "researcher.md"), [
 		"---",
 		"name: researcher",
 		"description: Gather primary evidence for a research question.",
@@ -56,7 +56,7 @@ function makeWorkspace(): string {
 		"Find source-backed evidence.",
 		"",
 	].join("\n"));
-	writeFileSync(join(root, ".feynman", "agents", "verifier.md"), [
+	writeFileSync(join(root, ".axorbis", "agents", "verifier.md"), [
 		"---",
 		"name: verifier",
 		"description: Verify claims against source artifacts.",
@@ -83,7 +83,7 @@ function makeWorkspace(): string {
 		"",
 	].join("\n"));
 	writeFileSync(join(root, "extensions", "research-tools.ts"), "export default function researchTools() {}\n");
-	writeFileSync(join(root, ".feynman", "settings.json"), JSON.stringify({
+	writeFileSync(join(root, ".axorbis", "settings.json"), JSON.stringify({
 		packages: ["npm:pi-web-access", "npm:pi-docparser"],
 	}, null, 2));
 	return root;
@@ -272,7 +272,7 @@ test("buildWorkbenchState derives artifact producer records from Pi session JSON
 	const root = makeWorkspace();
 	try {
 		const piSessionId = workbenchPiSessionId("scaling-laws");
-		const piSessionDir = join(root, ".feynman", "sessions");
+		const piSessionDir = join(root, ".axorbis", "sessions");
 		mkdirSync(piSessionDir, { recursive: true });
 		const piSessionPath = join(piSessionDir, `2026-06-30T08-30-00-000Z_${piSessionId}.jsonl`);
 		writeFileSync(piSessionPath, [
@@ -645,7 +645,7 @@ test("workbench chat normalizes legacy all-on session defaults", () => {
 test("workbench chat binds to a stable Pi session file", async () => {
 	const root = makeWorkspace();
 	try {
-		const sessionDir = join(root, ".feynman", "sessions");
+		const sessionDir = join(root, ".axorbis", "sessions");
 		mkdirSync(sessionDir, { recursive: true });
 		const piSessionId = workbenchPiSessionId("scaling-laws");
 		const piSessionPath = join(sessionDir, `2026-06-30T08-30-00-000Z_${piSessionId}.jsonl`);

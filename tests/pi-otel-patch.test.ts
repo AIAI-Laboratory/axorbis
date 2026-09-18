@@ -590,7 +590,7 @@ test("installed runtime verification executes OTLP routing from exact patched by
 	const root = mkdtempSync(resolve(tmpdir(), "feynman-installed-pi-otel-"));
 	const packageRoot = resolve(
 		root,
-		".feynman",
+		".axorbis",
 		"npm",
 		"node_modules",
 		"pi-otel",

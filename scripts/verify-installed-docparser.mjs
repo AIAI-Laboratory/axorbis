@@ -145,12 +145,12 @@ export function resolveInstalledDocparserPaths(packageRoot = defaultPackageRoot)
 
 	const docparserRoot = resolve(
 		resolvedPackageRoot,
-		".feynman",
+		".axorbis",
 		"npm",
 		"node_modules",
 		"pi-docparser",
 	);
-	const runtimeRoot = resolve(resolvedPackageRoot, ".feynman", "npm");
+	const runtimeRoot = resolve(resolvedPackageRoot, ".axorbis", "npm");
 	const runtimeRequire = createRequire(resolve(runtimeRoot, "package.json"));
 	const liteparseManifestPath = realpathSync(runtimeRequire.resolve("@llamaindex/liteparse/package.json"));
 	const liteparseManifest = JSON.parse(readFileSync(liteparseManifestPath, "utf8"));

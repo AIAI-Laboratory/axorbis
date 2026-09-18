@@ -65,7 +65,7 @@ import {
 	PI_WEB_ACCESS_REQUIRED_VERSION,
 	patchPiWebAccessSources,
 } from "../../scripts/lib/pi-web-access-patch.mjs";
-import { getFeynmanNpmGlobalNodeModulesPath } from "./runtime.js";
+import { getAxorbisNpmGlobalNodeModulesPath } from "./runtime.js";
 
 function patchFileIfPresent(path: string, patchSource: (source: string) => string): boolean {
 	if (!existsSync(path)) {
@@ -170,7 +170,7 @@ function resolveBundledPiVersion(appRoot: string): string | undefined {
 	let fallbackVersion: string | undefined;
 	for (const nodeModulesPath of [
 		resolve(appRoot, "node_modules"),
-		resolve(appRoot, ".feynman", "npm", "node_modules"),
+		resolve(appRoot, ".axorbis", "npm", "node_modules"),
 	]) {
 		for (const scope of ["@earendil-works", "@mariozechner"]) {
 			const packageRoot = resolve(nodeModulesPath, scope, "pi-coding-agent");
@@ -245,13 +245,13 @@ function patchPiCodingAgentPackageJsonSource(source: string): string {
 		[key: string]: unknown;
 	};
 	const piConfig = typeof pkg.piConfig === "object" && pkg.piConfig !== null ? pkg.piConfig : {};
-	if (piConfig.name === "feynman" && piConfig.configDir === ".feynman") {
+	if (piConfig.name === "feynman" && piConfig.configDir === ".axorbis") {
 		return source;
 	}
 	pkg.piConfig = {
 		...piConfig,
 		name: "feynman",
-		configDir: ".feynman",
+		configDir: ".axorbis",
 	};
 	return JSON.stringify(pkg, null, 2) + "\n";
 }
@@ -271,14 +271,14 @@ export function patchPiRuntimeNodeModules(
 	}
 	const nodeModuleRoots = [
 		resolve(appRoot, "node_modules"),
-		resolve(appRoot, ".feynman", "npm", "node_modules"),
+		resolve(appRoot, ".axorbis", "npm", "node_modules"),
 	];
 	if (feynmanAgentDir) {
 		// Pi resolves user-scope packages from Feynman's pinned npm prefix. When
 		// that copy is a real directory (junction-creation fallback or a
 		// `feynman update` reinstall) instead of a link into the bundled
 		// workspace, it must be patched too or unpatched sources execute.
-		nodeModuleRoots.push(getFeynmanNpmGlobalNodeModulesPath(feynmanAgentDir, platform));
+		nodeModuleRoots.push(getAxorbisNpmGlobalNodeModulesPath(feynmanAgentDir, platform));
 		// Pi's own package manager installs into <agentDir>/npm since Pi 0.75;
 		// a startup self-install lands fresh unpatched sources there.
 		nodeModuleRoots.push(resolve(feynmanAgentDir, "npm", "node_modules"));

@@ -39,7 +39,7 @@ const { finalizeNativeRuntimeWorkspace } = await import(
 async function createNativeRuntimeFixture({ launchable = false } = {}) {
 	const root = mkdtempSync(join(tmpdir(), "feynman-native-runtime-"));
 	const appDir = join(root, "app");
-	const feynmanDir = join(appDir, ".feynman");
+	const feynmanDir = join(appDir, ".axorbis");
 	const sourceWorkspaceDir = join(root, "source", "npm");
 	const workspaceDir = join(feynmanDir, "npm");
 	const runtimePackageDir = join(
@@ -250,7 +250,7 @@ test("native bundle retains authenticated offline repair across two launches", a
 				encoding: "utf8",
 				env: {
 					...process.env,
-					FEYNMAN_HOME: isolatedHome,
+					AXORBIS_HOME: isolatedHome,
 					FEYNMAN_SKIP_PANDOC_INSTALL: "1",
 					HOME: isolatedHome,
 					NODE_OPTIONS: `--import=${pathToFileURL(guardPath).href}`,

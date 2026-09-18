@@ -171,7 +171,7 @@ test("workbench connector OAuth start, callback, and disconnect persist local to
 
 test("reading a migrated OAuth store restricts the current copy without mutating workspace source permissions", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-oauth-migration-"));
-	const legacyDirectory = join(root, ".feynman", "workbench");
+	const legacyDirectory = join(root, ".axorbis", "workbench");
 	const legacyPath = join(legacyDirectory, "oauth-tokens.json");
 	mkdirSync(legacyDirectory, { recursive: true, mode: 0o755 });
 	writeFileSync(legacyPath, `${JSON.stringify({
@@ -207,7 +207,7 @@ test("OAuth migration rejects workspace-controlled symlinks without changing the
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-oauth-symlink-"));
 	const targetRoot = mkdtempSync(join(tmpdir(), "feynman-workbench-oauth-target-"));
 	const targetPath = join(targetRoot, "target.json");
-	const legacyDirectory = join(root, ".feynman", "workbench");
+	const legacyDirectory = join(root, ".axorbis", "workbench");
 	const legacyPath = join(legacyDirectory, "oauth-tokens.json");
 	mkdirSync(legacyDirectory, { recursive: true });
 	writeFileSync(targetPath, "{}\n", { mode: 0o644 });

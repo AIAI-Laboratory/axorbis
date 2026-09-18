@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { fetchLatestFeynmanVersion, getFeynmanUpgradeLines, isNewerVersion } from "../engine/system/self-update.js";
+import { fetchLatestFeynmanVersion, getAxorbisUpgradeLines, isNewerVersion } from "../engine/system/self-update.js";
 
 test("release discovery requests the personal package registry", async (t) => {
 	const requests: unknown[] = [];
@@ -28,16 +28,16 @@ test("isNewerVersion rejects non-release version strings", () => {
 	assert.equal(isNewerVersion("0.2.59", "unknown"), false);
 });
 
-test("getFeynmanUpgradeLines points npm installs at npm", () => {
-	const lines = getFeynmanUpgradeLines("0.2.59", "0.2.58", { standaloneBundle: false, platform: "win32" });
+test("getAxorbisUpgradeLines points npm installs at npm", () => {
+	const lines = getAxorbisUpgradeLines("0.2.59", "0.2.58", { standaloneBundle: false, platform: "win32" });
 	assert.equal(lines[0], "A newer Feynman is available: 0.2.59 (installed 0.2.58).");
 	assert.equal(lines[1], "Update the CLI itself with: npm install -g @advaitpaliwal/feynman");
 });
 
-test("getFeynmanUpgradeLines points standalone bundles at the installer", () => {
-	const windowsLines = getFeynmanUpgradeLines("0.2.59", "0.2.58", { standaloneBundle: true, platform: "win32" });
+test("getAxorbisUpgradeLines points standalone bundles at the installer", () => {
+	const windowsLines = getAxorbisUpgradeLines("0.2.59", "0.2.58", { standaloneBundle: true, platform: "win32" });
 	assert.equal(windowsLines[1], "Update the CLI itself with: irm https://feynman.is/install.ps1 | iex");
 
-	const unixLines = getFeynmanUpgradeLines("0.2.59", "0.2.58", { standaloneBundle: true, platform: "darwin" });
+	const unixLines = getAxorbisUpgradeLines("0.2.59", "0.2.58", { standaloneBundle: true, platform: "darwin" });
 	assert.equal(unixLines[1], "Update the CLI itself with: curl -fsSL https://feynman.is/install | bash");
 });

@@ -21,7 +21,7 @@ import {
 } from "../scripts/lib/pi-web-access-patch.mjs";
 
 const appRoot = process.cwd();
-const runtimeRoot = resolve(appRoot, ".feynman", "npm");
+const runtimeRoot = resolve(appRoot, ".axorbis", "npm");
 const webRoot = resolve(runtimeRoot, "node_modules", "pi-web-access");
 const fixtureRoot = resolve(
 	appRoot,

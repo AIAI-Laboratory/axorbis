@@ -25,14 +25,14 @@ const repoRoot = process.cwd();
 
 test("vendored runtime uses a committed exact dependency lock", () => {
 	const settings = JSON.parse(
-		readFileSync(join(repoRoot, ".feynman", "settings.json"), "utf8"),
+		readFileSync(join(repoRoot, ".axorbis", "settings.json"), "utf8"),
 	) as { packages: string[] };
 	const rootLock = JSON.parse(
 		readFileSync(join(repoRoot, "package-lock.json"), "utf8"),
 	) as { packages: Record<string, { version?: string }> };
 	const runtimeLock = JSON.parse(
 		readFileSync(
-			join(repoRoot, ".feynman", "runtime-package-lock.json"),
+			join(repoRoot, ".axorbis", "runtime-package-lock.json"),
 			"utf8",
 		),
 	) as {

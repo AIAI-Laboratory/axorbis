@@ -33,7 +33,7 @@ export async function fetchLatestFeynmanVersion(timeoutMs = 5000): Promise<strin
 	}
 }
 
-export function getFeynmanUpgradeLines(
+export function getAxorbisUpgradeLines(
 	latestVersion: string,
 	currentVersion: string,
 	options: { standaloneBundle: boolean; platform?: NodeJS.Platform },

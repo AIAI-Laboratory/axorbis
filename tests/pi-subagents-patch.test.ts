@@ -253,7 +253,7 @@ test("current pi-subagents identity patches are exact idempotent fixed points", 
 	const appRoot = process.env.FEYNMAN_SUBAGENTS_TEST_APP_ROOT ?? resolve(import.meta.dirname, "..");
 	const subagentsRoot = resolve(
 		appRoot,
-		".feynman",
+		".axorbis",
 		"npm",
 		"node_modules",
 		"pi-subagents",
@@ -295,7 +295,7 @@ test("patched installed pi-subagents carries model identity, context overflow, b
 	const appRoot = process.env.FEYNMAN_SUBAGENTS_TEST_APP_ROOT ?? resolve(import.meta.dirname, "..");
 	const subagentsRoot = resolve(
 		appRoot,
-		".feynman",
+		".axorbis",
 		"npm",
 		"node_modules",
 		"pi-subagents",

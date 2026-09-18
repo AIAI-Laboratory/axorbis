@@ -14,7 +14,7 @@ import { patchPiRuntimeNodeModules } from "../engine/pi/runtime-patches.js";
 
 const workerPath = resolve(
 	process.cwd(),
-	".feynman",
+	".axorbis",
 	"npm",
 	"node_modules",
 	"pi-docparser",
@@ -60,7 +60,7 @@ test("runtime patching leaves recognized legacy pi-docparser installs available 
 	const appRoot = mkdtempSync(resolve(tmpdir(), "feynman-legacy-docparser-patch-"));
 	const packageRoot = resolve(
 		appRoot,
-		".feynman",
+		".axorbis",
 		"npm",
 		"node_modules",
 		"pi-docparser",

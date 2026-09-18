@@ -8,7 +8,7 @@ import { updateWorkbenchPackageSettings } from "../engine/workbench/package-sett
 import { buildWorkbenchState } from "../engine/workbench/scan.js";
 
 function writePackage(root: string, name: string, manifest: Record<string, unknown>): void {
-	const packageRoot = join(root, ".feynman", "npm", "node_modules", ...name.split("/"));
+	const packageRoot = join(root, ".axorbis", "npm", "node_modules", ...name.split("/"));
 	mkdirSync(packageRoot, { recursive: true });
 	writeFileSync(join(packageRoot, "package.json"), JSON.stringify({
 		name,
@@ -19,8 +19,8 @@ function writePackage(root: string, name: string, manifest: Record<string, unkno
 test("workbench connector resources expose package state and lifecycle metadata", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-packages-"));
 	try {
-		mkdirSync(join(root, ".feynman"), { recursive: true });
-		writeFileSync(join(root, ".feynman", "settings.json"), JSON.stringify({
+		mkdirSync(join(root, ".axorbis"), { recursive: true });
+		writeFileSync(join(root, ".axorbis", "settings.json"), JSON.stringify({
 			packages: [
 				"npm:pi-web-access",
 				{
@@ -84,8 +84,8 @@ test("workbench connector resources expose package state and lifecycle metadata"
 test("workbench package setting updates enable and disable project package sources", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-package-settings-"));
 	try {
-		mkdirSync(join(root, ".feynman"), { recursive: true });
-		const settingsPath = join(root, ".feynman", "settings.json");
+		mkdirSync(join(root, ".axorbis"), { recursive: true });
+		const settingsPath = join(root, ".axorbis", "settings.json");
 		writeFileSync(settingsPath, JSON.stringify({
 			packages: ["npm:pi-web-access", { source: "npm:pi-docparser", skills: [] }],
 		}, null, 2));

@@ -28,25 +28,25 @@ export type PiRuntimeOptions = {
 	preLaunchNotice?: string;
 };
 
-export function getFeynmanNpmPrefixPath(feynmanAgentDir: string): string {
+export function getAxorbisNpmPrefixPath(feynmanAgentDir: string): string {
 	return resolve(dirname(feynmanAgentDir), "npm-global");
 }
 
-export function getFeynmanNpmGlobalNodeModulesPath(
+export function getAxorbisNpmGlobalNodeModulesPath(
 	feynmanAgentDir: string,
 	platform = process.platform,
 ): string {
-	const prefix = getFeynmanNpmPrefixPath(feynmanAgentDir);
+	const prefix = getAxorbisNpmPrefixPath(feynmanAgentDir);
 	return platform === "win32"
 		? resolve(prefix, "node_modules")
 		: resolve(prefix, "lib", "node_modules");
 }
 
-export function getFeynmanCommandShimDir(feynmanAgentDir: string): string {
+export function getAxorbisCommandShimDir(feynmanAgentDir: string): string {
 	return resolve(dirname(feynmanAgentDir), "bin");
 }
 
-export function getFeynmanCliBinPath(appRoot: string): string {
+export function getAxorbisCliBinPath(appRoot: string): string {
 	return resolve(appRoot, "bin", "feynman.js");
 }
 
@@ -54,10 +54,10 @@ function shellSingleQuote(value: string): string {
 	return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
-export function ensureFeynmanCommandShim(appRoot: string, feynmanAgentDir: string): string {
-	const shimDir = getFeynmanCommandShimDir(feynmanAgentDir);
+export function ensureAxorbisCommandShim(appRoot: string, feynmanAgentDir: string): string {
+	const shimDir = getAxorbisCommandShimDir(feynmanAgentDir);
 	const shimPath = resolve(shimDir, "feynman");
-	const feynmanBinPath = getFeynmanCliBinPath(appRoot);
+	const feynmanBinPath = getAxorbisCliBinPath(appRoot);
 	const script = [
 		"#!/bin/sh",
 		'FEYNMAN_NODE="${FEYNMAN_NODE_EXECUTABLE:-node}"',
@@ -75,7 +75,7 @@ export function ensureFeynmanCommandShim(appRoot: string, feynmanAgentDir: strin
 	return shimPath;
 }
 
-export function ensureFeynmanWorkspaceScaffold(
+export function ensureAxorbisWorkspaceScaffold(
 	workingDir: string,
 	createDirectory: typeof mkdirSync = mkdirSync,
 ): boolean {
@@ -99,7 +99,7 @@ export function ensureFeynmanWorkspaceScaffold(
 }
 
 export function applyFeynmanPackageManagerEnv(feynmanAgentDir: string): string {
-	const feynmanNpmPrefixPath = getFeynmanNpmPrefixPath(feynmanAgentDir);
+	const feynmanNpmPrefixPath = getAxorbisNpmPrefixPath(feynmanAgentDir);
 	process.env.FEYNMAN_NPM_PREFIX = feynmanNpmPrefixPath;
 	process.env.NPM_CONFIG_PREFIX = feynmanNpmPrefixPath;
 	process.env.npm_config_prefix = feynmanNpmPrefixPath;
@@ -115,7 +115,7 @@ function resolvePiPackageRoot(nodeModulesPath: string): string {
 }
 
 export function resolvePiPaths(appRoot: string) {
-	const workspaceNodeModulesPath = resolve(appRoot, ".feynman", "npm", "node_modules");
+	const workspaceNodeModulesPath = resolve(appRoot, ".axorbis", "npm", "node_modules");
 	const packageLocalPiRoot = resolvePiPackageRoot(resolve(appRoot, "node_modules"));
 	const workspacePiRoot = resolvePiPackageRoot(workspaceNodeModulesPath);
 	const piPackageRoot = existsSync(resolve(packageLocalPiRoot, "dist", "cli.js")) || !existsSync(resolve(workspacePiRoot, "dist", "cli.js"))
@@ -136,7 +136,7 @@ export function resolvePiPaths(appRoot: string) {
 			: workspaceTsxLoaderPath,
 		researchToolsPath: resolve(appRoot, "extensions", "research-tools.ts"),
 		promptTemplatePath: resolve(appRoot, "prompts"),
-		systemPromptPath: resolve(appRoot, ".feynman", "SYSTEM.md"),
+		systemPromptPath: resolve(appRoot, ".axorbis", "SYSTEM.md"),
 		piWorkspaceNodeModulesPath: workspaceNodeModulesPath,
 		nodeModulesBinPath: resolve(appRoot, "node_modules", ".bin"),
 	};
@@ -212,11 +212,11 @@ export function buildPiEnv(
 	paths: PiPaths = resolvePiPaths(options.appRoot),
 	executables?: ResolvedExecutables,
 ): NodeJS.ProcessEnv {
-	const feynmanNpmPrefixPath = getFeynmanNpmPrefixPath(options.feynmanAgentDir);
+	const feynmanNpmPrefixPath = getAxorbisNpmPrefixPath(options.feynmanAgentDir);
 	const feynmanNpmBinPath = resolve(feynmanNpmPrefixPath, "bin");
-	const feynmanCommandShimDir = getFeynmanCommandShimDir(options.feynmanAgentDir);
+	const feynmanCommandShimDir = getAxorbisCommandShimDir(options.feynmanAgentDir);
 	const feynmanWebSearchConfigPath = getPiWebSearchConfigPath();
-	const feynmanBinPath = getFeynmanCliBinPath(options.appRoot);
+	const feynmanBinPath = getAxorbisCliBinPath(options.appRoot);
 
 	const currentPath = process.env.PATH ?? "";
 	const binEntries = [feynmanCommandShimDir, paths.nodeModulesBinPath, resolve(paths.piWorkspaceNodeModulesPath, ".bin"), feynmanNpmBinPath];

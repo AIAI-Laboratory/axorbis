@@ -6,7 +6,7 @@ const warningLineLimit = 800;
 const failureLineLimit = 1200;
 const sourceRoots = ["engine", "web", "app", "extensions", "scripts", "tests"];
 const sourceExtensions = new Set([".ts", ".mts", ".mjs"]);
-const ignoredPathParts = new Set(["node_modules", "dist", "target", "runtime", ".git", ".feynman"]);
+const ignoredPathParts = new Set(["node_modules", "dist", "target", "runtime", ".git", ".axorbis"]);
 
 const allowedOversizedFiles = new Map([
 	[

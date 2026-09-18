@@ -43,7 +43,7 @@ test("artifact actions persist star, rename, hide, and reversible delete state",
 		assert.equal(existsSync(join(root, "outputs", "alpha.md")), false);
 		assert.equal(existsSync(deleted.trashPath ?? ""), true);
 		assert.match(readFileSync(workbenchDataPath(root, "artifact-actions.json"), "utf8"), /Pinned Beta Result/);
-		assert.equal(existsSync(join(root, ".feynman", "workbench", "artifact-actions.json")), false);
+		assert.equal(existsSync(join(root, ".axorbis", "workbench", "artifact-actions.json")), false);
 		assert.equal(readWorkbenchArtifactActions(root).length, 2);
 
 		state = buildWorkbenchState({ workingDir: root });

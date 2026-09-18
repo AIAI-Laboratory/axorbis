@@ -141,7 +141,7 @@ export function buildWorkbenchSkillLedgers(workingDir: string): {
 	const customSkills = listFiles(resolve(workingDir, "skills"), (name) => name === "SKILL.md")
 		.map((path) => skillRecord(workingDir, path))
 		.sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
-	const customAgentPrompts = directMarkdownFiles(resolve(workingDir, ".feynman", "agents"))
+	const customAgentPrompts = directMarkdownFiles(resolve(workingDir, ".axorbis", "agents"))
 		.map((path) => agentPromptRecord(workingDir, path))
 		.sort((a, b) => a.agentName.localeCompare(b.agentName) || a.path.localeCompare(b.path));
 	return {

@@ -25,7 +25,7 @@ import { contentText, type AssistantMessage } from "@earendil-works/pi-ai";
 
 import { verifyAlphaAuthStatus } from "./alpha-auth-status.js";
 import { syncBundledAssets } from "./bootstrap/sync.js";
-import { ensureFeynmanHome, getDefaultSessionDir, getFeynmanAgentDir, getFeynmanHome } from "./config/paths.js";
+import { ensureAxorbisHome, getDefaultSessionDir, getAxorbisAgentDir, getAxorbisHome } from "./config/paths.js";
 import { launchPiChat } from "./pi/launch.js";
 import {
 	installPackageSources,
@@ -84,7 +84,7 @@ import {
 } from "./model/catalog.js";
 import { clearSearchConfig, printSearchStatus, setSearchProvider } from "./search/commands.js";
 import type { PiWebSearchProvider } from "./pi/web-access.js";
-import { fetchLatestFeynmanVersion, getFeynmanUpgradeLines, isNewerVersion } from "./system/self-update.js";
+import { fetchLatestFeynmanVersion, getAxorbisUpgradeLines, isNewerVersion } from "./system/self-update.js";
 import { runDoctor, runStatus } from "./setup/doctor.js";
 import { setupPreviewDependencies } from "./setup/preview.js";
 import { runSetup } from "./setup/setup.js";
@@ -167,7 +167,7 @@ export function resolveBundledAlphaCliPath(appRoot: string): string {
 	const candidates = [
 		resolvedPackageAlpha,
 		resolve(appRoot, "node_modules", ...ALPHA_HUB_PACKAGE_PATH, "bin", "alpha"),
-		resolve(appRoot, ".feynman", "npm", "node_modules", ...ALPHA_HUB_PACKAGE_PATH, "bin", "alpha"),
+		resolve(appRoot, ".axorbis", "npm", "node_modules", ...ALPHA_HUB_PACKAGE_PATH, "bin", "alpha"),
 	].filter((candidate): candidate is string => Boolean(candidate));
 	const found = candidates.find((candidate) => existsSync(candidate));
 	if (!found) {
@@ -370,8 +370,8 @@ async function handleUpdateCommand(
 		const latestVersion = await latestFeynmanVersionPromise;
 		if (feynmanVersion && latestVersion && isNewerVersion(latestVersion, feynmanVersion)) {
 			const standaloneBundle =
-				!existsSync(resolve(appRoot, ".feynman", "runtime-workspace.tgz")) && existsSync(resolve(appRoot, ".feynman", "npm"));
-			for (const line of getFeynmanUpgradeLines(latestVersion, feynmanVersion, { standaloneBundle })) {
+				!existsSync(resolve(appRoot, ".axorbis", "runtime-workspace.tgz")) && existsSync(resolve(appRoot, ".axorbis", "npm"));
+			for (const line of getAxorbisUpgradeLines(latestVersion, feynmanVersion, { standaloneBundle })) {
 				console.log(line);
 			}
 		}
@@ -896,11 +896,11 @@ export async function main(): Promise<void> {
 
 async function runMain(input: { here: string; appRoot: string; feynmanVersion: string | undefined }): Promise<void> {
 	const { appRoot, feynmanVersion } = input;
-	const bundledSettingsPath = resolve(appRoot, ".feynman", "settings.json");
-	const feynmanHome = getFeynmanHome();
-	const feynmanAgentDir = getFeynmanAgentDir(feynmanHome);
+	const bundledSettingsPath = resolve(appRoot, ".axorbis", "settings.json");
+	const feynmanHome = getAxorbisHome();
+	const feynmanAgentDir = getAxorbisAgentDir(feynmanHome);
 
-	ensureFeynmanHome(feynmanHome);
+	ensureAxorbisHome(feynmanHome);
 	syncBundledAssets(appRoot, feynmanAgentDir);
 
 	const rawArgs = process.argv.slice(2);

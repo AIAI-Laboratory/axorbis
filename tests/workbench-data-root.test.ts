@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { getFeynmanActiveOrgPath } from "../engine/config/paths.js";
+import { getAxorbisActiveOrgPath } from "../engine/config/paths.js";
 import {
 	ensureWorkbenchDataRoot,
 	getLegacyHomeWorkbenchDataRoot,
@@ -13,23 +13,23 @@ import {
 	workbenchDataPath,
 } from "../engine/workbench/data-root.js";
 
-function withFeynmanHome<T>(homeParent: string, callback: () => T): T {
-	const previousHome = process.env.FEYNMAN_HOME;
-	const previousWorkbenchHome = process.env.FEYNMAN_WORKBENCH_HOME;
+function withAxorbisHome<T>(homeParent: string, callback: () => T): T {
+	const previousHome = process.env.AXORBIS_HOME;
+	const previousWorkbenchHome = process.env.AXORBIS_WORKBENCH_HOME;
 	try {
-		process.env.FEYNMAN_HOME = homeParent;
-		delete process.env.FEYNMAN_WORKBENCH_HOME;
+		process.env.AXORBIS_HOME = homeParent;
+		delete process.env.AXORBIS_WORKBENCH_HOME;
 		return callback();
 	} finally {
 		if (previousHome === undefined) {
-			delete process.env.FEYNMAN_HOME;
+			delete process.env.AXORBIS_HOME;
 		} else {
-			process.env.FEYNMAN_HOME = previousHome;
+			process.env.AXORBIS_HOME = previousHome;
 		}
 		if (previousWorkbenchHome === undefined) {
-			delete process.env.FEYNMAN_WORKBENCH_HOME;
+			delete process.env.AXORBIS_WORKBENCH_HOME;
 		} else {
-			process.env.FEYNMAN_WORKBENCH_HOME = previousWorkbenchHome;
+			process.env.AXORBIS_WORKBENCH_HOME = previousWorkbenchHome;
 		}
 	}
 }
@@ -39,10 +39,10 @@ test("workbench app data lives under the active Feynman org", () => {
 	try {
 		const workspace = join(root, "workspace");
 		mkdirSync(workspace, { recursive: true });
-		withFeynmanHome(join(root, "home-parent"), () => {
+		withAxorbisHome(join(root, "home-parent"), () => {
 			const dataRoot = ensureWorkbenchDataRoot(workspace);
-			const home = join(root, "home-parent", ".feynman");
-			const activeOrg = JSON.parse(readFileSync(getFeynmanActiveOrgPath(home), "utf8")) as { org_uuid: string };
+			const home = join(root, "home-parent", ".axorbis");
+			const activeOrg = JSON.parse(readFileSync(getAxorbisActiveOrgPath(home), "utf8")) as { org_uuid: string };
 
 			assert.equal(getWorkbenchDataHome(), join(home, "orgs", activeOrg.org_uuid, "workbench"));
 			assert.equal(dataRoot, join(home, "orgs", activeOrg.org_uuid, "workbench", "workspaces", getWorkbenchWorkspaceId(workspace)));
@@ -87,7 +87,7 @@ test("workbench app data migrates from legacy home-level workbench storage", () 
 	try {
 		const workspace = join(root, "workspace");
 		mkdirSync(workspace, { recursive: true });
-		withFeynmanHome(join(root, "home-parent"), () => {
+		withAxorbisHome(join(root, "home-parent"), () => {
 			const legacyRoot = getLegacyHomeWorkbenchDataRoot(workspace);
 			mkdirSync(legacyRoot, { recursive: true });
 			writeFileSync(join(legacyRoot, "settings.json"), `${JSON.stringify({

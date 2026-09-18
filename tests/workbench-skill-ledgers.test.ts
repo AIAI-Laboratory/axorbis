@@ -13,7 +13,7 @@ function makeWorkspace(): string {
 	mkdirSync(join(root, "papers"), { recursive: true });
 	mkdirSync(join(root, "notes"), { recursive: true });
 	mkdirSync(join(root, "skills", "literature-review"), { recursive: true });
-	mkdirSync(join(root, ".feynman", "agents"), { recursive: true });
+	mkdirSync(join(root, ".axorbis", "agents"), { recursive: true });
 	writeFileSync(join(root, "outputs", "skill-ledgers.md"), "# Skill ledgers\n");
 	writeFileSync(join(root, "package.json"), JSON.stringify({ name: "skill-ledger-fixture", license: "MIT" }, null, 2));
 	writeFileSync(join(root, "skills", "literature-review", "SKILL.md"), [
@@ -27,7 +27,7 @@ function makeWorkspace(): string {
 		"Search, read, rank, and cite sources before synthesis.",
 		"",
 	].join("\n"));
-	writeFileSync(join(root, ".feynman", "agents", "reviewer.md"), [
+	writeFileSync(join(root, ".axorbis", "agents", "reviewer.md"), [
 		"---",
 		"name: reviewer",
 		"description: Adversarial evidence reviewer.",

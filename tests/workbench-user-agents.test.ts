@@ -12,10 +12,10 @@ function makeWorkspace(): string {
 	mkdirSync(join(root, "outputs"), { recursive: true });
 	mkdirSync(join(root, "papers"), { recursive: true });
 	mkdirSync(join(root, "notes"), { recursive: true });
-	mkdirSync(join(root, ".feynman"), { recursive: true });
+	mkdirSync(join(root, ".axorbis"), { recursive: true });
 	mkdirSync(join(root, "skills", "alpha-research"), { recursive: true });
 	mkdirSync(join(root, "skills", "pdf-explore"), { recursive: true });
-	writeFileSync(join(root, ".feynman", "SYSTEM.md"), [
+	writeFileSync(join(root, ".axorbis", "SYSTEM.md"), [
 		"You are Feynman, a research-first AI agent.",
 		"",
 		"Use primary sources and write durable artifacts.",

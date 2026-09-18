@@ -6,7 +6,7 @@ import { StringDecoder } from "node:string_decoder";
 import {
 	buildPiArgs,
 	buildPiEnv,
-	ensureFeynmanCommandShim,
+	ensureAxorbisCommandShim,
 	resolvePiPaths,
 	toNodeImportSpecifier,
 	type PiRuntimeOptions,
@@ -366,7 +366,7 @@ async function spawnWorkbenchPi(request: WorkbenchPromptRequest, mode: ChildMode
 		? ["--import", toNodeImportSpecifier(paths.tsxLoaderPath), "--import", toNodeImportSpecifier(paths.promisePolyfillSourcePath)]
 		: ["--import", toNodeImportSpecifier(paths.promisePolyfillPath)];
 	const executables = await resolveAllExecutables();
-	ensureFeynmanCommandShim(request.appRoot!, request.feynmanAgentDir!);
+	ensureAxorbisCommandShim(request.appRoot!, request.feynmanAgentDir!);
 
 	return spawn(process.execPath, [
 		...importArgs,

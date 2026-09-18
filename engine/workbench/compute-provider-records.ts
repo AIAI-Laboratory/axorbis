@@ -44,7 +44,7 @@ function providerProbeTimestamp(workingDir: string, provider: WorkbenchComputePr
 		const host = readWorkbenchSettings(workingDir).computeHosts.find((item) => item.id === provider.settingsRecordId);
 		return timestampFromIso(host?.updatedAt);
 	}
-	const root = provider.id === "local-workspace" ? workingDir : resolve(workingDir, ".feynman");
+	const root = provider.id === "local-workspace" ? workingDir : resolve(workingDir, ".axorbis");
 	if (!existsSync(root)) return {};
 	const stat = statSync(root);
 	const ms = stat.mtimeMs || stat.ctimeMs || stat.birthtimeMs || 0;

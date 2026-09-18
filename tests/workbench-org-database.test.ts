@@ -5,29 +5,29 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
-import { getFeynmanOrgDatabasePath } from "../engine/config/paths.js";
+import { getAxorbisOrgDatabasePath } from "../engine/config/paths.js";
 import { REFERENCE_LEDGER_TABLE_NAMES } from "../engine/workbench/org-database-ledgers.js";
 import { materializeWorkbenchOrgDatabase } from "../engine/workbench/org-database.js";
 import { buildWorkbenchState } from "../engine/workbench/scan.js";
 import type { WorkbenchState } from "../engine/workbench/types.js";
 
-function withFeynmanHome<T>(homeParent: string, callback: () => T): T {
-	const previousHome = process.env.FEYNMAN_HOME;
-	const previousWorkbenchHome = process.env.FEYNMAN_WORKBENCH_HOME;
+function withAxorbisHome<T>(homeParent: string, callback: () => T): T {
+	const previousHome = process.env.AXORBIS_HOME;
+	const previousWorkbenchHome = process.env.AXORBIS_WORKBENCH_HOME;
 	try {
-		process.env.FEYNMAN_HOME = homeParent;
-		delete process.env.FEYNMAN_WORKBENCH_HOME;
+		process.env.AXORBIS_HOME = homeParent;
+		delete process.env.AXORBIS_WORKBENCH_HOME;
 		return callback();
 	} finally {
 		if (previousHome === undefined) {
-			delete process.env.FEYNMAN_HOME;
+			delete process.env.AXORBIS_HOME;
 		} else {
-			process.env.FEYNMAN_HOME = previousHome;
+			process.env.AXORBIS_HOME = previousHome;
 		}
 		if (previousWorkbenchHome === undefined) {
-			delete process.env.FEYNMAN_WORKBENCH_HOME;
+			delete process.env.AXORBIS_WORKBENCH_HOME;
 		} else {
-			process.env.FEYNMAN_WORKBENCH_HOME = previousWorkbenchHome;
+			process.env.AXORBIS_WORKBENCH_HOME = previousWorkbenchHome;
 		}
 	}
 }
@@ -138,7 +138,7 @@ function emptyState(partial: Partial<WorkbenchState>): WorkbenchState {
 test("materializeWorkbenchOrgDatabase writes Feynman-owned reference-shaped tables", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-org-db-"));
 	try {
-		withFeynmanHome(join(root, "home-parent"), () => {
+		withAxorbisHome(join(root, "home-parent"), () => {
 			const now = "2026-07-04T12:00:00.000Z";
 			const nowMs = Date.parse(now);
 			const state = emptyState({
@@ -552,7 +552,7 @@ test("built workbench state can refresh the org database on demand", () => {
 	try {
 		const workspace = join(root, "workspace");
 		mkdirSync(workspace, { recursive: true });
-		withFeynmanHome(join(root, "home-parent"), () => {
+		withAxorbisHome(join(root, "home-parent"), () => {
 			const state = buildWorkbenchState({ workingDir: workspace });
 			const { path } = materializeWorkbenchOrgDatabase(state);
 

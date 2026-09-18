@@ -42,7 +42,7 @@ test("workbench frame read cursors persist and appear in state", () => {
 		const storePath = workbenchDataPath(root, "read-cursors.json");
 		assert.equal(existsSync(storePath), true);
 		assert.match(readFileSync(storePath, "utf8"), /feynman\.workbenchReadCursors\.v1/);
-		assert.equal(existsSync(join(root, ".feynman", "workbench", "read-cursors.json")), false);
+		assert.equal(existsSync(join(root, ".axorbis", "workbench", "read-cursors.json")), false);
 
 		const state = buildWorkbenchState({ workingDir: root });
 		assert.equal(state.frameReadCursors[0]?.rootFrameId, "scaling-laws");

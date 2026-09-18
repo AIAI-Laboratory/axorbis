@@ -182,7 +182,7 @@ test("feynman alpha reaches Alpha Hub help when cwd is supplied before alpha", (
 		encoding: "utf8",
 		env: {
 			...process.env,
-			FEYNMAN_HOME: homeDir,
+			AXORBIS_HOME: homeDir,
 			FEYNMAN_TELEMETRY: "0",
 		},
 		maxBuffer: 1024 * 1024,
@@ -201,7 +201,7 @@ test("unknown CLI flags point users to Feynman help", () => {
 		encoding: "utf8",
 		env: {
 			...process.env,
-			FEYNMAN_HOME: homeDir,
+			AXORBIS_HOME: homeDir,
 			FEYNMAN_TELEMETRY: "0",
 		},
 		maxBuffer: 1024 * 1024,
@@ -217,7 +217,7 @@ test("packages CLI hides removed UI and bulk extras", () => {
 	const homeDir = mkdtempSync(join(tmpdir(), "feynman-packages-home-"));
 	const env = {
 		...process.env,
-		FEYNMAN_HOME: homeDir,
+		AXORBIS_HOME: homeDir,
 		FEYNMAN_TELEMETRY: "0",
 		NO_COLOR: "1",
 	};

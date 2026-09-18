@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-import { getFeynmanOrgDatabasePath } from "../config/paths.js";
+import { getAxorbisOrgDatabasePath } from "../config/paths.js";
 import { createReferenceLedgerTables, insertReferenceLedgerRows, REFERENCE_LEDGER_TABLE_NAMES } from "./org-database-ledgers.js";
 import type { WorkbenchState } from "./types.js";
 
@@ -863,7 +863,7 @@ function readCounts(database: DatabaseSync): Record<string, number> {
 	return counts;
 }
 
-export function ensureWorkbenchOrgDatabase(path = getFeynmanOrgDatabasePath()): string {
+export function ensureWorkbenchOrgDatabase(path = getAxorbisOrgDatabasePath()): string {
 	mkdirSync(dirname(path), { recursive: true });
 	const database = new DatabaseSync(path);
 	try {
@@ -875,7 +875,7 @@ export function ensureWorkbenchOrgDatabase(path = getFeynmanOrgDatabasePath()): 
 	return path;
 }
 
-export function materializeWorkbenchOrgDatabase(state: WorkbenchState, path = getFeynmanOrgDatabasePath()): WorkbenchOrgDatabaseSummary {
+export function materializeWorkbenchOrgDatabase(state: WorkbenchState, path = getAxorbisOrgDatabasePath()): WorkbenchOrgDatabaseSummary {
 	mkdirSync(dirname(path), { recursive: true });
 	const updatedAt = state.generatedAt;
 	const database = new DatabaseSync(path);

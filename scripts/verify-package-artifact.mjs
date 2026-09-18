@@ -522,9 +522,9 @@ for (const [label, path] of [
 	}
 }
 
-const archivePath = resolve(packageRoot, ".feynman", "runtime-workspace.tgz");
-const digestPath = resolve(packageRoot, ".feynman", "runtime-workspace.sha256");
-const runtimeLockPath = resolve(packageRoot, ".feynman", "runtime-package-lock.json");
+const archivePath = resolve(packageRoot, ".axorbis", "runtime-workspace.tgz");
+const digestPath = resolve(packageRoot, ".axorbis", "runtime-workspace.sha256");
+const runtimeLockPath = resolve(packageRoot, ".axorbis", "runtime-package-lock.json");
 if (!verifyFileSha256(archivePath, digestPath)) {
 	fail("runtime workspace archive SHA-256 does not match its sidecar");
 }
@@ -1046,7 +1046,7 @@ requireMarkers(
 	"runtime pi-web-access PDF extraction",
 	[
 		"FEYNMAN_FETCH_CACHE_DIR",
-		'join(process.cwd(), ".feynman", "cache", "fetch-content")',
+		'join(process.cwd(), ".axorbis", "cache", "fetch-content")',
 		"const enabled = pdf.enabled !== false;",
 		'import {',
 		'extractPDFViaDatalab',

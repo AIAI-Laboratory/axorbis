@@ -517,7 +517,7 @@ test("patchPiRuntimeNodeModules patches installed Pi runtime files", async () =>
 	assert.doesNotMatch(readFileSync(updateNoticePath, "utf8"), /`\$\{APP_NAME\} update --extensions`/);
 	const patchedPackageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { piConfig?: Record<string, unknown> };
 	assert.equal(patchedPackageJson.piConfig?.name, "feynman");
-	assert.equal(patchedPackageJson.piConfig?.configDir, ".feynman");
+	assert.equal(patchedPackageJson.piConfig?.configDir, ".axorbis");
 	assert.match(
 		readFileSync(modelRuntimePath, "utf8"),
 		/assertHeaderSafeRequestConfig\(model\.provider, providerOptions\.apiKey \?\? resolution\.auth\.apiKey, headers\)/,
@@ -546,17 +546,17 @@ test("patchPiRuntimeNodeModules patches installed Pi runtime files", async () =>
 
 test("patchPiRuntimeNodeModules patches the vendored runtime workspace", async () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-workspace-runtime-patches-"));
-	const agentLoopPath = join(appRoot, ".feynman", "npm", "node_modules", "@mariozechner", "pi-agent-core", "dist", "agent-loop.js");
-	const tuiPath = join(appRoot, ".feynman", "npm", "node_modules", "@mariozechner", "pi-tui", "dist", "tui.js");
-	const editorPath = join(appRoot, ".feynman", "npm", "node_modules", "@mariozechner", "pi-tui", "dist", "components", "editor.js");
-	const themePath = join(appRoot, ".feynman", "npm", "node_modules", "@mariozechner", "pi-coding-agent", "dist", "modes", "interactive", "theme", "theme.js");
-	const updateNoticePath = join(appRoot, ".feynman", "npm", "node_modules", "@mariozechner", "pi-coding-agent", "dist", "modes", "interactive", "interactive-mode.js");
-	const packageJsonPath = join(appRoot, ".feynman", "npm", "node_modules", "@mariozechner", "pi-coding-agent", "package.json");
-	const webAccessPath = join(appRoot, ".feynman", "npm", "node_modules", "pi-web-access", "index.ts");
-	const webAccessPdfPath = join(appRoot, ".feynman", "npm", "node_modules", "pi-web-access", "pdf-extract.ts");
-	const subagentSpawnPath = join(appRoot, ".feynman", "npm", "node_modules", "pi-subagents", "src", "runs", "shared", "pi-spawn.ts");
-	const piOtelConfigPath = join(appRoot, ".feynman", "npm", "node_modules", "pi-otel", "dist", "config.js");
-	const sessionSearchPath = join(appRoot, ".feynman", "npm", "node_modules", "@kaiserlich-dev", "pi-session-search", "extensions", "indexer.ts");
+	const agentLoopPath = join(appRoot, ".axorbis", "npm", "node_modules", "@mariozechner", "pi-agent-core", "dist", "agent-loop.js");
+	const tuiPath = join(appRoot, ".axorbis", "npm", "node_modules", "@mariozechner", "pi-tui", "dist", "tui.js");
+	const editorPath = join(appRoot, ".axorbis", "npm", "node_modules", "@mariozechner", "pi-tui", "dist", "components", "editor.js");
+	const themePath = join(appRoot, ".axorbis", "npm", "node_modules", "@mariozechner", "pi-coding-agent", "dist", "modes", "interactive", "theme", "theme.js");
+	const updateNoticePath = join(appRoot, ".axorbis", "npm", "node_modules", "@mariozechner", "pi-coding-agent", "dist", "modes", "interactive", "interactive-mode.js");
+	const packageJsonPath = join(appRoot, ".axorbis", "npm", "node_modules", "@mariozechner", "pi-coding-agent", "package.json");
+	const webAccessPath = join(appRoot, ".axorbis", "npm", "node_modules", "pi-web-access", "index.ts");
+	const webAccessPdfPath = join(appRoot, ".axorbis", "npm", "node_modules", "pi-web-access", "pdf-extract.ts");
+	const subagentSpawnPath = join(appRoot, ".axorbis", "npm", "node_modules", "pi-subagents", "src", "runs", "shared", "pi-spawn.ts");
+	const piOtelConfigPath = join(appRoot, ".axorbis", "npm", "node_modules", "pi-otel", "dist", "config.js");
+	const sessionSearchPath = join(appRoot, ".axorbis", "npm", "node_modules", "@kaiserlich-dev", "pi-session-search", "extensions", "indexer.ts");
 	await mkdir(dirname(agentLoopPath), { recursive: true });
 	await mkdir(dirname(tuiPath), { recursive: true });
 	await mkdir(dirname(editorPath), { recursive: true });
@@ -607,7 +607,7 @@ test("patchPiRuntimeNodeModules patches the vendored runtime workspace", async (
 	assert.match(readFileSync(updateNoticePath, "utf8"), /`\$\{APP_NAME\} update`/);
 	const patchedPackageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { piConfig?: Record<string, unknown> };
 	assert.equal(patchedPackageJson.piConfig?.name, "feynman");
-	assert.equal(patchedPackageJson.piConfig?.configDir, ".feynman");
+	assert.equal(patchedPackageJson.piConfig?.configDir, ".axorbis");
 	assert.match(readFileSync(webAccessPath, "utf8"), /params\.workflow \?\? configWorkflow \?\? "none"/);
 	assert.match(readFileSync(webAccessPath, "utf8"), /pi\.registerCommand\("web-results"/);
 	assert.match(readFileSync(webAccessPdfPath, "utf8"), /FEYNMAN_FETCH_CACHE_DIR/);
@@ -625,7 +625,7 @@ test("patchPiRuntimeNodeModules patches the vendored runtime workspace", async (
 
 test("patchPiRuntimeNodeModules adds reviewed forward files to a fresh pi-web-access install", () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-web-forward-files-"));
-	const webRoot = join(appRoot, ".feynman", "npm", "node_modules", "pi-web-access");
+	const webRoot = join(appRoot, ".axorbis", "npm", "node_modules", "pi-web-access");
 	const sanitizerPath = join(webRoot, "data-uri-sanitize.ts");
 	writePiWebAccessFixture(webRoot);
 	rmSync(sanitizerPath);
@@ -641,7 +641,7 @@ test("patchPiRuntimeNodeModules adds reviewed forward files to a fresh pi-web-ac
 
 test("patchPiRuntimeNodeModules rejects unsupported pi-web-access versions before launch", async () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-future-web-runtime-patches-"));
-	const webRoot = join(appRoot, ".feynman", "npm", "node_modules", "pi-web-access");
+	const webRoot = join(appRoot, ".axorbis", "npm", "node_modules", "pi-web-access");
 	const webAccessPath = join(webRoot, "index.ts");
 	writePiWebAccessFixture(webRoot, "0.29.0");
 	const originalSource = readFileSync(webAccessPath, "utf8");
@@ -656,7 +656,7 @@ test("patchPiRuntimeNodeModules rejects unsupported pi-web-access versions befor
 test("patchPiRuntimeNodeModules patches the Windows npm prefix layout", () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-windows-runtime-patches-"));
 	const homeRoot = mkdtempSync(join(tmpdir(), "feynman-windows-runtime-home-"));
-	const agentDir = join(homeRoot, ".feynman", "agent");
+	const agentDir = join(homeRoot, ".axorbis", "agent");
 	const bundledPiManifestPath = join(
 		appRoot,
 		"node_modules",
@@ -666,7 +666,7 @@ test("patchPiRuntimeNodeModules patches the Windows npm prefix layout", () => {
 	);
 	const webRoot = join(
 		homeRoot,
-		".feynman",
+		".axorbis",
 		"npm-global",
 		"node_modules",
 		"pi-web-access",
@@ -691,7 +691,7 @@ test("patchPiRuntimeNodeModules patches the Windows npm prefix layout", () => {
 
 test("patchPiRuntimeNodeModules rejects unreviewed web source before writing any file", () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-atomic-web-runtime-patches-"));
-	const webRoot = join(appRoot, ".feynman", "npm", "node_modules", "pi-web-access");
+	const webRoot = join(appRoot, ".axorbis", "npm", "node_modules", "pi-web-access");
 	writePiWebAccessFixture(webRoot, "0.28.0");
 	const indexPath = join(webRoot, "index.ts");
 	const pageQueryPath = join(webRoot, "page-query.ts");
@@ -715,7 +715,7 @@ test("patchPiRuntimeNodeModules rejects unreviewed web source before writing any
 
 test("patchPiRuntimeNodeModules validates non-model web invariants before writing any file", () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-atomic-web-non-model-patches-"));
-	const webRoot = join(appRoot, ".feynman", "npm", "node_modules", "pi-web-access");
+	const webRoot = join(appRoot, ".axorbis", "npm", "node_modules", "pi-web-access");
 	writePiWebAccessFixture(webRoot, "0.28.0", true);
 	const indexPath = join(webRoot, "index.ts");
 	writeFileSync(
@@ -737,7 +737,7 @@ test("patchPiRuntimeNodeModules validates non-model web invariants before writin
 test("patchPiRuntimeNodeModules leaves stale Pi core packages untouched while patching extensions", async () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-user-runtime-patches-"));
 	const homeRoot = mkdtempSync(join(tmpdir(), "feynman-user-runtime-home-"));
-	const agentDir = join(homeRoot, ".feynman", "agent");
+	const agentDir = join(homeRoot, ".axorbis", "agent");
 	const bundledPiManifestPath = join(
 		appRoot,
 		"node_modules",
@@ -747,7 +747,7 @@ test("patchPiRuntimeNodeModules leaves stale Pi core packages untouched while pa
 	);
 	const globalSpawnPath = join(
 		homeRoot,
-		".feynman",
+		".axorbis",
 		"npm-global",
 		"lib",
 		"node_modules",
@@ -769,7 +769,7 @@ test("patchPiRuntimeNodeModules leaves stale Pi core packages untouched while pa
 	);
 	const globalOtelConfigPath = join(
 		homeRoot,
-		".feynman",
+		".axorbis",
 		"npm-global",
 		"lib",
 		"node_modules",
@@ -780,7 +780,7 @@ test("patchPiRuntimeNodeModules leaves stale Pi core packages untouched while pa
 	const agentOtelConfigPath = join(agentDir, "npm", "node_modules", "pi-otel", "dist", "config.js");
 	const globalSessionSearchPath = join(
 		homeRoot,
-		".feynman",
+		".axorbis",
 		"npm-global",
 		"lib",
 		"node_modules",
@@ -933,9 +933,9 @@ test("patchPiRuntimeNodeModules repairs current Pi Undici in global and agent ro
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-user-undici-patches-"));
 	const homeRoot = mkdtempSync(join(tmpdir(), "feynman-user-undici-home-"));
 	t.after(() => { rmSync(appRoot, { recursive: true, force: true }); rmSync(homeRoot, { recursive: true, force: true }); });
-	const agentDir = join(homeRoot, ".feynman", "agent");
+	const agentDir = join(homeRoot, ".axorbis", "agent");
 	const rootNodeModules = join(appRoot, "node_modules");
-	const globalNodeModules = join(homeRoot, ".feynman", "npm-global", "lib", "node_modules");
+	const globalNodeModules = join(homeRoot, ".axorbis", "npm-global", "lib", "node_modules");
 	const agentNodeModules = join(agentDir, "npm", "node_modules");
 	const safeUndiciRoot = join(rootNodeModules, "undici");
 	const safeBraceRoot = join(rootNodeModules, "brace-expansion");
@@ -1057,7 +1057,7 @@ test("patchPiRuntimeNodeModules repairs current Pi Undici in global and agent ro
 test("patchPiRuntimeNodeModules accepts newer brace-expansion in Pi's agent-managed root", () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-agent-brace-forward-"));
 	const homeRoot = mkdtempSync(join(tmpdir(), "feynman-agent-brace-home-"));
-	const agentDir = join(homeRoot, ".feynman", "agent");
+	const agentDir = join(homeRoot, ".axorbis", "agent");
 	const bundledPiRoot = join(
 		appRoot,
 		"node_modules",

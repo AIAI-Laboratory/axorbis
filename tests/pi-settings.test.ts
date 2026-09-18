@@ -28,14 +28,14 @@ test("bundled settings disable the project theme copy while the synced agent the
 	const workingDir = join(root, "project");
 	const agentDir = join(root, "agent");
 	const themeJson = JSON.stringify({ name: "feynman", colors: {} }) + "\n";
-	mkdirSync(join(workingDir, ".feynman", "themes"), { recursive: true });
+	mkdirSync(join(workingDir, ".axorbis", "themes"), { recursive: true });
 	mkdirSync(join(agentDir, "themes"), { recursive: true });
 	writeFileSync(
-		join(workingDir, ".feynman", "settings.json"),
+		join(workingDir, ".axorbis", "settings.json"),
 		JSON.stringify({ themes: ["-themes/feynman.json"] }, null, 2) + "\n",
 		"utf8",
 	);
-	writeFileSync(join(workingDir, ".feynman", "themes", "feynman.json"), themeJson, "utf8");
+	writeFileSync(join(workingDir, ".axorbis", "themes", "feynman.json"), themeJson, "utf8");
 	writeFileSync(join(agentDir, "themes", "feynman.json"), themeJson, "utf8");
 
 	const settingsManager = SettingsManager.create(workingDir, agentDir, { projectTrusted: true });
@@ -56,8 +56,8 @@ test("bundled settings disable the project theme copy while the synced agent the
 		{ path: join(agentDir, "themes", "feynman.json"), enabled: true, scope: "user", source: "auto" },
 	);
 	assert.deepEqual(
-		feynmanThemeResources.find((resource) => resource.path === join(workingDir, ".feynman", "themes", "feynman.json")),
-		{ path: join(workingDir, ".feynman", "themes", "feynman.json"), enabled: false, scope: "project", source: "auto" },
+		feynmanThemeResources.find((resource) => resource.path === join(workingDir, ".axorbis", "themes", "feynman.json")),
+		{ path: join(workingDir, ".axorbis", "themes", "feynman.json"), enabled: false, scope: "project", source: "auto" },
 	);
 	assert.equal(feynmanThemeResources.length, 2);
 });
@@ -339,7 +339,7 @@ test("normalizeFeynmanSettings refreshes a relocated bundled researcher extensio
 
 test("bundled settings and package-list defaults use the same current core package set", () => {
 	const bundledSettings = JSON.parse(
-		readFileSync(join(process.cwd(), ".feynman", "settings.json"), "utf8"),
+		readFileSync(join(process.cwd(), ".axorbis", "settings.json"), "utf8"),
 	) as { packages?: string[] };
 	assert.deepEqual(bundledSettings.packages, [...CORE_PACKAGE_SOURCES]);
 	assert.deepEqual(CORE_PACKAGE_SOURCES, [

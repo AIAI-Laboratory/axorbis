@@ -29,7 +29,7 @@ import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
 import { PostHog, type PostHogOptions } from "posthog-node";
 
-import { getFeynmanHome, getFeynmanStateDir } from "../config/paths.js";
+import { getAxorbisHome, getAxorbisStateDir } from "../config/paths.js";
 
 export const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
 export const DEFAULT_POSTHOG_PROJECT_ID = "479027";
@@ -266,8 +266,8 @@ function readTelemetryState(path: string): TelemetryState {
 	}
 }
 
-function getAnonymousDistinctId(home = getFeynmanHome()): string {
-	const stateDir = getFeynmanStateDir(home);
+function getAnonymousDistinctId(home = getAxorbisHome()): string {
+	const stateDir = getAxorbisStateDir(home);
 	const statePath = resolve(stateDir, TELEMETRY_STATE_FILE);
 	const state = readTelemetryState(statePath);
 	if (typeof state.anonymousId === "string" && state.anonymousId.startsWith("feynman_")) {

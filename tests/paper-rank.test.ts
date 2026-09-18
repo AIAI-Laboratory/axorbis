@@ -1964,7 +1964,7 @@ test("feynman rank works end to end through the CLI with a fixture source", () =
 			encoding: "utf8",
 			env: {
 				...process.env,
-				FEYNMAN_HOME: homeDir,
+				AXORBIS_HOME: homeDir,
 			},
 			maxBuffer: 1024 * 1024 * 5,
 		},
@@ -2070,7 +2070,7 @@ test("feynman rank default output is concise and decision-first", () => {
 			encoding: "utf8",
 			env: {
 				...process.env,
-				FEYNMAN_HOME: homeDir,
+				AXORBIS_HOME: homeDir,
 				FEYNMAN_TELEMETRY: "off",
 			},
 			maxBuffer: 1024 * 1024 * 5,
@@ -2124,7 +2124,7 @@ test("feynman rank writes default outputs under --cwd", () => {
 			encoding: "utf8",
 			env: {
 				...process.env,
-				FEYNMAN_HOME: homeDir,
+				AXORBIS_HOME: homeDir,
 			},
 			maxBuffer: 1024 * 1024 * 5,
 		},
@@ -2168,7 +2168,7 @@ test("feynman paper works end to end through the CLI with a fixture source", () 
 			encoding: "utf8",
 			env: {
 				...process.env,
-				FEYNMAN_HOME: homeDir,
+				AXORBIS_HOME: homeDir,
 			},
 			maxBuffer: 1024 * 1024 * 5,
 		},
@@ -2219,7 +2219,7 @@ test("feynman paper default output names the best access route", () => {
 			encoding: "utf8",
 			env: {
 				...process.env,
-				FEYNMAN_HOME: homeDir,
+				AXORBIS_HOME: homeDir,
 				FEYNMAN_TELEMETRY: "off",
 			},
 			maxBuffer: 1024 * 1024 * 5,
@@ -2264,7 +2264,7 @@ test("feynman paper writes default outputs under --cwd", () => {
 			encoding: "utf8",
 			env: {
 				...process.env,
-				FEYNMAN_HOME: homeDir,
+				AXORBIS_HOME: homeDir,
 			},
 			maxBuffer: 1024 * 1024 * 5,
 		},
@@ -2305,7 +2305,7 @@ test("feynman rank accepts a preference file through the CLI", () => {
 			encoding: "utf8",
 			env: {
 				...process.env,
-				FEYNMAN_HOME: homeDir,
+				AXORBIS_HOME: homeDir,
 			},
 			maxBuffer: 1024 * 1024 * 5,
 		},
@@ -2352,7 +2352,7 @@ test("feynman rank accepts reproduction notes through the CLI", () => {
 			encoding: "utf8",
 			env: {
 				...process.env,
-				FEYNMAN_HOME: homeDir,
+				AXORBIS_HOME: homeDir,
 			},
 			maxBuffer: 1024 * 1024 * 5,
 		},

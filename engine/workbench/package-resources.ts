@@ -120,7 +120,7 @@ function installedPackageRoot(workingDir: string, source: string): string | unde
 	if (!source.startsWith("npm:")) return undefined;
 	const packageName = packageNameFromSource(source);
 	for (const root of [
-		resolve(workingDir, ".feynman", "npm", "node_modules", packageName),
+		resolve(workingDir, ".axorbis", "npm", "node_modules", packageName),
 		resolve(workingDir, "node_modules", packageName),
 	]) {
 		if (existsSync(resolve(root, "package.json"))) return root;
@@ -212,7 +212,7 @@ function packageDiagnostics(
 }
 
 export function buildConnectorResources(workingDir: string): WorkbenchResource[] {
-	const settings = readJsonObject(resolve(workingDir, ".feynman", "settings.json"));
+	const settings = readJsonObject(resolve(workingDir, ".axorbis", "settings.json"));
 	const configuredEntries = Array.isArray(settings?.packages)
 		? settings.packages.map(packageSettingsEntry).filter((entry): entry is PackageSettingsEntry => Boolean(entry))
 		: [];

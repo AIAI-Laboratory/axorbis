@@ -70,7 +70,7 @@ export function buildSourceRuntimeArchive(
 		spawn = spawnSync,
 	} = {},
 ) {
-	const feynmanDir = resolve(appRoot, ".feynman");
+	const feynmanDir = resolve(appRoot, ".axorbis");
 	const archivePath = resolve(feynmanDir, "runtime-workspace.tgz");
 	const digestPath = resolve(feynmanDir, "runtime-workspace.sha256");
 	if (

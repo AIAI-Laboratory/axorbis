@@ -17,7 +17,7 @@ function createBundledWorkspace(
 	dependenciesByPackage: Record<string, Record<string, string>> = {},
 ): void {
 	for (const packageName of packageNames) {
-		const packageDir = resolve(appRoot, ".feynman", "npm", "node_modules", packageName);
+		const packageDir = resolve(appRoot, ".axorbis", "npm", "node_modules", packageName);
 		mkdirSync(packageDir, { recursive: true });
 		writeFileSync(
 			join(packageDir, "package.json"),
@@ -296,7 +296,7 @@ test("seedBundledWorkspacePackages treats copied bundled packages as satisfied",
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-bundle-"));
 	const homeRoot = mkdtempSync(join(tmpdir(), "feynman-home-"));
 	const agentDir = resolve(homeRoot, "agent");
-	const bundledPackageDir = resolve(appRoot, ".feynman", "npm", "node_modules", "pi-subagents");
+	const bundledPackageDir = resolve(appRoot, ".axorbis", "npm", "node_modules", "pi-subagents");
 	const existingPackageDir = resolve(homeRoot, "npm-global", "lib", "node_modules", "pi-subagents");
 
 	mkdirSync(agentDir, { recursive: true });
@@ -368,7 +368,7 @@ test("seedBundledWorkspacePackages prunes stale links from previous bundled runt
 	mkdirSync(resolve(globalRoot, "@external"), { recursive: true });
 	mkdirSync(externalTarget, { recursive: true });
 	createBundledWorkspace(appRoot, ["pi-subagents"]);
-	symlinkSync(resolve(appRoot, ".feynman", "npm", "node_modules", "@opentelemetry", "api"), stalePackagePath, "dir");
+	symlinkSync(resolve(appRoot, ".axorbis", "npm", "node_modules", "@opentelemetry", "api"), stalePackagePath, "dir");
 	symlinkSync(externalTarget, externalPackagePath, "dir");
 
 	const seeded = seedBundledWorkspacePackages(agentDir, appRoot, ["npm:pi-subagents"]);

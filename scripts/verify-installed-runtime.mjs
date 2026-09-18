@@ -96,7 +96,7 @@ export async function verifyRpcSurface(options = {}) {
 	const verificationTimeoutMs = options.timeoutMs ?? 45 * 60_000;
 	const home = mkdtempSync(resolve(tmpdir(), "feynman-installed-rpc-"));
 	const invocation = resolveChildProcessCommand(binaryPath, ["--mode", "rpc"]);
-	const malformedAgentsDir = resolve(home, ".feynman", "agent", "agents");
+	const malformedAgentsDir = resolve(home, ".axorbis", "agent", "agents");
 	let stderr = "";
 	let stdoutBuffer = "";
 	let commandsVerified = false;
@@ -124,7 +124,7 @@ export async function verifyRpcSurface(options = {}) {
 				env: {
 					...process.env,
 					DO_NOT_TRACK: "1",
-					FEYNMAN_HOME: home,
+					AXORBIS_HOME: home,
 					FEYNMAN_TELEMETRY: "0",
 					HOME: home,
 				},
@@ -407,7 +407,7 @@ export async function verifyWebAccessRegistrationGates() {
 	const configPath = resolve(root, "custom-config", "research-web.json");
 	const extensionPath = resolve(
 		packageRoot,
-		".feynman",
+		".axorbis",
 		"npm",
 		"node_modules",
 		"pi-web-access",
@@ -630,7 +630,7 @@ export async function verifyWindowsWebCookies() {
 		process.env.LOCALAPPDATA = localAppData;
 		process.env.USERPROFILE = root;
 
-		const runtimeRoot = resolve(packageRoot, ".feynman", "npm");
+		const runtimeRoot = resolve(packageRoot, ".axorbis", "npm");
 		const runtimeRequire = createRequire(resolve(runtimeRoot, "package.json"));
 		const jitiModule = await import(
 			pathToFileURL(runtimeRequire.resolve("jiti")).href
@@ -981,7 +981,7 @@ export async function verifyPiCliEndOfOptions(installedPackageRoot = packageRoot
 		),
 		resolve(
 			installedPackageRoot,
-			".feynman",
+			".axorbis",
 			"npm",
 			"node_modules",
 			"@earendil-works",
@@ -1076,7 +1076,7 @@ export async function verifyPiEditLineEndings(installedPackageRoot = packageRoot
 		),
 		resolve(
 			installedPackageRoot,
-			".feynman",
+			".axorbis",
 			"npm",
 			"node_modules",
 			"@earendil-works",

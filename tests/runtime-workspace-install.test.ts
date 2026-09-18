@@ -21,7 +21,7 @@ import {
 
 test("source checkout builds the exact authenticated runtime archive", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-runtime-source-"));
-	const feynmanDir = join(root, ".feynman");
+	const feynmanDir = join(root, ".axorbis");
 	const archivePath = join(feynmanDir, "runtime-workspace.tgz");
 	const digestPath = join(feynmanDir, "runtime-workspace.sha256");
 	const inheritedTarget = process.env.FEYNMAN_RUNTIME_WORKSPACE_TARGET;
@@ -118,7 +118,7 @@ test("source checkout builds the exact authenticated runtime archive", () => {
 
 test("source archive rebuild requires both archive and digest outputs", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-runtime-source-output-"));
-	const feynmanDir = join(root, ".feynman");
+	const feynmanDir = join(root, ".axorbis");
 	const archivePath = join(feynmanDir, "runtime-workspace.tgz");
 	const digestPath = join(feynmanDir, "runtime-workspace.sha256");
 	try {
@@ -159,7 +159,7 @@ test("source archive rebuild requires both archive and digest outputs", () => {
 
 test("source checkout rebuilds a mismatched archive and digest pair", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-runtime-source-mismatch-"));
-	const feynmanDir = join(root, ".feynman");
+	const feynmanDir = join(root, ".axorbis");
 	const archivePath = join(feynmanDir, "runtime-workspace.tgz");
 	const digestPath = join(feynmanDir, "runtime-workspace.sha256");
 	try {
@@ -189,7 +189,7 @@ test("source checkout rebuilds a mismatched archive and digest pair", () => {
 
 test("installed package cannot rebuild missing or damaged runtime archives", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-runtime-installed-"));
-	const feynmanDir = join(root, ".feynman");
+	const feynmanDir = join(root, ".axorbis");
 	try {
 		mkdirSync(feynmanDir);
 		writeFileSync(join(feynmanDir, "runtime-package-lock.json"), "{}\n");

@@ -5,8 +5,8 @@ import { constants } from "node:os";
 import {
 	buildPiArgs,
 	buildPiEnv,
-	ensureFeynmanCommandShim,
-	ensureFeynmanWorkspaceScaffold,
+	ensureAxorbisCommandShim,
+	ensureAxorbisWorkspaceScaffold,
 	type PiRuntimeOptions,
 	resolvePiPaths,
 	toNodeImportSpecifier,
@@ -66,8 +66,8 @@ export async function launchPiChat(options: PiRuntimeOptions): Promise<void> {
 		? ["--import", toNodeImportSpecifier(tsxLoaderPath), "--import", toNodeImportSpecifier(promisePolyfillSourcePath)]
 		: ["--import", toNodeImportSpecifier(promisePolyfillPath)];
 	const executables = await resolveAllExecutables();
-	ensureFeynmanCommandShim(options.appRoot, options.feynmanAgentDir);
-	ensureFeynmanWorkspaceScaffold(options.workingDir);
+	ensureAxorbisCommandShim(options.appRoot, options.feynmanAgentDir);
+	ensureAxorbisWorkspaceScaffold(options.workingDir);
 
 	const child = spawn(process.execPath, [...importArgs, wrapperPath, piMainPath, ...buildPiArgs(options, paths)], {
 		cwd: options.workingDir,

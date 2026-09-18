@@ -40,7 +40,7 @@ if (candidateAppRoots.length === 0) {
 }
 
 const root = mkdtempSync(resolve(tmpdir(), "feynman-stale-pi-upgrade-"));
-const feynmanHome = resolve(root, ".feynman");
+const feynmanHome = resolve(root, ".axorbis");
 const agentDir = resolve(feynmanHome, "agent");
 const managedNodeModulesPath = resolve(agentDir, "npm", "node_modules");
 const persistentNodeModulesPath = process.platform === "win32"
@@ -297,8 +297,8 @@ function assertPatchedOtelTree(trustedOtelSnapshot, trustedOtelRealPath, expecte
 }
 
 function extractCandidateRuntimeBaseline(appRoot, index) {
-	const archivePath = resolve(appRoot, ".feynman", "runtime-workspace.tgz");
-	const currentRuntimeRoot = resolve(appRoot, ".feynman", "npm");
+	const archivePath = resolve(appRoot, ".axorbis", "runtime-workspace.tgz");
+	const currentRuntimeRoot = resolve(appRoot, ".axorbis", "npm");
 	if (!existsSync(archivePath)) {
 		if (!existsSync(currentRuntimeRoot)) {
 			throw new Error(`Feynman's candidate runtime is unavailable under ${appRoot}`);
@@ -329,7 +329,7 @@ function runFeynman(pass) {
 		env: {
 			...process.env,
 			DO_NOT_TRACK: "1",
-			FEYNMAN_HOME: root,
+			AXORBIS_HOME: root,
 			HOME: root,
 		},
 		input: "",
@@ -393,10 +393,10 @@ runWithTemporaryTreeCleanup(root, () => {
 			baselineRuntimeRoot,
 			directBraceRoot,
 			directBraceSnapshot: snapshotTree(directBraceRoot),
-			runtimeBraceRoot: resolve(appRoot, ".feynman", "npm", "node_modules", "brace-expansion"),
+			runtimeBraceRoot: resolve(appRoot, ".axorbis", "npm", "node_modules", "brace-expansion"),
 			baselineRuntimeBraceRoot,
 			baselineRuntimeBraceSnapshot: snapshotTree(baselineRuntimeBraceRoot),
-			runtimeOtelRoot: resolve(appRoot, ".feynman", "npm", "node_modules", "pi-otel"),
+			runtimeOtelRoot: resolve(appRoot, ".axorbis", "npm", "node_modules", "pi-otel"),
 			baselineRuntimeOtelRoot,
 			baselineRuntimeOtelSnapshot: snapshotTree(baselineRuntimeOtelRoot),
 			baselineRuntimeOtelConfig: readFileSync(

@@ -19,7 +19,7 @@ test("loadPiWebAccessConfig returns empty config when Pi web config is missing",
 	assert.deepEqual(loadPiWebAccessConfig(configPath), {});
 });
 
-test("getPiWebSearchConfigPath respects FEYNMAN_HOME semantics", () => {
+test("getPiWebSearchConfigPath respects AXORBIS_HOME semantics", () => {
 	assert.equal(getPiWebSearchConfigPath("/tmp/custom-home"), "/tmp/custom-home/.feynman/web-search.json");
 });
 
@@ -77,7 +77,7 @@ test("savePiWebAccessConfig restricts web-search.json permissions", { skip: proc
 test("getPiWebAccessStatus reads Pi web-access config directly", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-pi-web-"));
 	const configPath = getPiWebSearchConfigPath(root);
-	mkdirSync(join(root, ".feynman"), { recursive: true });
+	mkdirSync(join(root, ".axorbis"), { recursive: true });
 	writeFileSync(
 		configPath,
 		JSON.stringify({
@@ -104,7 +104,7 @@ test("getPiWebAccessStatus reads Pi web-access config directly", () => {
 test("getPiWebAccessStatus reads Gemini routes directly", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-pi-web-"));
 	const configPath = getPiWebSearchConfigPath(root);
-	mkdirSync(join(root, ".feynman"), { recursive: true });
+	mkdirSync(join(root, ".axorbis"), { recursive: true });
 	writeFileSync(
 		configPath,
 		JSON.stringify({

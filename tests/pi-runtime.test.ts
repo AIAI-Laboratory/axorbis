@@ -10,10 +10,10 @@ import {
 	applyFeynmanPackageManagerEnv,
 	buildPiArgs,
 	buildPiEnv,
-	ensureFeynmanCommandShim,
-	ensureFeynmanWorkspaceScaffold,
-	getFeynmanCommandShimDir,
-	getFeynmanNpmGlobalNodeModulesPath,
+	ensureAxorbisCommandShim,
+	ensureAxorbisWorkspaceScaffold,
+	getAxorbisCommandShimDir,
+	getAxorbisNpmGlobalNodeModulesPath,
 	resolvePiPaths,
 	toNodeImportSpecifier,
 	validatePiInstallation,
@@ -24,19 +24,19 @@ import {
 	patchPiCliArgsSource,
 } from "../scripts/lib/pi-cli-args-patch.mjs";
 
-test("getFeynmanNpmGlobalNodeModulesPath follows npm prefix layout on each platform", () => {
-	const agentDir = join("home", ".feynman", "agent");
+test("getAxorbisNpmGlobalNodeModulesPath follows npm prefix layout on each platform", () => {
+	const agentDir = join("home", ".axorbis", "agent");
 	assert.equal(
-		getFeynmanNpmGlobalNodeModulesPath(agentDir, "linux"),
-		resolve("home", ".feynman", "npm-global", "lib", "node_modules"),
+		getAxorbisNpmGlobalNodeModulesPath(agentDir, "linux"),
+		resolve("home", ".axorbis", "npm-global", "lib", "node_modules"),
 	);
 	assert.equal(
-		getFeynmanNpmGlobalNodeModulesPath(agentDir, "darwin"),
-		resolve("home", ".feynman", "npm-global", "lib", "node_modules"),
+		getAxorbisNpmGlobalNodeModulesPath(agentDir, "darwin"),
+		resolve("home", ".axorbis", "npm-global", "lib", "node_modules"),
 	);
 	assert.equal(
-		getFeynmanNpmGlobalNodeModulesPath(agentDir, "win32"),
-		resolve("home", ".feynman", "npm-global", "node_modules"),
+		getAxorbisNpmGlobalNodeModulesPath(agentDir, "win32"),
+		resolve("home", ".axorbis", "npm-global", "node_modules"),
 	);
 });
 
@@ -441,7 +441,7 @@ test("buildPiEnv clears inherited telemetry collectors when Feynman telemetry is
 	}
 });
 
-test("ensureFeynmanCommandShim creates a repo-local feynman launcher", () => {
+test("ensureAxorbisCommandShim creates a repo-local feynman launcher", () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-shim-app-"));
 	const homeRoot = mkdtempSync(join(tmpdir(), "feynman-shim-home-"));
 	const feynmanAgentDir = join(homeRoot, "agent");
@@ -454,7 +454,7 @@ test("ensureFeynmanCommandShim creates a repo-local feynman launcher", () => {
 		"utf8",
 	);
 
-	const shimPath = ensureFeynmanCommandShim(appRoot, feynmanAgentDir);
+	const shimPath = ensureAxorbisCommandShim(appRoot, feynmanAgentDir);
 	const result = spawnSync(shimPath, ["alpha", "status"], {
 		encoding: "utf8",
 		env: {
@@ -463,27 +463,27 @@ test("ensureFeynmanCommandShim creates a repo-local feynman launcher", () => {
 		},
 	});
 
-	assert.equal(getFeynmanCommandShimDir(feynmanAgentDir), join(homeRoot, "bin"));
+	assert.equal(getAxorbisCommandShimDir(feynmanAgentDir), join(homeRoot, "bin"));
 	assert.equal(shimPath, join(homeRoot, "bin", "feynman"));
 	assert.equal(result.status, 0);
 	assert.deepEqual(JSON.parse(result.stdout), { argv: ["alpha", "status"], bin: feynmanBinPath });
 });
 
-test("ensureFeynmanWorkspaceScaffold creates default artifact directories", () => {
+test("ensureAxorbisWorkspaceScaffold creates default artifact directories", () => {
 	const workingDir = mkdtempSync(join(tmpdir(), "feynman-workspace-scaffold-"));
 
-	assert.equal(ensureFeynmanWorkspaceScaffold(workingDir), true);
+	assert.equal(ensureAxorbisWorkspaceScaffold(workingDir), true);
 
 	for (const relPath of ["outputs/.plans", "outputs/.drafts", "papers", "notes"]) {
 		assert.equal(existsSync(join(workingDir, relPath)), true, relPath);
 	}
 });
 
-test("ensureFeynmanWorkspaceScaffold does not block read-only research sessions", () => {
+test("ensureAxorbisWorkspaceScaffold does not block read-only research sessions", () => {
 	const workingDir = mkdtempSync(join(tmpdir(), "feynman-workspace-readonly-"));
 	const permissionError = Object.assign(new Error("read-only filesystem"), { code: "EROFS" });
 
-	assert.equal(ensureFeynmanWorkspaceScaffold(workingDir, () => {
+	assert.equal(ensureAxorbisWorkspaceScaffold(workingDir, () => {
 		throw permissionError;
 	}), false);
 });
@@ -549,7 +549,7 @@ test("resolvePiPaths includes the Promise.withResolvers polyfill path", () => {
 
 test("resolvePiPaths falls back to the vendored runtime workspace in packed installs", () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-packed-runtime-"));
-	const piDist = join(appRoot, ".feynman", "npm", "node_modules", "@earendil-works", "pi-coding-agent", "dist");
+	const piDist = join(appRoot, ".axorbis", "npm", "node_modules", "@earendil-works", "pi-coding-agent", "dist");
 	mkdirSync(piDist, { recursive: true });
 	writeFileSync(join(piDist, "cli.js"), "", "utf8");
 	writeFileSync(join(piDist, "main.js"), "", "utf8");
@@ -563,7 +563,7 @@ test("resolvePiPaths falls back to the vendored runtime workspace in packed inst
 
 	const paths = resolvePiPaths(appRoot);
 
-	assert.equal(paths.piPackageRoot, join(appRoot, ".feynman", "npm", "node_modules", "@earendil-works", "pi-coding-agent"));
+	assert.equal(paths.piPackageRoot, join(appRoot, ".axorbis", "npm", "node_modules", "@earendil-works", "pi-coding-agent"));
 	assert.equal(paths.piCliPath, join(piDist, "cli.js"));
 	assert.deepEqual(validatePiInstallation(appRoot), []);
 });
@@ -604,9 +604,9 @@ test("resolveBundledAlphaCliPath resolves hoisted package installs before bundle
 test("resolveBundledAlphaCliPath prefers package-local alpha and falls back to the bundled workspace", () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-alpha-cli-"));
 	const packageLocalAlpha = join(appRoot, "node_modules", "@advaitpaliwal", "alpha-hub", "bin", "alpha");
-	const bundledAlpha = join(appRoot, ".feynman", "npm", "node_modules", "@advaitpaliwal", "alpha-hub", "bin", "alpha");
+	const bundledAlpha = join(appRoot, ".axorbis", "npm", "node_modules", "@advaitpaliwal", "alpha-hub", "bin", "alpha");
 
-	mkdirSync(join(appRoot, ".feynman", "npm", "node_modules", "@advaitpaliwal", "alpha-hub", "bin"), { recursive: true });
+	mkdirSync(join(appRoot, ".axorbis", "npm", "node_modules", "@advaitpaliwal", "alpha-hub", "bin"), { recursive: true });
 	writeFileSync(bundledAlpha, "", "utf8");
 	assert.equal(resolveBundledAlphaCliPath(appRoot), bundledAlpha);
 

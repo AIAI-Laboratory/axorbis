@@ -179,9 +179,9 @@ export function syncBundledAssets(appRoot: string, agentDir: string): BootstrapS
 		skipped: [],
 	};
 
-	syncManagedFiles(resolve(appRoot, ".feynman", "themes"), resolve(agentDir, "themes"), "themes", state, result);
-	syncManagedFiles(resolve(appRoot, ".feynman", "agents"), resolve(agentDir, "agents"), "agents", state, result);
-	syncManagedFiles(resolve(appRoot, ".feynman", "config"), agentDir, "config", state, result);
+	syncManagedFiles(resolve(appRoot, ".axorbis", "themes"), resolve(agentDir, "themes"), "themes", state, result);
+	syncManagedFiles(resolve(appRoot, ".axorbis", "agents"), resolve(agentDir, "agents"), "agents", state, result);
+	syncManagedFiles(resolve(appRoot, ".axorbis", "config"), agentDir, "config", state, result);
 	syncManagedFiles(resolve(appRoot, "skills"), resolve(agentDir, "skills"), "skills", state, result);
 
 	writeBootstrapState(statePath, state);

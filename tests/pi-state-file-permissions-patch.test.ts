@@ -101,13 +101,13 @@ test("launch-time repair reaches bundled, vendored, global, and agent-managed Pi
 		/assertPiPackageVersion\(workspacePiPackageRoot, "vendored pi-coding-agent"\);[\s\S]*patchFilesIfPresent\(\[authStoragePath, workspaceAuthStoragePath\]/,
 	);
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-pi-state-file-roots-"));
-	const agentDir = join(appRoot, "agent-home", ".feynman");
+	const agentDir = join(appRoot, "agent-home", ".axorbis");
 	const globalNodeModules = process.platform === "win32"
 		? join(appRoot, "agent-home", "npm-global", "node_modules")
 		: join(appRoot, "agent-home", "npm-global", "lib", "node_modules");
 	const nodeModulesRoots = [
 		join(appRoot, "node_modules"),
-		join(appRoot, ".feynman", "npm", "node_modules"),
+		join(appRoot, ".axorbis", "npm", "node_modules"),
 		globalNodeModules,
 		join(agentDir, "npm", "node_modules"),
 	];
@@ -126,7 +126,7 @@ test("launch-time repair reaches bundled, vendored, global, and agent-managed Pi
 				JSON.stringify({
 					name: "@earendil-works/pi-coding-agent",
 					version: PI_STATE_FILE_PERMISSIONS_REQUIRED_VERSION,
-					piConfig: { name: "feynman", configDir: ".feynman" },
+					piConfig: { name: "feynman", configDir: ".axorbis" },
 				}),
 				"utf8",
 			);
@@ -200,7 +200,7 @@ test(
 		try {
 			for (const nodeModulesRoot of [
 				resolve(packageRoot, "node_modules"),
-				resolve(packageRoot, ".feynman", "npm", "node_modules"),
+				resolve(packageRoot, ".axorbis", "npm", "node_modules"),
 			]) {
 				const scope = resolve(nodeModulesRoot, "@earendil-works");
 				mkdirSync(scope, { recursive: true });

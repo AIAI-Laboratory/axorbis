@@ -18,7 +18,7 @@ function makeSettingsWorkspace(): string {
 	mkdirSync(join(root, "outputs", ".drafts"), { recursive: true });
 	mkdirSync(join(root, "papers"), { recursive: true });
 	mkdirSync(join(root, "notes"), { recursive: true });
-	mkdirSync(join(root, ".feynman", "agents"), { recursive: true });
+	mkdirSync(join(root, ".axorbis", "agents"), { recursive: true });
 	writeFileSync(join(root, "CHANGELOG.md"), [
 		"# Changelog",
 		"",

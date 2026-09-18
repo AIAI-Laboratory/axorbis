@@ -113,7 +113,7 @@ test("workbench server exports an artifact through the authenticated cloud expor
 		const logPath = workbenchDataPath(root, "cloud-exports.jsonl");
 		assert.equal(existsSync(logPath), true);
 		assert.match(readFileSync(logPath, "utf8"), /"status":"complete"/);
-		assert.equal(existsSync(join(root, ".feynman", "workbench", "cloud-exports.jsonl")), false);
+		assert.equal(existsSync(join(root, ".axorbis", "workbench", "cloud-exports.jsonl")), false);
 		assert.match(payload.export.target, /^file:\/\//);
 	} finally {
 		await handle.close();

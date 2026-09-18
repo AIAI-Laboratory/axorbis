@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
-import { ensureFeynmanActiveOrg, getFeynmanActiveOrgDir, getFeynmanHome } from "../config/paths.js";
+import { ensureAxorbisActiveOrg, getAxorbisActiveOrgDir, getAxorbisHome } from "../config/paths.js";
 
 const WORKBENCH_DATA_SCHEMA = "feynman.workbenchDataRoot.v1";
 const WORKBENCH_INDEX_SCHEMA = "feynman.workbenchWorkspaceIndex.v1";
@@ -37,11 +37,11 @@ function workspaceIdFromPath(workingDir: string): string {
 }
 
 export function getWorkbenchDataHome(): string {
-	const override = process.env.FEYNMAN_WORKBENCH_HOME?.trim();
-	return override ? resolve(override) : resolve(getFeynmanActiveOrgDir(), "workbench");
+	const override = process.env.AXORBIS_WORKBENCH_HOME?.trim();
+	return override ? resolve(override) : resolve(getAxorbisActiveOrgDir(), "workbench");
 }
 
-export function getLegacyWorkbenchDataHome(home = getFeynmanHome()): string {
+export function getLegacyWorkbenchDataHome(home = getAxorbisHome()): string {
 	return resolve(home, "workbench");
 }
 
@@ -58,7 +58,7 @@ export function getLegacyHomeWorkbenchDataRoot(workingDir: string): string {
 }
 
 export function getLegacyWorkbenchDataRoot(workingDir: string): string {
-	return resolve(workingDir, ".feynman", "workbench");
+	return resolve(workingDir, ".axorbis", "workbench");
 }
 
 export function legacyWorkbenchDataPath(workingDir: string, ...segments: string[]): string {
@@ -66,7 +66,7 @@ export function legacyWorkbenchDataPath(workingDir: string, ...segments: string[
 }
 
 function writeWorkspaceManifest(workingDir: string, root: string): void {
-	const activeOrg = ensureFeynmanActiveOrg();
+	const activeOrg = ensureAxorbisActiveOrg();
 	const path = join(root, "workspace.json");
 	const createdAt = (() => {
 		if (!existsSync(path)) return nowIso();
@@ -92,7 +92,7 @@ function writeWorkspaceManifest(workingDir: string, root: string): void {
 }
 
 function writeWorkbenchIndex(workingDir: string, root: string): void {
-	const activeOrg = ensureFeynmanActiveOrg();
+	const activeOrg = ensureAxorbisActiveOrg();
 	const path = resolve(getWorkbenchDataHome(), "workspaces.json");
 	const workspaceId = getWorkbenchWorkspaceId(workingDir);
 	const canonical = canonicalWorkspacePath(workingDir);

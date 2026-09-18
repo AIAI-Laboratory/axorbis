@@ -8,17 +8,17 @@ import { syncBundledAssets } from "../engine/bootstrap/sync.js";
 
 function createAppRoot(): string {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-app-"));
-	mkdirSync(join(appRoot, ".feynman", "themes"), { recursive: true });
-	mkdirSync(join(appRoot, ".feynman", "agents"), { recursive: true });
-	writeFileSync(join(appRoot, ".feynman", "themes", "feynman.json"), '{"theme":"v1"}\n', "utf8");
-	writeFileSync(join(appRoot, ".feynman", "agents", "researcher.md"), "# v1\n", "utf8");
+	mkdirSync(join(appRoot, ".axorbis", "themes"), { recursive: true });
+	mkdirSync(join(appRoot, ".axorbis", "agents"), { recursive: true });
+	writeFileSync(join(appRoot, ".axorbis", "themes", "feynman.json"), '{"theme":"v1"}\n', "utf8");
+	writeFileSync(join(appRoot, ".axorbis", "agents", "researcher.md"), "# v1\n", "utf8");
 	return appRoot;
 }
 
 test("syncBundledAssets copies missing bundled files", () => {
 	const appRoot = createAppRoot();
 	const home = mkdtempSync(join(tmpdir(), "feynman-home-"));
-	process.env.FEYNMAN_HOME = home;
+	process.env.AXORBIS_HOME = home;
 	const agentDir = join(home, "agent");
 	mkdirSync(agentDir, { recursive: true });
 
@@ -32,14 +32,14 @@ test("syncBundledAssets copies missing bundled files", () => {
 test("syncBundledAssets preserves user-modified files and updates managed files", () => {
 	const appRoot = createAppRoot();
 	const home = mkdtempSync(join(tmpdir(), "feynman-home-"));
-	process.env.FEYNMAN_HOME = home;
+	process.env.AXORBIS_HOME = home;
 	const agentDir = join(home, "agent");
 	mkdirSync(agentDir, { recursive: true });
 
 	syncBundledAssets(appRoot, agentDir);
 
-	writeFileSync(join(appRoot, ".feynman", "themes", "feynman.json"), '{"theme":"v2"}\n', "utf8");
-	writeFileSync(join(appRoot, ".feynman", "agents", "researcher.md"), "# v2\n", "utf8");
+	writeFileSync(join(appRoot, ".axorbis", "themes", "feynman.json"), '{"theme":"v2"}\n', "utf8");
+	writeFileSync(join(appRoot, ".axorbis", "agents", "researcher.md"), "# v2\n", "utf8");
 	writeFileSync(join(agentDir, "agents", "researcher.md"), "# user-custom\n", "utf8");
 
 	const result = syncBundledAssets(appRoot, agentDir);
@@ -53,7 +53,7 @@ test("syncBundledAssets preserves user-modified files and updates managed files"
 test("syncBundledAssets removes deleted managed files but preserves user-modified stale files", () => {
 	const appRoot = createAppRoot();
 	const home = mkdtempSync(join(tmpdir(), "feynman-home-"));
-	process.env.FEYNMAN_HOME = home;
+	process.env.AXORBIS_HOME = home;
 	const agentDir = join(home, "agent");
 	mkdirSync(agentDir, { recursive: true });
 
@@ -84,9 +84,9 @@ test("syncBundledAssets removes deleted managed files but preserves user-modifie
 test("syncBundledAssets installs Feynman's Option+Enter newline binding without overriding user config", async () => {
 	const appRoot = createAppRoot();
 	const home = mkdtempSync(join(tmpdir(), "feynman-home-"));
-	process.env.FEYNMAN_HOME = home;
+	process.env.AXORBIS_HOME = home;
 	const agentDir = join(home, "agent");
-	const bundledConfigDir = join(appRoot, ".feynman", "config");
+	const bundledConfigDir = join(appRoot, ".axorbis", "config");
 	mkdirSync(bundledConfigDir, { recursive: true });
 	writeFileSync(join(bundledConfigDir, "keybindings.json"), JSON.stringify({
 		"tui.input.newLine": ["ctrl+j", "alt+enter"],

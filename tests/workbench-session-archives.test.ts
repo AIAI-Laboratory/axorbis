@@ -66,7 +66,7 @@ test("buildWorkbenchState emits Pi-derived compaction and branch archive rows", 
 	const root = makeWorkspace();
 	try {
 		const piSessionId = workbenchPiSessionId("scaling-laws");
-		const piSessionDir = join(root, ".feynman", "sessions");
+		const piSessionDir = join(root, ".axorbis", "sessions");
 		mkdirSync(piSessionDir, { recursive: true });
 		const piSessionPath = join(piSessionDir, `2026-06-30T08-30-00-000Z_${piSessionId}.jsonl`);
 		writeFileSync(piSessionPath, [

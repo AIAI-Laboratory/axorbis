@@ -493,7 +493,7 @@ function buildScienceConnectorCatalogResources(existingResources: WorkbenchResou
 }
 
 function buildSpecialistResources(workingDir: string): WorkbenchResource[] {
-	return directMarkdownFiles(resolve(workingDir, ".feynman", "agents"))
+	return directMarkdownFiles(resolve(workingDir, ".axorbis", "agents"))
 		.map((path) => markdownResource(workingDir, path, {
 			source: "Feynman specialist",
 			section: "Built-in specialists",
@@ -681,7 +681,7 @@ function buildPermissionResources(workingDir: string, settings: WorkbenchSetting
 			id: "pi-project-trust",
 			name: "Project trust",
 			description: "Pi project trust gates project settings, packages, skills, prompts, and extensions before they are loaded.",
-			status: existsSync(resolve(workingDir, ".feynman", "settings.json")) ? "configured" : "available",
+			status: existsSync(resolve(workingDir, ".axorbis", "settings.json")) ? "configured" : "available",
 			source: "Pi security model",
 			section: "Trust boundary",
 			path: ".feynman/settings.json",
@@ -857,7 +857,7 @@ function buildCustomConnectorResources(settings: WorkbenchSettings, workingDir: 
 function buildStorageResources(workingDir: string, artifacts: WorkbenchArtifact[]): WorkbenchResource[] {
 	const dataRoot = getWorkbenchDataRoot(workingDir);
 	const chatCount = countFiles(migratedWorkbenchDataPath(workingDir, "sessions"), (name) => name.endsWith(".json"));
-	const piSessionCount = countFiles(resolve(workingDir, ".feynman", "sessions"), (name) => name.endsWith(".jsonl"));
+	const piSessionCount = countFiles(resolve(workingDir, ".axorbis", "sessions"), (name) => name.endsWith(".jsonl"));
 	const artifactBytes = artifacts.reduce((sum, artifact) => sum + artifact.sizeBytes, 0);
 	const workbenchUsage = directorySize(dataRoot);
 	const cloudTargets = listWorkbenchCloudExportTargets(workingDir);
@@ -966,7 +966,7 @@ function buildUsageResources(
 function buildGeneralResources(workingDir: string): WorkbenchResource[] {
 	const packageJson = readJsonObject(resolve(workingDir, "package.json"));
 	const piPackageJson = readJsonObject(resolve(workingDir, "node_modules", "@earendil-works", "pi-coding-agent", "package.json"));
-	const settings = readJsonObject(resolve(workingDir, ".feynman", "settings.json"));
+	const settings = readJsonObject(resolve(workingDir, ".axorbis", "settings.json"));
 	const pythonRuntime = resolvePythonRuntimeCommand();
 	const rRuntime = resolveRRuntimeCommand();
 	const rscriptRuntime = resolveRscriptRuntimeCommand();

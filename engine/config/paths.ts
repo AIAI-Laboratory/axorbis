@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 
 const ACTIVE_ORG_SCHEMA = "feynman.activeOrg.v1";
 
-export type FeynmanActiveOrg = {
+export type AxorbisActiveOrg = {
 	schema: typeof ACTIVE_ORG_SCHEMA;
 	org_uuid: string;
 	org_name: string;
@@ -13,39 +13,39 @@ export type FeynmanActiveOrg = {
 	login_owner_data_dir: string;
 };
 
-export function getFeynmanHome(): string {
-	return resolve(process.env.FEYNMAN_HOME ?? homedir(), ".feynman");
+export function getAxorbisHome(): string {
+	return resolve(process.env.AXORBIS_HOME ?? homedir(), ".axorbis");
 }
 
-export function getFeynmanOrgsDir(home = getFeynmanHome()): string {
+export function getAxorbisOrgsDir(home = getAxorbisHome()): string {
 	return resolve(home, "orgs");
 }
 
-export function getFeynmanActiveOrgPath(home = getFeynmanHome()): string {
+export function getAxorbisActiveOrgPath(home = getAxorbisHome()): string {
 	return resolve(home, "active-org.json");
 }
 
-export function getFeynmanAgentDir(home = getFeynmanHome()): string {
+export function getAxorbisAgentDir(home = getAxorbisHome()): string {
 	return resolve(home, "agent");
 }
 
-export function getFeynmanMemoryDir(home = getFeynmanHome()): string {
+export function getAxorbisMemoryDir(home = getAxorbisHome()): string {
 	return resolve(home, "memory");
 }
 
-export function getFeynmanStateDir(home = getFeynmanHome()): string {
+export function getAxorbisStateDir(home = getAxorbisHome()): string {
 	return resolve(home, ".state");
 }
 
-export function getDefaultSessionDir(home = getFeynmanHome()): string {
+export function getDefaultSessionDir(home = getAxorbisHome()): string {
 	return resolve(home, "sessions");
 }
 
-export function getBootstrapStatePath(home = getFeynmanHome()): string {
-	return resolve(getFeynmanStateDir(home), "bootstrap.json");
+export function getBootstrapStatePath(home = getAxorbisHome()): string {
+	return resolve(getAxorbisStateDir(home), "bootstrap.json");
 }
 
-function normalizeActiveOrg(home: string, value: unknown): FeynmanActiveOrg | undefined {
+function normalizeActiveOrg(home: string, value: unknown): AxorbisActiveOrg | undefined {
 	if (!value || typeof value !== "object") return undefined;
 	const record = value as Record<string, unknown>;
 	const orgUuid = typeof record.org_uuid === "string" && record.org_uuid.trim() ? record.org_uuid.trim() : undefined;
@@ -55,7 +55,7 @@ function normalizeActiveOrg(home: string, value: unknown): FeynmanActiveOrg | un
 		: randomUUID();
 	const orgName = typeof record.org_name === "string" && record.org_name.trim()
 		? record.org_name.trim()
-		: "Feynman Local Workspace";
+		: "Axorbis Local Workspace";
 	const ownerDir = typeof record.login_owner_data_dir === "string" && record.login_owner_data_dir.trim()
 		? record.login_owner_data_dir.trim()
 		: home;
@@ -68,11 +68,11 @@ function normalizeActiveOrg(home: string, value: unknown): FeynmanActiveOrg | un
 	};
 }
 
-function activeOrgJson(org: FeynmanActiveOrg): string {
+function activeOrgJson(org: AxorbisActiveOrg): string {
 	return `${JSON.stringify(org, null, 2)}\n`;
 }
 
-function writeActiveOrgAtomic(path: string, org: FeynmanActiveOrg): void {
+function writeActiveOrgAtomic(path: string, org: AxorbisActiveOrg): void {
 	const temporaryPath = `${path}.${process.pid}.${randomUUID()}.tmp`;
 	try {
 		writeFileSync(temporaryPath, activeOrgJson(org), { encoding: "utf8", mode: 0o600, flag: "wx" });
@@ -82,7 +82,7 @@ function writeActiveOrgAtomic(path: string, org: FeynmanActiveOrg): void {
 	}
 }
 
-function createActiveOrg(path: string, org: FeynmanActiveOrg): boolean {
+function createActiveOrg(path: string, org: AxorbisActiveOrg): boolean {
 	const temporaryPath = `${path}.${process.pid}.${randomUUID()}.tmp`;
 	try {
 		writeFileSync(temporaryPath, activeOrgJson(org), { encoding: "utf8", mode: 0o600, flag: "wx" });
@@ -98,10 +98,10 @@ function createActiveOrg(path: string, org: FeynmanActiveOrg): boolean {
 	}
 }
 
-export function ensureFeynmanActiveOrg(home = getFeynmanHome()): FeynmanActiveOrg {
+export function ensureAxorbisActiveOrg(home = getAxorbisHome()): AxorbisActiveOrg {
 	mkdirSync(home, { recursive: true });
-	mkdirSync(getFeynmanOrgsDir(home), { recursive: true });
-	const path = getFeynmanActiveOrgPath(home);
+	mkdirSync(getAxorbisOrgsDir(home), { recursive: true });
+	const path = getAxorbisActiveOrgPath(home);
 	if (existsSync(path)) {
 		try {
 			const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
@@ -110,17 +110,17 @@ export function ensureFeynmanActiveOrg(home = getFeynmanHome()): FeynmanActiveOr
 				if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
 					writeActiveOrgAtomic(path, normalized);
 				}
-				mkdirSync(resolve(getFeynmanOrgsDir(home), normalized.org_uuid), { recursive: true });
+				mkdirSync(resolve(getAxorbisOrgsDir(home), normalized.org_uuid), { recursive: true });
 				return normalized;
 			}
 		} catch {
 			// Fall through and create a fresh local org manifest below.
 		}
 	}
-	const org: FeynmanActiveOrg = {
+	const org: AxorbisActiveOrg = {
 		schema: ACTIVE_ORG_SCHEMA,
 		org_uuid: randomUUID(),
-		org_name: "Feynman Local Workspace",
+		org_name: "Axorbis Local Workspace",
 		account_uuid: randomUUID(),
 		login_owner_data_dir: home,
 	};
@@ -128,7 +128,7 @@ export function ensureFeynmanActiveOrg(home = getFeynmanHome()): FeynmanActiveOr
 		try {
 			const existing = normalizeActiveOrg(home, JSON.parse(readFileSync(path, "utf8")));
 			if (existing) {
-				mkdirSync(resolve(getFeynmanOrgsDir(home), existing.org_uuid), { recursive: true });
+				mkdirSync(resolve(getAxorbisOrgsDir(home), existing.org_uuid), { recursive: true });
 				return existing;
 			}
 		} catch {
@@ -136,26 +136,26 @@ export function ensureFeynmanActiveOrg(home = getFeynmanHome()): FeynmanActiveOr
 		}
 		writeActiveOrgAtomic(path, org);
 	}
-	mkdirSync(resolve(getFeynmanOrgsDir(home), org.org_uuid), { recursive: true });
+	mkdirSync(resolve(getAxorbisOrgsDir(home), org.org_uuid), { recursive: true });
 	return org;
 }
 
-export function getFeynmanActiveOrgDir(home = getFeynmanHome()): string {
-	return resolve(getFeynmanOrgsDir(home), ensureFeynmanActiveOrg(home).org_uuid);
+export function getAxorbisActiveOrgDir(home = getAxorbisHome()): string {
+	return resolve(getAxorbisOrgsDir(home), ensureAxorbisActiveOrg(home).org_uuid);
 }
 
-export function getFeynmanOrgDatabasePath(home = getFeynmanHome()): string {
-	return resolve(getFeynmanActiveOrgDir(home), "feynman-workbench.db");
+export function getAxorbisOrgDatabasePath(home = getAxorbisHome()): string {
+	return resolve(getAxorbisActiveOrgDir(home), "feynman-workbench.db");
 }
 
-export function ensureFeynmanHome(home = getFeynmanHome()): void {
+export function ensureAxorbisHome(home = getAxorbisHome()): void {
 	for (const dir of [
 		home,
-		getFeynmanOrgsDir(home),
-		getFeynmanActiveOrgDir(home),
-		getFeynmanAgentDir(home),
-		getFeynmanMemoryDir(home),
-		getFeynmanStateDir(home),
+		getAxorbisOrgsDir(home),
+		getAxorbisActiveOrgDir(home),
+		getAxorbisAgentDir(home),
+		getAxorbisMemoryDir(home),
+		getAxorbisStateDir(home),
 		getDefaultSessionDir(home),
 	]) {
 		mkdirSync(dir, { recursive: true });

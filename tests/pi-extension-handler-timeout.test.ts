@@ -311,7 +311,7 @@ test("Pi 0.85.1 extension timeout patch is exact, idempotent, and fail closed", 
 });
 
 test("root, vendored, and archived Pi runners accept the same in-memory repair", () => {
-	const archivePath = resolve(appRoot, ".feynman", "runtime-workspace.tgz");
+	const archivePath = resolve(appRoot, ".axorbis", "runtime-workspace.tgz");
 	const surfaces = [
 		{
 			label: "root package",
@@ -327,7 +327,7 @@ test("root, vendored, and archived Pi runners accept the same in-memory repair",
 					readFileSync(
 						resolve(
 							appRoot,
-							".feynman",
+							".axorbis",
 							"npm",
 							"node_modules",
 							"@earendil-works",
@@ -342,7 +342,7 @@ test("root, vendored, and archived Pi runners accept the same in-memory repair",
 				readFileSync(
 					resolve(
 						appRoot,
-						".feynman",
+						".axorbis",
 						"npm",
 						"node_modules",
 						"@earendil-works",

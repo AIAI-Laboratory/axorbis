@@ -345,7 +345,7 @@ function validateBundle(bundleRoot, target) {
 	assertPortableSymlinks(bundleRoot);
 	const nodeExecutable = resolveBundledNodeExecutable(bundleRoot, target);
 
-	const betterSqlitePackageJson = resolve(bundleRoot, "app", ".feynman", "npm", "node_modules", "better-sqlite3", "package.json");
+	const betterSqlitePackageJson = resolve(bundleRoot, "app", ".axorbis", "npm", "node_modules", "better-sqlite3", "package.json");
 	if (!existsSync(betterSqlitePackageJson)) {
 		logStep("skipping better-sqlite3 validation; sqlite-backed packages are not bundled for this Node runtime");
 	} else {
@@ -407,7 +407,7 @@ async function packBundle(bundleRoot, target, outDir) {
 }
 
 export function finalizeNativeRuntimeWorkspace(appDir) {
-	const appFeynmanDir = resolve(appDir, ".feynman");
+	const appFeynmanDir = resolve(appDir, ".axorbis");
 	const workspaceDir = resolve(appFeynmanDir, "npm");
 	const archivePath = resolve(appFeynmanDir, "runtime-workspace.tgz");
 	const digestPath = resolve(appFeynmanDir, "runtime-workspace.sha256");
@@ -471,7 +471,7 @@ async function main() {
 		copyPackageFiles(appDir);
 		installAppDependencies(appDir, stagingRoot);
 
-		const appFeynmanDir = resolve(appDir, ".feynman");
+		const appFeynmanDir = resolve(appDir, ".axorbis");
 		logStep("extracting runtime workspace...");
 		const runtimeArchivePath = resolve(appFeynmanDir, "runtime-workspace.tgz");
 		const runtimeArchiveDigestPath = resolve(appFeynmanDir, "runtime-workspace.sha256");

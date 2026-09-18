@@ -29,7 +29,7 @@ function createInstalledManagedPackage(agentDir: string, packageName: string, ve
 }
 
 function createInstalledProjectPackage(workingDir: string, packageName: string, version = "1.0.0"): void {
-	createInstalledPackage(resolve(workingDir, ".feynman", "npm", "node_modules", packageName), packageName, version);
+	createInstalledPackage(resolve(workingDir, ".axorbis", "npm", "node_modules", packageName), packageName, version);
 }
 
 function readInstalledPackageVersion(packageRoot: string): string {
@@ -323,7 +323,7 @@ test("reconcileManagedCorePackageInstalls repairs stale user installs from the b
 	const agentDir = resolve(root, "agent");
 	const appRoot = resolve(root, "app");
 	const managedRoot = resolve(agentDir, "npm");
-	const bundledRoot = resolve(appRoot, ".feynman", "npm");
+	const bundledRoot = resolve(appRoot, ".axorbis", "npm");
 	const packageSource = "npm:pi-web-access@0.28.0";
 	const customSource = "npm:@samfp/pi-memory@^1.0.0";
 
@@ -331,9 +331,9 @@ test("reconcileManagedCorePackageInstalls repairs stale user installs from the b
 	createInstalledManagedPackage(agentDir, "pi-web-access", "0.21.0");
 	createInstalledManagedPackage(agentDir, "@samfp/pi-memory", "1.4.0");
 	createInstalledPackage(resolve(bundledRoot, "node_modules", "pi-web-access"), "pi-web-access", "0.28.0");
-	mkdirSync(resolve(appRoot, ".feynman"), { recursive: true });
+	mkdirSync(resolve(appRoot, ".axorbis"), { recursive: true });
 	writeFileSync(
-		resolve(appRoot, ".feynman", "runtime-package-lock.json"),
+		resolve(appRoot, ".axorbis", "runtime-package-lock.json"),
 		JSON.stringify({
 			name: "feynman-pi-runtime",
 			lockfileVersion: 3,
@@ -395,16 +395,16 @@ test("reconcileManagedCorePackageInstalls removes a broken stale managed symlink
 	const agentDir = resolve(root, "agent");
 	const appRoot = resolve(root, "app");
 	const managedPackagePath = resolve(agentDir, "npm", "node_modules", "pi-web-access");
-	const bundledPackagePath = resolve(appRoot, ".feynman", "npm", "node_modules", "pi-web-access");
+	const bundledPackagePath = resolve(appRoot, ".axorbis", "npm", "node_modules", "pi-web-access");
 	const packageSource = "npm:pi-web-access@0.28.0";
 
 	writeSettings(agentDir, { packages: [packageSource] });
 	mkdirSync(resolve(managedPackagePath, ".."), { recursive: true });
 	symlinkSync(resolve(root, "missing-pi-web-access"), managedPackagePath, "dir");
 	createInstalledPackage(bundledPackagePath, "pi-web-access", "0.28.0");
-	mkdirSync(resolve(appRoot, ".feynman"), { recursive: true });
+	mkdirSync(resolve(appRoot, ".axorbis"), { recursive: true });
 	writeFileSync(
-		resolve(appRoot, ".feynman", "runtime-package-lock.json"),
+		resolve(appRoot, ".axorbis", "runtime-package-lock.json"),
 		JSON.stringify({
 			name: "feynman-pi-runtime",
 			lockfileVersion: 3,
@@ -442,7 +442,7 @@ test("reconcileManagedCorePackageInstalls replaces a stale usable prefix copy", 
 	const agentDir = resolve(root, "agent");
 	const appRoot = resolve(root, "app");
 	const packageSource = "npm:pi-web-access@0.28.0";
-	const bundledPackagePath = resolve(appRoot, ".feynman", "npm", "node_modules", "pi-web-access");
+	const bundledPackagePath = resolve(appRoot, ".axorbis", "npm", "node_modules", "pi-web-access");
 	const globalPackagePath = resolve(root, "npm-global", "lib", "node_modules", "pi-web-access");
 	const managedPackagePath = resolve(agentDir, "npm", "node_modules", "pi-web-access");
 
@@ -461,7 +461,7 @@ test("reconcileManagedCorePackageInstalls preserves a usable current prefix copy
 	const agentDir = resolve(root, "agent");
 	const appRoot = resolve(root, "app");
 	const packageSource = "npm:pi-web-access@0.28.0";
-	const bundledPackagePath = resolve(appRoot, ".feynman", "npm", "node_modules", "pi-web-access");
+	const bundledPackagePath = resolve(appRoot, ".axorbis", "npm", "node_modules", "pi-web-access");
 	const globalPackagePath = resolve(root, "npm-global", "lib", "node_modules", "pi-web-access");
 	const managedPackagePath = resolve(agentDir, "npm", "node_modules", "pi-web-access");
 
@@ -500,7 +500,7 @@ test("reconcileManagedCorePackageInstalls uses normalized personal Alpha and lat
 		const separator = spec.lastIndexOf("@");
 		const name = spec.slice(0, separator);
 		const version = spec.slice(separator + 1);
-		createInstalledPackage(resolve(appRoot, ".feynman", "npm", "node_modules", name), name, version);
+		createInstalledPackage(resolve(appRoot, ".axorbis", "npm", "node_modules", name), name, version);
 		createInstalledManagedPackage(agentDir, name, "0.0.1");
 	}
 	const repaired = reconcileManagedCorePackageInstalls(agentDir, appRoot);
@@ -742,14 +742,14 @@ test("updateConfiguredPackages updates project packages in the project install r
 	const workingDir = resolve(root, "project");
 	const agentDir = resolve(root, "agent");
 	const logPath = resolve(root, "npm-invocations.jsonl");
-	mkdirSync(resolve(workingDir, ".feynman"), { recursive: true });
+	mkdirSync(resolve(workingDir, ".axorbis"), { recursive: true });
 
 	const scriptPath = writeFakeUpdatingNpmScript(root, logPath, { "test-project": "2.0.0" });
 	writeSettings(agentDir, {
 		npmCommand: [process.execPath, scriptPath],
 	});
 	writeFileSync(
-		resolve(workingDir, ".feynman", "settings.json"),
+		resolve(workingDir, ".axorbis", "settings.json"),
 		JSON.stringify({ packages: ["npm:test-project"] }, null, 2) + "\n",
 		"utf8",
 	);
@@ -762,9 +762,9 @@ test("updateConfiguredPackages updates project packages in the project install r
 	assert.equal(invocations.length, 1);
 	const invocation = invocations[0] ?? [];
 	assert.ok(!invocation.includes("-g"));
-	assert.equal(invocation[invocation.indexOf("--prefix") + 1], resolve(workingDir, ".feynman", "npm"));
+	assert.equal(invocation[invocation.indexOf("--prefix") + 1], resolve(workingDir, ".axorbis", "npm"));
 	assert.equal(
-		readInstalledPackageVersion(resolve(workingDir, ".feynman", "npm", "node_modules", "test-project")),
+		readInstalledPackageVersion(resolve(workingDir, ".axorbis", "npm", "node_modules", "test-project")),
 		"2.0.0",
 	);
 });
@@ -806,7 +806,7 @@ test("updateConfiguredPackages targets the effective project package when a sour
 	const workingDir = resolve(root, "project");
 	const agentDir = resolve(root, "agent");
 	const logPath = resolve(root, "npm-invocations.jsonl");
-	mkdirSync(resolve(workingDir, ".feynman"), { recursive: true });
+	mkdirSync(resolve(workingDir, ".axorbis"), { recursive: true });
 
 	const scriptPath = writeFakeUpdatingNpmScript(root, logPath, { "test-duplicate": "2.0.0" });
 	writeSettings(agentDir, {
@@ -814,7 +814,7 @@ test("updateConfiguredPackages targets the effective project package when a sour
 		packages: ["npm:test-duplicate"],
 	});
 	writeFileSync(
-		resolve(workingDir, ".feynman", "settings.json"),
+		resolve(workingDir, ".axorbis", "settings.json"),
 		JSON.stringify({ packages: ["npm:test-duplicate"] }, null, 2) + "\n",
 		"utf8",
 	);
@@ -828,9 +828,9 @@ test("updateConfiguredPackages targets the effective project package when a sour
 	assert.equal(invocations.length, 1);
 	const invocation = invocations[0] ?? [];
 	assert.ok(!invocation.includes("-g"));
-	assert.equal(invocation[invocation.indexOf("--prefix") + 1], resolve(workingDir, ".feynman", "npm"));
+	assert.equal(invocation[invocation.indexOf("--prefix") + 1], resolve(workingDir, ".axorbis", "npm"));
 	assert.equal(
-		readInstalledPackageVersion(resolve(workingDir, ".feynman", "npm", "node_modules", "test-duplicate")),
+		readInstalledPackageVersion(resolve(workingDir, ".axorbis", "npm", "node_modules", "test-duplicate")),
 		"2.0.0",
 	);
 	assert.equal(

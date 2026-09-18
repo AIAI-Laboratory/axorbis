@@ -34,9 +34,9 @@ test("bundled prompts and skills do not contain blocked promotional product cont
 test("research writing prompts forbid fabricated results and unproven figures", () => {
 	const draftPrompt = readFileSync(join(repoRoot, "prompts", "draft.md"), "utf8");
 	const draftDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "workflows", "draft.md"), "utf8");
-	const systemPrompt = readFileSync(join(repoRoot, ".feynman", "SYSTEM.md"), "utf8");
-	const writerPrompt = readFileSync(join(repoRoot, ".feynman", "agents", "writer.md"), "utf8");
-	const verifierPrompt = readFileSync(join(repoRoot, ".feynman", "agents", "verifier.md"), "utf8");
+	const systemPrompt = readFileSync(join(repoRoot, ".axorbis", "SYSTEM.md"), "utf8");
+	const writerPrompt = readFileSync(join(repoRoot, ".axorbis", "agents", "writer.md"), "utf8");
+	const verifierPrompt = readFileSync(join(repoRoot, ".axorbis", "agents", "verifier.md"), "utf8");
 
 	for (const [label, content] of [
 		["system prompt", systemPrompt],
@@ -62,7 +62,7 @@ test("research writing prompts forbid fabricated results and unproven figures", 
 });
 
 test("deepresearch workflow requires durable artifacts even when blocked", () => {
-	const systemPrompt = readFileSync(join(repoRoot, ".feynman", "SYSTEM.md"), "utf8");
+	const systemPrompt = readFileSync(join(repoRoot, ".axorbis", "SYSTEM.md"), "utf8");
 	const deepResearchPrompt = readFileSync(join(repoRoot, "prompts", "deepresearch.md"), "utf8");
 
 	assert.match(systemPrompt, /Do not claim you are only a static model/i);
@@ -75,10 +75,10 @@ test("deepresearch workflow requires durable artifacts even when blocked", () =>
 });
 
 test("research workflows use real web-search tool names and grant them to evidence agents", () => {
-	const systemPrompt = readFileSync(join(repoRoot, ".feynman", "SYSTEM.md"), "utf8");
+	const systemPrompt = readFileSync(join(repoRoot, ".axorbis", "SYSTEM.md"), "utf8");
 	const deepResearchPrompt = readFileSync(join(repoRoot, "prompts", "deepresearch.md"), "utf8");
-	const researcherPrompt = readFileSync(join(repoRoot, ".feynman", "agents", "researcher.md"), "utf8");
-	const verifierPrompt = readFileSync(join(repoRoot, ".feynman", "agents", "verifier.md"), "utf8");
+	const researcherPrompt = readFileSync(join(repoRoot, ".axorbis", "agents", "researcher.md"), "utf8");
+	const verifierPrompt = readFileSync(join(repoRoot, ".axorbis", "agents", "verifier.md"), "utf8");
 
 	assert.match(systemPrompt, /call `web_search`/i);
 	assert.match(systemPrompt, /do not call non-existent aliases such as `search_web`/i);
@@ -144,8 +144,8 @@ test("review surfaces frame critique as internal research review, not external p
 	const reviewerDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "agents", "reviewer.md"), "utf8");
 	const slashDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "slash-commands.md"), "utf8");
 	const reviewPrompt = readFileSync(join(repoRoot, "prompts", "review.md"), "utf8");
-	const reviewerPrompt = readFileSync(join(repoRoot, ".feynman", "agents", "reviewer.md"), "utf8");
-	const systemPrompt = readFileSync(join(repoRoot, ".feynman", "SYSTEM.md"), "utf8");
+	const reviewerPrompt = readFileSync(join(repoRoot, ".axorbis", "agents", "reviewer.md"), "utf8");
+	const systemPrompt = readFileSync(join(repoRoot, ".axorbis", "SYSTEM.md"), "utf8");
 	const researchReviewSkill = readFileSync(join(repoRoot, "skills", "research-review", "SKILL.md"), "utf8");
 	const readme = readFileSync(join(repoRoot, "README.md"), "utf8");
 	const homePage = readFileSync(join(repoRoot, "website", "src", "pages", "index.astro"), "utf8");
@@ -239,7 +239,7 @@ test("autoresearch copy stays bounded to shipped experiment-loop behavior", () =
 });
 
 test("watch and jobs copy does not promise unshipped scheduler or process packages", () => {
-	const systemPrompt = readFileSync(join(repoRoot, ".feynman", "SYSTEM.md"), "utf8");
+	const systemPrompt = readFileSync(join(repoRoot, ".axorbis", "SYSTEM.md"), "utf8");
 	const watchPrompt = readFileSync(join(repoRoot, "prompts", "watch.md"), "utf8");
 	const jobsPrompt = readFileSync(join(repoRoot, "prompts", "jobs.md"), "utf8");
 	const watchSkill = readFileSync(join(repoRoot, "skills", "watch", "SKILL.md"), "utf8");
@@ -290,11 +290,11 @@ test("preview copy treats preview commands as optional live package capabilities
 });
 
 test("visualization copy gates chart packages on visible tools", () => {
-	const systemPrompt = readFileSync(join(repoRoot, ".feynman", "SYSTEM.md"), "utf8");
+	const systemPrompt = readFileSync(join(repoRoot, ".axorbis", "SYSTEM.md"), "utf8");
 	const litPrompt = readFileSync(join(repoRoot, "prompts", "lit.md"), "utf8");
 	const comparePrompt = readFileSync(join(repoRoot, "prompts", "compare.md"), "utf8");
 	const draftPrompt = readFileSync(join(repoRoot, "prompts", "draft.md"), "utf8");
-	const writerPrompt = readFileSync(join(repoRoot, ".feynman", "agents", "writer.md"), "utf8");
+	const writerPrompt = readFileSync(join(repoRoot, ".axorbis", "agents", "writer.md"), "utf8");
 	const combined = `${systemPrompt}\n${litPrompt}\n${comparePrompt}\n${draftPrompt}\n${writerPrompt}`;
 
 	assert.doesNotMatch(combined, /pi-charts|@walterra\/pi-charts|pi-generative-ui/i);
@@ -560,7 +560,7 @@ test("deepresearch citation and review stages are sequential and avoid giant edi
 });
 
 test("deepresearch requires post-edit verification before claiming fixes landed", () => {
-	const systemPrompt = readFileSync(join(repoRoot, ".feynman", "SYSTEM.md"), "utf8");
+	const systemPrompt = readFileSync(join(repoRoot, ".axorbis", "SYSTEM.md"), "utf8");
 	const deepResearchPrompt = readFileSync(join(repoRoot, "prompts", "deepresearch.md"), "utf8");
 
 	assert.match(systemPrompt, /Do not say a file edit, patch, correction, or reviewer fix was applied/i);

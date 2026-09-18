@@ -30,7 +30,7 @@ export function updateWorkbenchPackageSettings(
 		throw new Error("Missing package source.");
 	}
 
-	const settingsPath = resolve(workingDir, ".feynman", "settings.json");
+	const settingsPath = resolve(workingDir, ".axorbis", "settings.json");
 	const settings = readSettings(settingsPath);
 	const packages = Array.isArray(settings.packages) ? [...settings.packages] : [];
 	const selected = new Set(normalizedSources);

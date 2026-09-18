@@ -100,7 +100,7 @@ test("workbench compute jobs expose running cancel and stored retry through the 
 		assert.ok((runningPayload.pollerLeases[0]?.expiresAtMs ?? 0) > Date.now());
 		assert.deepEqual(runningPayload.pollerLeases[0]?.activeJobIds, [`compute:${jobId}`]);
 		assert.deepEqual(runningPayload.pollerLeases[0]?.pendingTerminateIds, []);
-		await waitFor(() => existsSync(join(root, ".feynman", "retry-ready")), "retry marker");
+		await waitFor(() => existsSync(join(root, ".axorbis", "retry-ready")), "retry marker");
 
 		const cancel = await fetch(`${handle.url}api/compute/job/action`, {
 			method: "POST",

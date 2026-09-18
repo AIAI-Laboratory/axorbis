@@ -61,7 +61,7 @@ test("packaged runtime restoration requires a complete extracted tree", () => {
 
 test("runtime workspace integrity checks installed versions and the exact archive digest", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-runtime-integrity-"));
-	const feynmanDir = join(root, ".feynman");
+	const feynmanDir = join(root, ".axorbis");
 	const workspace = join(feynmanDir, "npm");
 	const nodeModules = join(workspace, "node_modules");
 	const packageRoot = join(nodeModules, "@scope", "runtime");
@@ -330,7 +330,7 @@ test("runtime reinstall preserves archived exact packages and adds new configure
 
 test("runtime archive integrity rejects a lock that differs from the committed graph", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-runtime-lock-integrity-"));
-	const feynmanDir = join(root, ".feynman");
+	const feynmanDir = join(root, ".axorbis");
 	const workspace = join(feynmanDir, "npm");
 	const packageRoot = join(workspace, "node_modules", "runtime");
 	const manifestPath = join(workspace, ".runtime-manifest.json");
@@ -435,9 +435,9 @@ test("runtime input hashes are independent of the checkout root", () => {
 	const inputFiles = ["scripts/prepare-runtime-workspace.mjs", ".feynman/settings.json"];
 	for (const root of [left, right]) {
 		mkdirSync(join(root, "scripts"), { recursive: true });
-		mkdirSync(join(root, ".feynman"), { recursive: true });
+		mkdirSync(join(root, ".axorbis"), { recursive: true });
 		writeFileSync(join(root, "scripts", "prepare-runtime-workspace.mjs"), "same source\n");
-		writeFileSync(join(root, ".feynman", "settings.json"), '{"same":true}\n');
+		writeFileSync(join(root, ".axorbis", "settings.json"), '{"same":true}\n');
 	}
 
 	assert.equal(

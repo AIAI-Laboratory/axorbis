@@ -12,8 +12,8 @@ import { CORE_PACKAGE_SOURCES, NATIVE_PACKAGE_SOURCES, supportsNativePackageSour
 export { resolveAdjacentNpmCommand };
 import {
 	applyFeynmanPackageManagerEnv,
-	getFeynmanNpmGlobalNodeModulesPath,
-	getFeynmanNpmPrefixPath,
+	getAxorbisNpmGlobalNodeModulesPath,
+	getAxorbisNpmPrefixPath,
 } from "./runtime.js";
 import { patchPiRuntimeNodeModules } from "./runtime-patches.js";
 import { getPathWithCurrentNode, resolveExecutable } from "../system/executables.js";
@@ -224,7 +224,7 @@ export function reconcileManagedCorePackageInstalls(
 
 	const managedInstallRoot = resolve(agentDir, "npm");
 	const managedNodeModulesRoot = resolve(managedInstallRoot, "node_modules");
-	const bundledNodeModulesRoot = resolve(appRoot, ".feynman", "npm", "node_modules");
+	const bundledNodeModulesRoot = resolve(appRoot, ".axorbis", "npm", "node_modules");
 	if (!existsSync(bundledNodeModulesRoot)) {
 		return [];
 	}
@@ -259,7 +259,7 @@ export function reconcileManagedCorePackageInstalls(
 		return { source, parsed, bundledPackagePath };
 	});
 
-	const globalNodeModulesRoot = getFeynmanNpmGlobalNodeModulesPath(agentDir);
+	const globalNodeModulesRoot = getAxorbisNpmGlobalNodeModulesPath(agentDir);
 	for (const { parsed } of managedPackages) {
 		const globalPackagePath = resolve(globalNodeModulesRoot, parsed.name);
 		if (readInstalledNpmVersion(globalPackagePath) === parsed.exactVersion) continue;
@@ -336,7 +336,7 @@ function resolveRuntimePeerSpec(packageName: string): string | undefined {
 
 	for (const packageRoot of [
 		resolve(APP_ROOT, "node_modules", packageName),
-		resolve(APP_ROOT, ".feynman", "npm", "node_modules", packageName),
+		resolve(APP_ROOT, ".axorbis", "npm", "node_modules", packageName),
 	]) {
 		try {
 			const pkg = JSON.parse(readFileSync(resolve(packageRoot, "package.json"), "utf8")) as {
@@ -391,7 +391,7 @@ function defaultNpmInstallTarget(workingDir: string, agentDir: string, scope: Pa
 	if (scope === "project") {
 		return {
 			scope,
-			installRoot: resolve(workingDir, ".feynman", "npm"),
+			installRoot: resolve(workingDir, ".axorbis", "npm"),
 			global: false,
 			cwd: workingDir,
 		};
@@ -399,7 +399,7 @@ function defaultNpmInstallTarget(workingDir: string, agentDir: string, scope: Pa
 
 	return {
 		scope,
-		installRoot: getFeynmanNpmPrefixPath(agentDir),
+		installRoot: getAxorbisNpmPrefixPath(agentDir),
 		global: true,
 		cwd: agentDir,
 	};
@@ -544,7 +544,7 @@ function isBundledWorkspacePackagePath(installedPath: string | undefined, appRoo
 		return false;
 	}
 
-	const bundledRoot = resolve(appRoot, ".feynman", "npm", "node_modules");
+	const bundledRoot = resolve(appRoot, ".axorbis", "npm", "node_modules");
 	return installedPath.startsWith(bundledRoot);
 }
 
@@ -994,12 +994,12 @@ export function seedBundledWorkspacePackages(
 	sources: string[],
 	platform = process.platform,
 ): string[] {
-	const bundledNodeModulesRoot = resolve(appRoot, ".feynman", "npm", "node_modules");
+	const bundledNodeModulesRoot = resolve(appRoot, ".axorbis", "npm", "node_modules");
 	if (!existsSync(bundledNodeModulesRoot)) {
 		return [];
 	}
 
-	const globalNodeModulesRoot = getFeynmanNpmGlobalNodeModulesPath(agentDir, platform);
+	const globalNodeModulesRoot = getAxorbisNpmGlobalNodeModulesPath(agentDir, platform);
 	const seeded: string[] = [];
 	const bundledPackageNames = listBundledWorkspacePackageNames(bundledNodeModulesRoot);
 	const newlySeededPackageNames = new Set<string>();

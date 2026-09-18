@@ -58,7 +58,7 @@ async function loadPatchedBtwModule(
 	t: TestContext,
 	prefix: string,
 ): Promise<LoadedBtwModule> {
-	const tempRoot = mkdtempSync(resolve(appRoot, ".feynman", prefix));
+	const tempRoot = mkdtempSync(resolve(appRoot, ".axorbis", prefix));
 	t.after(() => {
 		if (existsSync(tempRoot)) rmSync(tempRoot, { recursive: true });
 	});
@@ -246,7 +246,7 @@ test("pi-btw 0.4.1 patch ports ModelRuntime into both child-session paths", () =
 });
 
 test("pi-btw package patch rejects marker-preserving runtime drift", (t) => {
-	const packageRoot = mkdtempSync(resolve(appRoot, ".feynman", "btw-package-test-"));
+	const packageRoot = mkdtempSync(resolve(appRoot, ".axorbis", "btw-package-test-"));
 	t.after(() => {
 		if (existsSync(packageRoot)) rmSync(packageRoot, { recursive: true });
 	});

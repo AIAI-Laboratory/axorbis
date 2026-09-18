@@ -353,7 +353,7 @@ test("installed verifier preflights both exact Pi copies before executing either
 		),
 		join(
 			installedRoot,
-			".feynman",
+			".axorbis",
 			"npm",
 			"node_modules",
 			"@earendil-works",
@@ -412,13 +412,13 @@ test("installed verifier preflights both exact Pi copies before executing either
 
 test("launch-time Pi repair reaches root, generated, global, and agent-managed copies", () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-pi-cli-args-roots-"));
-	const agentDir = join(appRoot, "agent-home", ".feynman");
+	const agentDir = join(appRoot, "agent-home", ".axorbis");
 	const globalNodeModules = process.platform === "win32"
 		? join(appRoot, "agent-home", "npm-global", "node_modules")
 		: join(appRoot, "agent-home", "npm-global", "lib", "node_modules");
 	const nodeModulesRoots = [
 		join(appRoot, "node_modules"),
-		join(appRoot, ".feynman", "npm", "node_modules"),
+		join(appRoot, ".axorbis", "npm", "node_modules"),
 		globalNodeModules,
 		join(agentDir, "npm", "node_modules"),
 	];
@@ -436,7 +436,7 @@ test("launch-time Pi repair reaches root, generated, global, and agent-managed c
 				`${JSON.stringify({
 					name: "@earendil-works/pi-coding-agent",
 					version: "0.85.1",
-					piConfig: { name: "feynman", configDir: ".feynman" },
+					piConfig: { name: "feynman", configDir: ".axorbis" },
 				})}\n`,
 			);
 			writeFileSync(argsPath, REVIEWED_ARGS_FIXTURE);
@@ -461,10 +461,10 @@ test("launch-time Pi repair reaches root, generated, global, and agent-managed c
 
 test("launch-time Pi repair preflights all managed copies before writing", () => {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-pi-cli-args-atomic-"));
-	const agentDir = join(appRoot, "agent-home", ".feynman");
+	const agentDir = join(appRoot, "agent-home", ".axorbis");
 	const roots = [
 		join(appRoot, "node_modules"),
-		join(appRoot, ".feynman", "npm", "node_modules"),
+		join(appRoot, ".axorbis", "npm", "node_modules"),
 		join(agentDir, "npm", "node_modules"),
 	];
 	try {

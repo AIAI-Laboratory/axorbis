@@ -33,7 +33,7 @@ const PI_WEB_ACCESS_FORWARD_FIXTURE_ROOT = join(
 const PI_WEB_ACCESS_RUNTIME_ROOT = join(
 	import.meta.dirname,
 	"..",
-	".feynman",
+	".axorbis",
 	"npm",
 	"node_modules",
 	"pi-web-access",

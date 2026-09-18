@@ -95,16 +95,16 @@ import {
 } from "./lib/runtime-workspace-integrity.mjs";
 
 const appRoot = resolve(import.meta.dirname, "..");
-const settingsPath = resolve(appRoot, ".feynman", "settings.json");
+const settingsPath = resolve(appRoot, ".axorbis", "settings.json");
 const packageJsonPath = resolve(appRoot, "package.json");
 const packageLockPath = resolve(appRoot, "package-lock.json");
-const feynmanDir = resolve(appRoot, ".feynman");
+const feynmanDir = resolve(appRoot, ".axorbis");
 const runtimePackageLockPath = resolve(feynmanDir, "runtime-package-lock.json");
 const explicitWorkspaceDir =
 	process.env.FEYNMAN_RUNTIME_WORKSPACE_TARGET?.trim();
 const workspaceDir = explicitWorkspaceDir
 	? resolve(explicitWorkspaceDir)
-	: resolve(appRoot, ".feynman", "npm");
+	: resolve(appRoot, ".axorbis", "npm");
 const workspaceNodeModulesDir = resolve(workspaceDir, "node_modules");
 const manifestPath = resolve(workspaceDir, ".runtime-manifest.json");
 const workspacePackageJsonPath = resolve(workspaceDir, "package.json");
@@ -495,13 +495,13 @@ function assertPiPackageVersion(packageRoot, surface) {
 function patchPiCodingAgentPackageJsonSource(source) {
 	const pkg = JSON.parse(source);
 	const piConfig = typeof pkg.piConfig === "object" && pkg.piConfig !== null ? pkg.piConfig : {};
-	if (piConfig.name === "feynman" && piConfig.configDir === ".feynman") {
+	if (piConfig.name === "feynman" && piConfig.configDir === ".axorbis") {
 		return source;
 	}
 	pkg.piConfig = {
 		...piConfig,
 		name: "feynman",
-		configDir: ".feynman",
+		configDir: ".axorbis",
 	};
 	return JSON.stringify(pkg, null, 2) + "\n";
 }
