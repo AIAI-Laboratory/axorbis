@@ -60,7 +60,7 @@ test("buildWorkbenchState exposes Claude-style agent and bundled-agent setting r
 			defaultProgress: boolean;
 		};
 		assert.equal(parameters.source, "feynman-bundled-agent");
-		assert.equal(parameters.path, ".feynman/agents/researcher.md");
+		assert.equal(parameters.path, ".axorbis/agents/researcher.md");
 		assert.deepEqual(parameters.tools, ["read", "bash", "web_search"]);
 		assert.equal(parameters.thinking, "high");
 		assert.equal(parameters.output, "research.md");

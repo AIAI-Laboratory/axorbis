@@ -20,7 +20,7 @@ test("loadPiWebAccessConfig returns empty config when Pi web config is missing",
 });
 
 test("getPiWebSearchConfigPath respects AXORBIS_HOME semantics", () => {
-	assert.equal(getPiWebSearchConfigPath("/tmp/custom-home"), "/tmp/custom-home/.feynman/web-search.json");
+	assert.equal(getPiWebSearchConfigPath("/tmp/custom-home"), "/tmp/custom-home/.axorbis/web-search.json");
 });
 
 test("getPiWebSearchConfigPath honors an exact custom Feynman config path", () => {
@@ -31,7 +31,7 @@ test("getPiWebSearchConfigPath honors an exact custom Feynman config path", () =
 		assert.equal(getPiWebSearchConfigPath(), "/tmp/custom-web/research-web.json");
 		assert.equal(
 			getPiWebSearchConfigPath("/tmp/explicit-home"),
-			"/tmp/explicit-home/.feynman/web-search.json",
+			"/tmp/explicit-home/.axorbis/web-search.json",
 		);
 	} finally {
 		if (previousConfigPath === undefined) {

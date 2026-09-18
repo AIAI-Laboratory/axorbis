@@ -60,8 +60,8 @@ test("workbench connector resources expose package state and lifecycle metadata"
 		assert.match(webAccess?.detail ?? "", /v0\.13\.0/);
 		assert.match(webAccess?.detail ?? "", /1 extensions, 1 skills/);
 		assert.ok(webAccess?.tags.includes("installed"), "expected installed package tag");
-		assert.ok(webAccess?.diagnostics?.some((item) => item.includes(".feynman/settings.json")), "expected project config diagnostic");
-		assert.ok(webAccess?.diagnostics?.some((item) => item.includes(".feynman/npm/node_modules/pi-web-access")), "expected install path diagnostic");
+		assert.ok(webAccess?.diagnostics?.some((item) => item.includes(".axorbis/settings.json")), "expected project config diagnostic");
+		assert.ok(webAccess?.diagnostics?.some((item) => item.includes(".axorbis/npm/node_modules/pi-web-access")), "expected install path diagnostic");
 		assert.ok(webAccess?.diagnostics?.some((item) => item.includes("project trust gates loading")), "expected Pi trust boundary diagnostic");
 
 		assert.equal(docparser?.status, "configured");

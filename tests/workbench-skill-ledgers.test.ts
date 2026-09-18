@@ -72,7 +72,7 @@ test("buildWorkbenchState exposes Claude-style custom skill and agent prompt row
 		assert.match(prompt?.id ?? "", /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
 		assert.equal(prompt?.userId, "local-workbench");
 		assert.equal(prompt?.agentName, "reviewer");
-		assert.equal(prompt?.path, ".feynman/agents/reviewer.md");
+		assert.equal(prompt?.path, ".axorbis/agents/reviewer.md");
 		assert.match(prompt?.promptText ?? "", /Check claims against citations/);
 		assert.ok((prompt?.createdAtMs ?? 0) > 0);
 		assert.ok((prompt?.updatedAtMs ?? 0) > 0);

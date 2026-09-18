@@ -57,7 +57,7 @@ test("workbench compute jobs expose running cancel and stored retry through the 
 				language: "bash",
 				executionMode: "isolated",
 				purpose: "exploration",
-				code: "mkdir -p .feynman\nif [ -f .feynman/retry-ready ]; then printf 'retried\\n'; else touch .feynman/retry-ready; sleep 30; fi",
+				code: "mkdir -p .feynman\nif [ -f .axorbis/retry-ready ]; then printf 'retried\\n'; else touch .axorbis/retry-ready; sleep 30; fi",
 			}),
 		});
 
