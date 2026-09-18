@@ -48,3 +48,4 @@ try{
 }catch(e){Object.assign(proof,{fatal:e.stack,calls,sideEffects,registered,active,errors,network});process.exitCode=1;}
 finally{await factory?.dispose();}
 console.log('PROOF_JSON='+JSON.stringify(proof));
+

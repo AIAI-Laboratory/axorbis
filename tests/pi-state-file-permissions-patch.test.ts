@@ -178,7 +178,7 @@ test("installed state verifier checks Windows ACLs without PowerShell command in
 	);
 	assert.match(
 		verifier,
-		/const runtimeArchiveRoot = resolve\(packageRoot, "\.feynman"\)/,
+		/const runtimeArchiveRoot = resolve\(packageRoot, "\.axorbis"\)/,
 	);
 	assert.match(
 		verifier,

@@ -15,3 +15,4 @@ export default async function registerOfflineProvider(pi) {
  pi.on('session_start',()=>record('registered',{tools:pi.getAllTools().map(t=>t.name),active:pi.getActiveTools()}));
  pi.on('session_shutdown',()=>record('shutdown'));
 }
+

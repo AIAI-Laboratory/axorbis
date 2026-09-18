@@ -29,3 +29,4 @@ try{
  console.log('DETACHED_JSON='+JSON.stringify({driverPid:process.pid,pid,exited,proceedConsumed:!fs.existsSync(path.join(asyncDir,'runner-startup-proceed.json')),start,final:readJSON(path.join(asyncDir,'status.json'))??final,provider,network,asyncDir,dirs:DIRS}));
 }catch(error){let logs={};if(asyncDir){for(const name of fs.readdirSync(asyncDir)){if(/log$/.test(name))logs[name]=fs.readFileSync(path.join(asyncDir,name),'utf8').slice(-12000);}}console.log('DETACHED_JSON='+JSON.stringify({fatal:String(error.stack),asyncDir,pid,logs}));process.exitCode=1;}
 finally{if(pid&&!exited){try{process.kill(pid,'SIGTERM');}catch{}}}
+
