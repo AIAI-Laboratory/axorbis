@@ -1,7 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { registerAlphaTools } from "./research-tools/alpha.js";
-import { registerChemistrySketcherTool } from "./research-tools/chemistry-sketcher.js";
 import { registerCurrentDateResearchContext } from "./research-tools/current-date.js";
 import { registerDiscoveryCommands } from "./research-tools/discovery.js";
 import { registerFeynmanModelCommand } from "./research-tools/feynman-model.js";
@@ -25,7 +24,6 @@ export default function researchTools(pi: ExtensionAPI): void {
 	});
 
 	registerAlphaTools(pi);
-	registerChemistrySketcherTool(pi);
 	registerCurrentDateResearchContext(pi);
 	registerHuggingFaceTools(pi);
 	registerDiscoveryCommands(pi);

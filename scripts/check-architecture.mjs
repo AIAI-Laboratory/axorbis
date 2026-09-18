@@ -4,13 +4,13 @@ import { dirname, join, normalize, relative, resolve } from "node:path";
 const appRoot = resolve(import.meta.dirname, "..");
 const warningLineLimit = 800;
 const failureLineLimit = 1200;
-const sourceRoots = ["src", "extensions", "scripts", "tests"];
+const sourceRoots = ["engine", "web", "app", "extensions", "scripts", "tests"];
 const sourceExtensions = new Set([".ts", ".mts", ".mjs"]);
-const ignoredPathParts = new Set(["node_modules", "dist", ".git", ".feynman"]);
+const ignoredPathParts = new Set(["node_modules", "dist", "target", "runtime", ".git", ".feynman"]);
 
 const allowedOversizedFiles = new Map([
 	[
-		"src/rank/paper-rank.ts",
+		"engine/rank/paper-rank.ts",
 		"Existing PaperRank god-file. Split into papers/evidence/rank/artifact modules before adding new ranking surface.",
 	],
 	[
@@ -18,23 +18,23 @@ const allowedOversizedFiles = new Map([
 		"Existing PaperRank coverage cluster. Move tests alongside extracted PaperRank modules.",
 	],
 	[
-		"src/cli.ts",
-		"Existing CLI dispatcher. Split command handlers into src/commands/ before growing CLI behavior.",
+		"engine/cli.ts",
+		"Existing CLI dispatcher. Split command handlers into engine/commands/ before growing CLI behavior.",
 	],
 ]);
 
 const domainRoots = [
-	"src/artifacts/",
-	"src/evidence/",
-	"src/papers/",
-	"src/rank/",
+	"engine/artifacts/",
+	"engine/evidence/",
+	"engine/papers/",
+	"engine/rank/",
 ];
 
 const disallowedDomainImportRoots = [
-	"src/cli",
-	"src/commands/",
-	"src/setup/",
-	"src/ui/",
+	"engine/cli",
+	"engine/commands/",
+	"engine/setup/",
+	"engine/ui/",
 ];
 
 function extensionOf(path) {

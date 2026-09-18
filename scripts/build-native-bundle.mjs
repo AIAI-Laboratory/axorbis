@@ -18,6 +18,7 @@ import {
 	createDeterministicZip,
 } from "./lib/deterministic-archive.mjs";
 import { resolveChildProcessCommand } from "./lib/child-process-command.mjs";
+import { assertPortableSymlinks } from "./lib/portable-symlinks.mjs";
 
 const appRoot = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(appRoot, "package.json"), "utf8"));
@@ -201,6 +202,7 @@ function copyPackageFiles(appDir) {
 		mkdirSync(dirname(destination), { recursive: true });
 		cpSync(source, destination, {
 			recursive: true,
+			verbatimSymlinks: true,
 			filter: (path) => path !== releaseDir && !path.startsWith(`${releaseDir}/`),
 		});
 	}
@@ -225,7 +227,7 @@ function installAppDependencies(appDir, stagingRoot) {
 		cwd: appRoot,
 	});
 
-	cpSync(resolve(depsDir, "node_modules"), resolve(appDir, "node_modules"), { recursive: true });
+	cpSync(resolve(depsDir, "node_modules"), resolve(appDir, "node_modules"), { recursive: true, verbatimSymlinks: true });
 }
 
 function extractTarball(archivePath, destination, compressionFlag) {
@@ -340,6 +342,7 @@ function writeLauncher(bundleRoot, target) {
 
 function validateBundle(bundleRoot, target) {
 	logStep("validating bundled native dependencies...");
+	assertPortableSymlinks(bundleRoot);
 	const nodeExecutable = resolveBundledNodeExecutable(bundleRoot, target);
 
 	const betterSqlitePackageJson = resolve(bundleRoot, "app", ".feynman", "npm", "node_modules", "better-sqlite3", "package.json");

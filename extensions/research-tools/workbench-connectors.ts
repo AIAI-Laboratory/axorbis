@@ -5,9 +5,9 @@ import { resolve } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
-import { migratedWorkbenchDataPath } from "../../src/workbench/data-root.js";
-import { authorizationHeaderForConnector } from "../../src/workbench/oauth-store.js";
-import { upsertWorkbenchSettingsRecord } from "../../src/workbench/settings-store.js";
+import { migratedWorkbenchDataPath } from "../../engine/workbench/data-root.js";
+import { authorizationHeaderForConnector } from "../../engine/workbench/oauth-store.js";
+import { upsertWorkbenchSettingsRecord } from "../../engine/workbench/settings-store.js";
 
 type WorkbenchConnectorTransport = "local" | "sse" | "streamable_http";
 

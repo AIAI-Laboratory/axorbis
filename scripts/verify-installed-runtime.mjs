@@ -68,7 +68,6 @@ const EXPECTED_FEYNMAN_TOOLS = Object.freeze([
 	"feynman_connector_call",
 	"feynman_connector_tools",
 	"feynman_model_endpoint_call",
-	"feynman_open_chemistry_sketcher",
 	"feynman_science_database_search",
 	"feynman_workbench_context",
 	"hf_dataset_info",

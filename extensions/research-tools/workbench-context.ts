@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
-import { migratedWorkbenchDataPath } from "../../src/workbench/data-root.js";
+import { migratedWorkbenchDataPath } from "../../engine/workbench/data-root.js";
 
 type WorkbenchSettings = {
 	allowedDomains?: Array<{ domain?: string; id?: string }>;

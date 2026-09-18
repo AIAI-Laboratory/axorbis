@@ -1,21 +1,24 @@
-# Contributing to Feynman
+# Contributing to Axorbis
 
-Feynman is a research-first CLI built on Pi and alphaXiv. This guide is for humans and agents contributing code, prompts, skills, docs, installers, or workflow behavior to the repository.
+Axorbis is a research workspace built on the Feynman/Pi engine. This guide is for humans and agents contributing code, prompts, skills, docs, installers, or workflow behavior to this repository.
 
 ## Quick Links
 
-- GitHub: https://github.com/advaitpaliwal/feynman
-- Docs: https://feynman.is/docs
+- GitHub: https://github.com/AIAI-Laboratory/axorbis
+- Docs source: [website/](website/)
 - Repo agent contract: [AGENTS.md](AGENTS.md)
-- Issues: https://github.com/advaitpaliwal/feynman/issues
+- Issues: https://github.com/AIAI-Laboratory/axorbis/issues
 
 ## What Goes Where
 
-- CLI/runtime code: `src/`
+- Research engine, CLI, and workbench server: `engine/`
+- Axorbis product interface: `web/`
+- Tauri desktop app: `app/`
 - Bundled prompt templates: `prompts/`
 - Bundled Pi skills: `skills/`
 - Bundled Pi subagent prompts: `.feynman/agents/`
 - Docs site: `website/`
+- Long-form project documents: `docs/`
 - Build/release scripts: `scripts/`
 - Generated research artifacts: `outputs/`, `papers/`, `notes/`
 
@@ -29,7 +32,7 @@ If you need to change how bundled subagents behave, edit `.feynman/agents/*.md`.
 
 ```bash
 nvm use || nvm install
-npm install
+npm ci
 ```
 
 4. Run the required checks before asking for review:
@@ -38,6 +41,7 @@ npm install
 npm test
 npm run typecheck
 npm run build
+npm run architecture:check
 ```
 
 5. If you changed the docs site, also validate the website:
@@ -87,44 +91,9 @@ npm run build
   - `scripts/check-node-version.mjs`
   - install docs in `README.md` and `website/src/content/docs/getting-started/installation.md`
 
-### Website deployment
+### Website and desktop releases
 
-The existing static `website/` build serves research docs and installers. Cloudflare
-Pages project `feynman` (`feynman-bpr.pages.dev`) uses
-`website/wrangler.jsonc` and uploads `website/dist`; building also synchronizes the
-canonical installer scripts into the site.
-
-`.github/workflows/deploy-website.yml` deploys only after a successful **Publish and
-Release** run triggered by a `main` push in `advaitpaliwal/feynman`, or a manual
-**Deploy website** dispatch on `main`. Forks, pull requests, unsuccessful releases,
-and non-main manual runs are excluded. Both automatic and manual runs validate
-their initiating SHA, then **reconcile current `main`**, not that initiating SHA.
-Before checkout, the GitHub API must prove a completed, successful, same-repository
-`main` push run of the existing `.github/workflows/publish.yml` at exactly current
-main's SHA. The workflow has `contents: read` and `actions: read`; the automatic
-`GITHUB_TOKEN` is exposed as `GH_TOKEN` only to this pre-checkout lookup.
-API errors fail closed; an unqualified main skips every remaining step. Manual
-dispatch does not bypass publisher success.
-
-The qualified SHA is checked out exactly, its root manifest's
-`@advaitpaliwal/feynman` version must exist on the public npm registry, and website
-`npm ci`, lint, typecheck, and build must pass. Production runs remain serialized
-without interrupting active uploads. GitHub can replace a pending run with a
-delayed older event; that surviving run now reconciles qualified current main,
-so it can deploy the newer release whose pending invocation was canceled. A final
-live-main check still skips the upload if main changed after source selection.
-There is no fallback to an older release when current main is unqualified; wait
-for its successful publisher event or dispatch again after that proof exists.
-
-Hosting and canonical secrets remain in the existing **Companion** organization:
-Infisical project **feynman**, environment **prod**, mirrored to GitHub repository
-secrets. GitHub and npm use the personal `advaitpaliwal` account. The existing
-`CLOUDFLARE_API_TOKEN` secret is passed only to the upload step, after Wrangler
-`4.107.0` is installed; no new credential is required. Cloudflare account ID
-`2164ee7d134223511b4621d9b163a5ac` is a nonsecret workflow constant.
-
-This configuration does not publish npm, change DNS, or establish a `feynman.is`
-domain cutover. Maintainers handle release completion and domain routing separately.
+The documentation site in `website/` is independently built with Astro. The product web interface in `web/` is bundled into the local backend and desktop app; publishing the documentation site does not publish the app. For native release prerequisites, use [app/README.md](app/README.md). Do not reuse upstream Feynman publishing credentials or workflows for Axorbis.
 
 ## AI-Assisted Contributions
 

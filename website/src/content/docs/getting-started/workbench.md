@@ -1,6 +1,6 @@
 ---
-title: Science Workbench
-description: Run the local Feynman science workbench for chat, artifacts, notebooks, compute, provenance, and setup state.
+title: Axorbis Research Workspace
+description: Run the local Axorbis interface for projects, research questions, sources, claims, and activity.
 section: Getting Started
 order: 3
 ---
@@ -13,18 +13,27 @@ feynman serve
 
 The command starts a local server, prints an authenticated localhost URL, and opens the workbench. The URL token is local to that server process. For trusted local testing, run `feynman serve --no-auth` to print a plain localhost URL with no token.
 
+## Desktop host
+
+The source repository also contains a Tauri desktop host for the same workbench. Its bootstrap uses the same Axorbis visual system as the web interface, opens with a workspace picker, starts Feynman on an available localhost port, waits for the authenticated URL, and keeps the backend tied to the desktop app lifecycle. Closing the window leaves the app in the system tray; **Quit Axorbis** stops the managed server.
+
+```bash
+npm ci --prefix desktop
+npm run desktop:dev
+```
+
+Use `npm run desktop:check` to validate the Rust host and `npm run desktop:build` for a developer package. `npm run desktop:release-build` stages the verified native runtime and builds a standalone app. The macOS Apple Silicon release workflow requires Apple signing and notarization secrets before publishing a `v<version>` GitHub Release. There is not yet a published Axorbis desktop installer. Once releases exist, Axorbis checks for a newer stable version at startup and every six hours, then displays a dismissible link to its download page; it does not install updates automatically.
+
 The Axorbis workspace opens a researcher-first Home and Projects view with a red (`#FF3B30`), white, and black interface. Open a project, add a research question, and investigate through Ask or Deep research in the same workspace. The question is backed by a persisted Feynman session; the workspace shows streaming activity, its plan, sources, claims, and linked evidence. The question list and evidence inspector open when needed, and `/app-shell/` opens the same redesigned interface. Existing Pi agents, research tools, compute, and provenance remain available through the Feynman runtime; some specialized control-plane views are still being adapted to the new UI.
 
-## What the workbench contains
+## What Axorbis shows
 
-- **Projects and sessions** -- Create projects, open existing research sessions, continue Pi-backed chat, and keep project metadata, frame rows, frame message rows, frame backfill health rows, and run state tied to the workspace.
-- **Onboarding context** -- Capture field, goal, workflow, data tools, bottlenecks, permissions, selected first task, suggested specialist, suggested seed workflows, and connector choices.
-- **Feynman Bio Tools** -- Use Feynman-owned science connectors for literature, exact OpenAlex work/citation/reference/author/venue workflows, exact arXiv search and batch-paper retrieval, PubMed article metadata, PMID/PMCID/DOI conversion, related-article links, citation matching, copyright/license checks, PMC full-text routing, bioRxiv/medRxiv DOI lookup, date/category preprint windows, published-preprint links, funder/ROR lookup, preprint usage/content statistics, Europe PMC open-access full-text sections, citation graphs, authors, venues, OA status, ClinicalTrials.gov trial search, NCT detail records, sponsor programs, eligibility filters, investigator records, endpoint summaries, Grants.gov Search2 opportunity lookup, FDA labels, adverse events, recalls, Drugs@FDA applications, application counts, pharmacologic classes, generic-equivalent active-ingredient sets, ChEMBL compound search, drug indications and warnings, calculated ADMET properties, bioactivity rows, mechanisms, target records, PubChem compound/search/similarity/bioassay/safety workflows, ChEBI entity/ontology workflows, BindingDB target/compound workflows, Rhea reaction search/detail workflows, editable Ketcher chemistry sketch seeds, gene, BioMart, Ensembl lookup/xref/VEP/homology/sequence/overlap workflows, MyGene query-many lookup, OLS ontology catalogue/search/term lookup, QuickGO annotations, UniProt entry retrieval, Reactome pathway mapping, CellGuide, PanglaoDB marker genes and gene-to-cell-type workflows, exact Antibody Registry antibody/RRID/catalog/stat workflows, reagent, cell-type, metabolomics, genome-track, UCSC exact track/chromosome/conservation/TFBS workflows, UniBind TF-DNA binding, KEGG entry/search/link/ID-conversion workflows, InterPro/Pfam exact domain architecture, entry, clan, family protein/proteome modes, Human Protein Atlas exact gene/search modes, STRING exact ID mapping, network, similarity, and best-hit workflows, purchasable ZINC compounds, exact gnomAD/CADD/ClinVar/dbSNP variant workflows, GWAS Catalog exact association/study/trait/SNP workflows, eQTL Catalogue exact dataset and association workflows, PheWeb/FinnGen PheWAS workflows, GTEx dataset/tissue/sample/gene/expression/eQTL workflows, tissue/protein-atlas, expression, protein, predicted-structure, structure, EM-map, complex, interaction, exact ENCODE/JASPAR/UniBind regulation workflows for experiments, biosamples, files, matrices, species/taxa/collections/releases, datasets, and regional TFBS, exact ArrayExpress/GEO/MetaboLights/MGnify/PRIDE omics-archive workflows for experiments, samples, files, analyses, projects, and protein evidence, metagenomics, pathway, chemical-ontology, chemistry, binding, reaction, exact Rfam RNA family metadata/accession/alignment/model/tree/region/structure/search workflows, cBioPortal study/detail/mutation-frequency/mutation/CNA/clinical-attribute workflows, DepMap model/gene/dependency workflows, CIViC gene/variant/evidence/assertion/profile/disease/therapy workflows, ClinGen validity/dosage/actionability/classification workflows, Open Targets disease-drug/disease-target/drug/search workflows, cancer-curation, canceromics, human-genetics, and target-discovery work.
-- **Artifacts and previews** -- Browse outputs, papers, notes, plans, datasets, generated reports, JSON/JSONL, CSV, PDFs, images, audio, video, XLSX workbooks, Jupyter notebooks, LaTeX, KET/RXN/CDXML/CXSMILES/Molfile/SDF/SMILES chemistry artifacts, proteins, alignments, genomes, variants, trees, tensors, and saved snapshots from one artifact pane. Files expose local workspace artifacts, SSH/BYOC compute hosts, and cloud buckets from Feynman's owned host and credential state. HTML reports support element-level annotation inside the sandboxed preview, with selector/text capture and saved badges attached to the artifact annotation ledger. Artifacts written by Pi chat stay attached to the producing run and project through snapshot/output provenance even when their filenames use a different slug. Artifact Notes open target-aware edit and preview modals backed by Feynman's target-note ledger, Customize > Storage opens a cloud credential modal, and Cloud export opens a target-and-destination modal with an owned audit log.
-- **Versions and lineage** -- Inspect artifact versions, checksums, producer records, upstream and downstream links, annotations, and execution evidence.
-- **Notebooks and compute** -- Run local Python, R, and Bash cells, inspect persistent session kernels, review notebook execution logs, and track configured compute providers and jobs.
-- **Settings and resources** -- Review specialists, skills, frame records, frame message records, frame backfill health records, watch routine records, skill source/license records, setup decision records, review feedback records, compute poller lease records, Pi commands, connectors, memory categories, permissions, compute, network, storage, credentials, usage, and general runtime state.
-- **Redacted credential state** -- See which provider credentials are configured through settings, environment variables, or Pi auth storage without exposing raw values.
+- **Home and Projects** — Create a project, return to recent research, and organize questions.
+- **Question workspace** — Continue a Pi-backed session with Ask or Deep research, streamed replies, tool activity, and the associated plan.
+- **Evidence** — Browse linked sources, claims, generated files, and basic text or PDF previews in the on-demand inspector.
+- **Navigation** — Search projects and questions with the command palette; use responsive layouts and light or dark themes.
+
+Axorbis is the sole web and desktop interface. The previous workbench's specialized scientific viewers, artifact editing controls, notebook/compute panels, settings pages, and other control-plane screens are not present in this UI. The Feynman backend still owns its research tools, APIs, sessions, provenance, local state, and workspace files; those capabilities are not all directly surfaced here yet.
 
 ## Standalone boundary
 

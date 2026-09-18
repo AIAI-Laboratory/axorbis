@@ -10,6 +10,10 @@ node_modules
 .feynman/cache
 .feynman/schedule-prompts.json
 dist
+app/src-tauri/target
+app/src-tauri/gen
+app/runtime/*
+!app/runtime/.gitkeep
 *.tgz
 .feynman/runtime-workspace.sha256
 outputs/*

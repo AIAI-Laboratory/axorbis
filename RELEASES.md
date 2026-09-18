@@ -1,12 +1,16 @@
 # Release Notes
 
-This file is the public release history for Feynman. Keep entries user-facing: what changed, why it matters, and anything users should do after upgrading.
+This file contains Axorbis release notes and the inherited Feynman release history. Keep entries user-facing: what changed, why it matters, and anything users should do after upgrading.
 
 GitHub release notes are generated from the matching `## vX.Y.Z` section in this file.
 
 ## Unreleased
 
+- Organized the source into `engine/`, `web/`, and `app/`, with long-form product documents indexed under `docs/`. Removed duplicate image assets and the old Ketcher sketcher integration that no longer had a usable interface. Source checkouts should use the updated desktop and web paths; installed research data is unchanged.
+- Axorbis now checks the latest stable GitHub Release at startup and every six hours, announcing a newer version inside the workspace with a dismissible download link. Offline checks remain non-blocking. Added a fail-closed standalone desktop release build that stages the verified Feynman runtime and rejects broken or external runtime links, plus a macOS Apple Silicon GitHub release workflow gated on signing and notarization. This does not silently install updates.
+- Removed the previous workbench interface, its specialized viewer components, styles, and UI-only helpers. Axorbis is now the only built web entry and the only interface opened by the desktop host. Existing `/app-shell/` links continue to resolve to Axorbis; the research backend and its data remain intact.
 - Renamed the researcher-first interface Axorbis and redesigned it around a restrained red (`#FF3B30`), white, and black interface. Home, Projects, and question workspaces now share simpler navigation; the question view offers in-place Ask and Deep research, streaming activity, sources, claims, and an on-demand evidence inspector. The former `/app-shell/` URL opens this new interface. Feynman's existing sessions, research runtime, tools, files, and provenance remain the backing services.
+- Completed the Tauri desktop host for source and staged-runtime builds. It now selects a workspace, starts the authenticated workbench on an available localhost port, waits for the real tokenized URL before navigation, reports actionable startup errors, manages the backend process through app shutdown, and provides working native menu and tray behavior. The bootstrap page uses a scoped CSP and does not grant Tauri IPC to the served workbench.
 
 ## v0.3.49 - 2026-09-06
 

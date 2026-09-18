@@ -6,3 +6,5 @@
 - Use `#FF3B30`, white, black, and neutral grays for the interface, with light/dark/system theme support and disclosure of question list and evidence inspector on demand.
 - Expose an `axorbis` CLI alias while retaining the upstream package name, `feynman` command, and persisted data paths until a separately verified distribution migration is ready.
 - Use existing workbench project/session creation APIs; keep theme globally and pane display preferences per project in local storage until user settings support them.
+- Organize product source into `engine/`, `web/`, and `app/`; keep `website/` separate as a documentation site. Preserve root runtime inputs (`prompts/`, `skills/`, `.feynman/`, `extensions/`) and stable build output paths to avoid changing installed-engine behavior during a source-only reorganization.
+- Keep canonical root contracts (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `RELEASES.md`, and the lab notebook `CHANGELOG.md`) at the root; index long-form product documentation from `docs/README.md`.

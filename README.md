@@ -2,9 +2,24 @@
 
 **A research workspace that keeps the question, evidence, and work in one place.**
 
-Axorbis is a new interface built on the [Feynman](https://github.com/companion-inc/feynman) research engine. It organizes work as **Projects → Research questions → Sources and claims**, while the existing Feynman runtime handles agents, tools, sessions, artifacts, and provenance.
+Axorbis is a new interface built on the [Feynman](https://github.com/advaitpaliwal/feynman) research engine. It organizes work as **Projects → Research questions → Sources and claims**, while the existing Feynman runtime handles agents, tools, sessions, artifacts, and provenance.
 
 This repository is an early, runnable product slice. The interface uses `#FF3B30`, white, and black, with light and dark themes.
+
+## Project layout
+
+```text
+engine/     Feynman research engine, CLI, and workbench server
+web/        Axorbis web interface (also used inside the desktop app)
+app/        Tauri desktop host and native packaging
+website/    Public documentation site
+extensions/ Pi research tools and integration extensions
+scripts/    Build, packaging, and verification scripts
+tests/      Engine, web, and desktop tests
+docs/       Product and architecture documents
+```
+
+The desktop app hosts the same web interface; `website/` is a separate documentation site. Runtime inputs such as `prompts/`, `skills/`, and `.feynman/` remain at the repository root because the engine resolves them there.
 
 ## What works today
 
@@ -37,6 +52,19 @@ npm run dev -- setup
 
 The current package still uses Feynman's runtime and data paths. If you install this source package as a CLI, both `axorbis` and `feynman` point to the same runtime. **There is no published Axorbis npm package or native installer yet.** Installing the upstream Feynman package does not install this Axorbis interface.
 
+### Run the desktop app from source
+
+The Tauri desktop host provides workspace selection, an authenticated dynamic localhost launch, native menu and tray behavior, startup error recovery, and managed backend shutdown:
+
+```bash
+npm ci --prefix app
+npm run desktop:dev
+```
+
+Use `npm run desktop:check` for Rust formatting, compile, and unit tests, or `npm run desktop:build` for a development package. A self-contained release requires `npm run desktop:release-build`, which builds and stages a verified native runtime before packaging. See [`app/README.md`](app/README.md) for signing and release prerequisites. Native installers are not published yet.
+
+Axorbis checks the repository's latest stable GitHub Release when the workspace opens and periodically while it is in use. If a newer version exists, it shows a dismissible announcement linking to the release download. This is an update announcement, not unattended installation.
+
 ## How to use the workspace
 
 1. Create a project for a research topic.
@@ -63,12 +91,13 @@ The underlying Feynman capabilities remain in the codebase. This table describes
 npm run typecheck
 npm run build
 npm run architecture:check
-node --import tsx --test tests/workbench-react-shell.test.ts
+node --import tsx --test tests/workbench-axorbis-shell.test.ts
+node --import tsx --test tests/workbench-update-announcement.test.ts tests/desktop-release.test.ts
 ```
 
-The HTTP test binds to localhost, so some sandboxed environments require permission for it. The app is served locally by `src/workbench/server.ts`; the current frontend is in `workbench-web/src/research-app.tsx` and `workbench-web/src/research-app.css`.
+The HTTP test binds to localhost, so some sandboxed environments require permission for it. The app is served locally by `engine/workbench/server.ts`. `web/index.html` is the sole web entry, and Axorbis lives in `web/src/app/research-app.tsx` and `web/src/styles/research-app.css`.
 
-Product direction is recorded in [`feynman_research_workspace_spec.md`](feynman_research_workspace_spec.md). Persistent implementation state and decisions live in [`.ai/STATE.md`](.ai/STATE.md) and [`.ai/DECISIONS.md`](.ai/DECISIONS.md).
+Product direction and other long-form documents are indexed in [`docs/README.md`](docs/README.md). Persistent implementation state and decisions live in [`.ai/STATE.md`](.ai/STATE.md) and [`.ai/DECISIONS.md`](.ai/DECISIONS.md).
 
 ## Upstream and license
 

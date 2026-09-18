@@ -1,36 +1,10 @@
-# Astro + React + TypeScript + shadcn/ui
+# Axorbis documentation website
 
-This is a template for a new Astro project with React, TypeScript, and shadcn/ui.
-
-## Adding components
-
-To add components to your app, run the following command:
+This Astro project builds the public documentation site. It is separate from the product interface in [`../web/`](../web/) and the desktop host in [`../app/`](../app/).
 
 ```bash
-npx shadcn@latest add button
+npm ci --prefix website
+npm run build --prefix website
 ```
 
-This will place the ui components in the `src/components` directory.
-
-## Using components
-
-To use the components in your app, import them in an `.astro` file:
-
-```astro
----
-import { Button } from "@/components/ui/button"
----
-
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Astro App</title>
-  </head>
-  <body>
-    <div class="grid h-screen place-items-center content-center">
-      <Button>Button</Button>
-    </div>
-  </body>
-</html>
-```
+Documentation pages live in `src/content/docs/`; shared assets are in `public/`. The build output is `dist/`. See the root [README](../README.md) for the runnable research workspace and [docs index](../docs/README.md) for project documents.
