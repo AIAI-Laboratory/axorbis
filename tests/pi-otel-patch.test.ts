@@ -117,7 +117,7 @@ test("patched pi-otel config resolves independent signal endpoints, headers, and
 			`data:text/javascript;base64,${Buffer.from(executable).toString("base64")}`
 		) as { resolveConfig: (cwd: string) => any };
 		const cfg = resolveConfig(resolve(tmpdir(), "feynman-pi-otel-config"));
-		assert.deepEqual(cfg.feynmanOtlpSignals, {
+		assert.deepEqual(cfg.axorbisOtlpSignals, {
 			traces: {
 				endpoint: "https://traces.example/custom",
 				protocol: "http/json",
@@ -223,7 +223,7 @@ export function initSdk(cfg) {
 				endpoint: "https://collector.example/base",
 				headers: { common: "one" },
 				protocol: "http/protobuf",
-				feynmanOtlpSignals: {
+				axorbisOtlpSignals: {
 					traces: {
 						endpoint: "https://traces.example/custom",
 						headers: { trace: "two" },
@@ -421,7 +421,7 @@ test("patched pi-otel executes shutdown and dashboard rewiring in their owning s
 	const dashboardReadyBody = extractHandlerBody('pi.events.on("pi-otel:dashboard-ready"');
 
 	assert.doesNotMatch(sessionShutdownBody, /\boverride\b|\bcfg\b/);
-	assert.match(dashboardReadyBody, /delete cfg\.feynmanOtlpSignals/);
+	assert.match(dashboardReadyBody, /delete cfg\.axorbisOtlpSignals/);
 
 	const sessionState = {
 		shutdowns: 0,
@@ -454,7 +454,7 @@ test("patched pi-otel executes shutdown and dashboard rewiring in their owning s
 			enabled: true,
 			endpoint: "https://collector.example/base",
 			protocol: "http/protobuf",
-			feynmanOtlpSignals: {
+			axorbisOtlpSignals: {
 				traces: { endpoint: "https://collector.example/base/v1/traces" },
 			},
 		},
@@ -481,7 +481,7 @@ test("patched pi-otel executes shutdown and dashboard rewiring in their owning s
 	assert.equal(dashboardState.wired.length, 1);
 	assert.equal(dashboardState.wired[0].endpoint, "https://dashboard.example/otel");
 	assert.equal(dashboardState.wired[0].protocol, "grpc");
-	assert.equal(dashboardState.wired[0].feynmanOtlpSignals, undefined);
+	assert.equal(dashboardState.wired[0].axorbisOtlpSignals, undefined);
 });
 
 test("patchPiOtelSource is idempotent", () => {
@@ -517,7 +517,7 @@ test("pi-otel repairs the exact pre-release misplaced dashboard reset", () => {
 	const correct = patchPiOtelSource("dist/index.js", baseline);
 	const signalReset =
 		'        if (typeof override.endpoint === "string" || typeof override.protocol === "string")\n' +
-		"            delete cfg.feynmanOtlpSignals;\n";
+		"            delete cfg.axorbisOtlpSignals;\n";
 	const broken = correct
 		.replace(signalReset, "")
 		.replace(

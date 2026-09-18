@@ -611,7 +611,7 @@ test("patchPiRuntimeNodeModules patches the vendored runtime workspace", async (
 	assert.match(readFileSync(webAccessPath, "utf8"), /params\.workflow \?\? configWorkflow \?\? "none"/);
 	assert.match(readFileSync(webAccessPath, "utf8"), /pi\.registerCommand\("web-results"/);
 	assert.match(readFileSync(webAccessPdfPath, "utf8"), /AXORBIS_FETCH_CACHE_DIR/);
-	assert.match(readFileSync(webAccessPdfPath, "utf8"), /\.feynman.*cache.*fetch-content/);
+	assert.match(readFileSync(webAccessPdfPath, "utf8"), /\.axorbis.*cache.*fetch-content/);
 	assert.doesNotMatch(readFileSync(webAccessPdfPath, "utf8"), /pi-web-pdf|tmpdir/);
 	assert.match(readFileSync(subagentSpawnPath, "utf8"), /process\.env\.FEYNMAN_PI_CLI_PATH/);
 	assert.match(readFileSync(subagentSpawnPath, "utf8"), /\targv2\?: string;/);
