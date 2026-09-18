@@ -31,7 +31,7 @@ function fixture(run: (root: string) => void) {
 	write("package.json", JSON.stringify(manifest));
 	write("package-lock.json", JSON.stringify({ lockfileVersion: 3, packages }));
 	write("dist/app.js.map", map);
-	write(".feynman/npm/node_modules/runtime/file.js.map", map);
+	write(".axorbis/npm/node_modules/runtime/file.js.map", map);
 	try { run(root); } finally { rmSync(root, { recursive: true, force: true }); }
 }
 
@@ -56,7 +56,7 @@ test("explicit scratch application preserves JS/types/licenses/native/docs/examp
 		for (const path of ["dist/index.js", "dist/index.d.ts", "dist/native.node", "LICENSE", "docs/help.md", "examples/demo.js"]) {
 			assert.equal(readFileSync(join(root, "node_modules/bundled", path), "utf8"), `retained ${path}`);
 		}
-		for (const path of ["dist/app.js.map", ".feynman/npm/node_modules/runtime/file.js.map", "node_modules/dev-only/dist/index.js.map"]) {
+		for (const path of ["dist/app.js.map", ".axorbis/npm/node_modules/runtime/file.js.map", "node_modules/dev-only/dist/index.js.map"]) {
 			assert.equal(readFileSync(join(root, path), "utf8"), map);
 		}
 		assert.deepEqual(readFileSync(join(root, "package-lock.json")), before);

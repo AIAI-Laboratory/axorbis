@@ -519,7 +519,7 @@ test("reconcileManagedCorePackageInstalls rejects a stale bundle before changing
 	writeSettings(agentDir, { packages: ["npm:pi-web-access@0.28.0"] });
 	createInstalledManagedPackage(agentDir, "pi-web-access", "0.25.0");
 	createInstalledGlobalPackage(root, "pi-web-access", "0.25.0");
-	createInstalledPackage(resolve(appRoot, ".feynman/npm/node_modules/pi-web-access"), "pi-web-access", "0.25.0");
+	createInstalledPackage(resolve(appRoot, ".axorbis/npm/node_modules/pi-web-access"), "pi-web-access", "0.25.0");
 	assert.throws(() => reconcileManagedCorePackageInstalls(agentDir, appRoot), /must match npm:pi-web-access@0\.28\.0; found 0\.25\.0/);
 	assert.equal(readInstalledPackageVersion(resolve(agentDir, "npm/node_modules/pi-web-access")), "0.25.0");
 	assert.equal(readInstalledPackageVersion(resolve(root, "npm-global/lib/node_modules/pi-web-access")), "0.25.0");
@@ -536,7 +536,7 @@ test("reconcileManagedCorePackageInstalls leaves explicit non-managed selectors 
 	] });
 	createInstalledManagedPackage(agentDir, "pi-subagents", "0.99.0");
 	createInstalledManagedPackage(agentDir, "@companion-ai/alpha-hub", "9.0.0");
-	createInstalledPackage(resolve(appRoot, ".feynman/npm/node_modules/pi-subagents"), "pi-subagents", "0.65.1");
+	createInstalledPackage(resolve(appRoot, ".axorbis/npm/node_modules/pi-subagents"), "pi-subagents", "0.65.1");
 	assert.deepEqual(reconcileManagedCorePackageInstalls(agentDir, appRoot), []);
 	assert.equal(readInstalledPackageVersion(resolve(agentDir, "npm/node_modules/pi-subagents")), "0.99.0");
 	assert.equal(readInstalledPackageVersion(resolve(agentDir, "npm/node_modules/@companion-ai/alpha-hub")), "9.0.0");

@@ -215,9 +215,9 @@ test("buildPiEnv wires Feynman paths into the Pi environment", () => {
 		assert.equal(env.FEYNMAN_BIN_PATH, "/repo/feynman/bin/feynman.js");
 		assert.equal(env.FEYNMAN_PI_CLI_PATH, "/repo/feynman/node_modules/@earendil-works/pi-coding-agent/dist/cli.js");
 		assert.equal(env.FEYNMAN_MEMORY_DIR, "/home/.feynman/memory");
-		assert.equal(env.FEYNMAN_NPM_PREFIX, "/home/.feynman/npm-global");
-		assert.equal(env.NPM_CONFIG_PREFIX, "/home/.feynman/npm-global");
-		assert.equal(env.npm_config_prefix, "/home/.feynman/npm-global");
+		assert.equal(env.FEYNMAN_NPM_PREFIX, "/home/.axorbis/npm-global");
+		assert.equal(env.NPM_CONFIG_PREFIX, "/home/.axorbis/npm-global");
+		assert.equal(env.npm_config_prefix, "/home/.axorbis/npm-global");
 		assert.equal(env.FEYNMAN_CODING_AGENT_DIR, "/home/.feynman/agent");
 		assert.equal(env.PI_CODING_AGENT_DIR, "/home/.feynman/agent");
 		assert.equal(env.AXORBIS_WEB_SEARCH_CONFIG, "/tmp/custom-web/research-web.json");
@@ -239,7 +239,7 @@ test("buildPiEnv wires Feynman paths into the Pi environment", () => {
 		assert.match(env.OTEL_EXPORTER_OTLP_LOGS_HEADERS ?? "", /^Authorization=Bearer phc_/);
 		assert.ok(
 			env.PATH?.startsWith(
-				"/home/.feynman/bin:/repo/feynman/node_modules/.bin:/repo/feynman/.feynman/npm/node_modules/.bin:/home/.feynman/npm-global/bin:",
+				"/home/.feynman/bin:/repo/feynman/node_modules/.bin:/repo/feynman/.axorbis/npm/node_modules/.bin:/home/.axorbis/npm-global/bin:",
 			),
 		);
 	} finally {
@@ -518,10 +518,10 @@ test("applyFeynmanPackageManagerEnv pins npm globals to the Feynman prefix", () 
 	try {
 		const prefix = applyFeynmanPackageManagerEnv("/home/.feynman/agent");
 
-		assert.equal(prefix, "/home/.feynman/npm-global");
-		assert.equal(process.env.FEYNMAN_NPM_PREFIX, "/home/.feynman/npm-global");
-		assert.equal(process.env.NPM_CONFIG_PREFIX, "/home/.feynman/npm-global");
-		assert.equal(process.env.npm_config_prefix, "/home/.feynman/npm-global");
+		assert.equal(prefix, "/home/.axorbis/npm-global");
+		assert.equal(process.env.FEYNMAN_NPM_PREFIX, "/home/.axorbis/npm-global");
+		assert.equal(process.env.NPM_CONFIG_PREFIX, "/home/.axorbis/npm-global");
+		assert.equal(process.env.npm_config_prefix, "/home/.axorbis/npm-global");
 	} finally {
 		if (previousFeynmanPrefix === undefined) {
 			delete process.env.FEYNMAN_NPM_PREFIX;

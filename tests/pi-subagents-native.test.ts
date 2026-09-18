@@ -9,7 +9,7 @@ import { assertPiSubagentsNativeSources, PI_SUBAGENTS_NATIVE_MARKER } from "../s
 import { verifyPiSubagentsNativeBehavior } from "../scripts/lib/pi-subagents-native-verification.mjs";
 
 const appRoot = process.env.FEYNMAN_SUBAGENTS_TEST_APP_ROOT ?? resolve(import.meta.dirname, "..");
-const runtime = resolve(appRoot, ".feynman/npm");
+const runtime = resolve(appRoot, ".axorbis/npm");
 const root = resolve(runtime, "node_modules/pi-subagents");
 const installedVersion = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")).version;
 // These cases are native-layout specific; the existing suite keeps legacy tests.

@@ -18,8 +18,8 @@ test("installed compiler smoke requires root/runtime and both nested Pi compiler
 	assert.deepEqual(surfaces.map((surface: { modules: string }) => surface.modules), [
 		join(root, "node_modules"),
 		join(root, "node_modules/@earendil-works/pi-coding-agent/node_modules"),
-		join(root, ".feynman/npm/node_modules"),
-		join(root, ".feynman/npm/node_modules/@earendil-works/pi-coding-agent/node_modules"),
+		join(root, ".axorbis/npm/node_modules"),
+		join(root, ".axorbis/npm/node_modules/@earendil-works/pi-coding-agent/node_modules"),
 	]);
 });
 

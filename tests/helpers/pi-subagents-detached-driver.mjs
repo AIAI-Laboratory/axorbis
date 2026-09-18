@@ -3,7 +3,7 @@ import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {EventEmitter} from 'node:events';
 const root=process.env.PROOF_ROOT, home=process.env.HOME;
-const sub=path.join(root,'.feynman/npm/node_modules/pi-subagents');
+const sub=path.join(root,'.axorbis/npm/node_modules/pi-subagents');
 const {executeAsyncSingle}=await import(pathToFileURL(path.join(sub,'src/runs/background/async-execution.ts')));
 const {DIRS,SUBAGENT_ASYNC_STARTED_EVENT}=await import(pathToFileURL(path.join(sub,'src/shared/types.ts')));
 const events=new EventEmitter();let pid,asyncDir,exited=false;

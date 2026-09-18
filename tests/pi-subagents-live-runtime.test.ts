@@ -11,7 +11,7 @@ import test from "node:test";
 // No session factory injection, shared runtime writes, or provider credentials.
 const root = process.cwd();
 const worker = resolve(root, "tests/helpers/pi-subagents-native-child.mjs");
-const runtimeRoot = resolve(root, ".feynman/npm/node_modules");
+const runtimeRoot = resolve(root, ".axorbis/npm/node_modules");
 
 function isolatedEnvironment(home: string, host: string, mode: string): NodeJS.ProcessEnv {
 	// Do not copy process.env: CI/developer credentials and provider overrides

@@ -384,7 +384,7 @@ test("NODE_PATH-only host is rejected even when Node's unrestricted compiler loo
 });
 
 function runtimeRecoveryFixture(t: TestContext, empty = true) {
-	const f = fixture(t), runtime = join(f.app, ".feynman/npm");
+	const f = fixture(t), runtime = join(f.app, ".axorbis/npm");
 	const destination = join(f.modules, host), source = join(runtime, "node_modules", host);
 	assert.notEqual(source, destination);
 	mkdirSync(dirname(source), { recursive: true });

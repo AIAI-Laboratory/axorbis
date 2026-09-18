@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 export default async function registerOfflineProvider(pi) {
- const modules=path.join(process.env.PROOF_ROOT,'.feynman/npm/node_modules');
+ const modules=path.join(process.env.PROOF_ROOT,'.axorbis/npm/node_modules');
  const {createAssistantMessageEventStream}=await import(pathToFileURL(path.join(modules,'@earendil-works/pi-ai/dist/index.js')));
  const {Type}=await import(pathToFileURL(path.join(modules,'typebox/build/index.mjs')));
  const record=(type,data={})=>fs.appendFileSync(path.join(process.env.HOME,'provider-proof.jsonl'),JSON.stringify({type,pid:process.pid,...data})+'\n');
