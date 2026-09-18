@@ -45,7 +45,7 @@ test("buildPiArgs includes configured runtime paths and prompt", () => {
 		appRoot: "/repo/feynman",
 		workingDir: "/workspace",
 		sessionDir: "/sessions",
-		feynmanAgentDir: "/home/.feynman/agent",
+		feynmanAgentDir: "/home/.axorbis/agent",
 		mode: "rpc",
 		initialPrompt: "hello",
 		explicitModelSpec: "openai:gpt-test",
@@ -75,7 +75,7 @@ test("buildPiArgs places the delimiter after all options for dash-leading prompt
 		appRoot: "/repo/feynman",
 		workingDir: "/workspace",
 		sessionDir: "/sessions",
-		feynmanAgentDir: "/home/.feynman/agent",
+		feynmanAgentDir: "/home/.axorbis/agent",
 		mode: "text",
 		explicitModelSpec: "openai:gpt-test",
 		oneShotPrompt: "--answer briefly",
@@ -93,7 +93,7 @@ test("buildPiArgs places the delimiter after all options for dash-leading prompt
 		appRoot: "/repo/feynman",
 		workingDir: "/workspace",
 		sessionDir: "/sessions",
-		feynmanAgentDir: "/home/.feynman/agent",
+		feynmanAgentDir: "/home/.axorbis/agent",
 		mode: "rpc",
 		initialPrompt: "- summarize these results",
 	});
@@ -128,7 +128,7 @@ test("buildPiArgs omits thinking arg when launch thinking is not explicit", () =
 		appRoot: "/repo/feynman",
 		workingDir: "/workspace",
 		sessionDir: "/sessions",
-		feynmanAgentDir: "/home/.feynman/agent",
+		feynmanAgentDir: "/home/.axorbis/agent",
 		mode: "rpc",
 		initialPrompt: "hello",
 	});
@@ -141,7 +141,7 @@ test("buildPiArgs passes --continue when resuming the recent persisted session",
 		appRoot: "/repo/feynman",
 		workingDir: "/workspace",
 		sessionDir: "/sessions",
-		feynmanAgentDir: "/home/.feynman/agent",
+		feynmanAgentDir: "/home/.axorbis/agent",
 		mode: "text",
 		resumeRecentSession: true,
 	});
@@ -156,7 +156,7 @@ test("buildPiArgs passes stable session ids through to Pi", () => {
 		appRoot: "/repo/feynman",
 		workingDir: "/workspace",
 		sessionDir: "/sessions",
-		feynmanAgentDir: "/home/.feynman/agent",
+		feynmanAgentDir: "/home/.axorbis/agent",
 		mode: "json",
 		sessionId: "feynman-workbench-scaling-laws",
 		oneShotPrompt: "hello",
@@ -206,7 +206,7 @@ test("buildPiEnv wires Feynman paths into the Pi environment", () => {
 		appRoot: "/repo/feynman",
 		workingDir: "/workspace",
 		sessionDir: "/sessions",
-		feynmanAgentDir: "/home/.feynman/agent",
+		feynmanAgentDir: "/home/.axorbis/agent",
 		feynmanVersion: "0.1.5",
 	});
 
@@ -393,7 +393,7 @@ test("buildPiEnv clears inherited telemetry collectors when Feynman telemetry is
 			appRoot: "/repo/feynman",
 			workingDir: "/workspace",
 			sessionDir: "/sessions",
-			feynmanAgentDir: "/home/.feynman/agent",
+			feynmanAgentDir: "/home/.axorbis/agent",
 			feynmanVersion: "0.3.4",
 		});
 
@@ -495,7 +495,7 @@ test("buildPiEnv uses pre-resolved executable paths when provided", () => {
 			appRoot: "/repo/feynman",
 			workingDir: "/workspace",
 			sessionDir: "/sessions",
-			feynmanAgentDir: "/home/.feynman/agent",
+			feynmanAgentDir: "/home/.axorbis/agent",
 		},
 		paths,
 		{
@@ -516,7 +516,7 @@ test("applyFeynmanPackageManagerEnv pins npm globals to the Feynman prefix", () 
 	const previousLowercasePrefix = process.env.npm_config_prefix;
 
 	try {
-		const prefix = applyFeynmanPackageManagerEnv("/home/.feynman/agent");
+		const prefix = applyFeynmanPackageManagerEnv("/home/.axorbis/agent");
 
 		assert.equal(prefix, "/home/.axorbis/npm-global");
 		assert.equal(process.env.FEYNMAN_NPM_PREFIX, "/home/.axorbis/npm-global");
