@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
-import { workbenchDataPath } from "../src/workbench/data-root.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
+import { workbenchDataPath } from "../engine/workbench/data-root.js";
 
 function makeWorkspace(): { exportRoot: string; root: string } {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-cloud-export-"));

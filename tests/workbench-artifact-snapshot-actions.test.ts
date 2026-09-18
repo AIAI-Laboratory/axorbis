@@ -8,14 +8,14 @@ import {
 	captureArtifactSnapshotBaseline,
 	readArtifactSnapshotRecords,
 	recordArtifactSnapshotsForChanges,
-} from "../src/workbench/artifact-snapshots.js";
+} from "../engine/workbench/artifact-snapshots.js";
 import {
 	diffArtifactVersionSnapshot,
 	restoreArtifactVersionSnapshot,
-} from "../src/workbench/artifact-snapshot-actions.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
-import type { WorkbenchArtifactVersion } from "../src/workbench/types.js";
+} from "../engine/workbench/artifact-snapshot-actions.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
+import type { WorkbenchArtifactVersion } from "../engine/workbench/types.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-snapshot-actions-"));

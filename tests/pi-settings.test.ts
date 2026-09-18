@@ -19,9 +19,9 @@ import {
 	resolvePackageUpdateSources,
 	shouldPruneLegacyDefaultPackages,
 	supportsNativePackageSources,
-} from "../src/pi/package-presets.js";
-import { chooseRecommendedModel } from "../src/model/catalog.js";
-import { normalizeFeynmanSettings, normalizeThinkingLevel } from "../src/pi/settings.js";
+} from "../engine/pi/package-presets.js";
+import { chooseRecommendedModel } from "../engine/model/catalog.js";
+import { normalizeFeynmanSettings, normalizeThinkingLevel } from "../engine/pi/settings.js";
 
 test("bundled settings disable the project theme copy while the synced agent theme stays enabled", async () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-settings-"));

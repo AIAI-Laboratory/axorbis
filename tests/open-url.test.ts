@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { getOpenUrlCommand } from "../src/system/open-url.js";
+import { getOpenUrlCommand } from "../engine/system/open-url.js";
 
 test("getOpenUrlCommand uses open on macOS when available", () => {
 	const command = getOpenUrlCommand(

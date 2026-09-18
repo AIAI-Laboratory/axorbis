@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { exitCodeFromSignal } from "../src/pi/launch.js";
+import { exitCodeFromSignal } from "../engine/pi/launch.js";
 
 test("exitCodeFromSignal maps POSIX signals to conventional shell exit codes", () => {
 	assert.equal(exitCodeFromSignal("SIGTERM"), 143);

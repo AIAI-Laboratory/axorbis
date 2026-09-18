@@ -402,7 +402,7 @@ test("all runtime and package surfaces wire and verify the timeout patch", () =>
 		"utf8",
 	);
 	const launchPatchSource = readFileSync(
-		resolve(appRoot, "src", "pi", "runtime-patches.ts"),
+		resolve(appRoot, "engine", "pi", "runtime-patches.ts"),
 		"utf8",
 	);
 	assert.ok(

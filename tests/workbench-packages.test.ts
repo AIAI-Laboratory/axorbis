@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { updateWorkbenchPackageSettings } from "../src/workbench/package-settings.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
+import { updateWorkbenchPackageSettings } from "../engine/workbench/package-settings.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
 
 function writePackage(root: string, name: string, manifest: Record<string, unknown>): void {
 	const packageRoot = join(root, ".feynman", "npm", "node_modules", ...name.split("/"));

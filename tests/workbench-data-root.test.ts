@@ -4,14 +4,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { getFeynmanActiveOrgPath } from "../src/config/paths.js";
+import { getFeynmanActiveOrgPath } from "../engine/config/paths.js";
 import {
 	ensureWorkbenchDataRoot,
 	getLegacyHomeWorkbenchDataRoot,
 	getWorkbenchDataHome,
 	getWorkbenchWorkspaceId,
 	workbenchDataPath,
-} from "../src/workbench/data-root.js";
+} from "../engine/workbench/data-root.js";
 
 function withFeynmanHome<T>(homeParent: string, callback: () => T): T {
 	const previousHome = process.env.FEYNMAN_HOME;

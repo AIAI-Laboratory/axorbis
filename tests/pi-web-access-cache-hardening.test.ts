@@ -9,6 +9,7 @@ import {
 	rmSync,
 	statSync,
 	symlinkSync,
+	unlinkSync,
 	utimesSync,
 	writeFileSync,
 } from "node:fs";
@@ -225,7 +226,7 @@ test("fetched-content cache rejects directory and entry symlinks", { skip: proce
 		assert.match(rejected.fetchCacheError, /not a safe directory/);
 		assert.deepEqual(readdirSync(outsideDir), []);
 
-		rmSync(cacheDir);
+		unlinkSync(cacheDir);
 		mkdirSync(cacheDir);
 		const targetPath = join(outsideDir, "outside.json");
 		const linkedData = {

@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { executeNotebookCell } from "../src/workbench/notebook-execution.js";
-import { workbenchDataPath } from "../src/workbench/data-root.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
+import { executeNotebookCell } from "../engine/workbench/notebook-execution.js";
+import { workbenchDataPath } from "../engine/workbench/data-root.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-modal-"));

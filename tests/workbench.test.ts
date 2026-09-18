@@ -11,14 +11,14 @@ import {
 	removeWorkbenchChatAttachment,
 	submitWorkbenchChatMessage,
 	updateWorkbenchChatSessionConfig,
-} from "../src/workbench/chat.js";
-import { attachStrictJsonlLineReader, buildWorkbenchRpcPrompt, handlePiJsonLine } from "../src/workbench/chat-runtime.js";
-import { workbenchDataPath } from "../src/workbench/data-root.js";
-import { executeNotebookCell, readNotebookExecutionRecords } from "../src/workbench/notebook-execution.js";
-import { generateWorkbenchPlan, updateWorkbenchPlanAction, updateWorkbenchPlanStep } from "../src/workbench/plan.js";
-import { buildWorkbenchState, readWorkbenchFile, readWorkbenchFileDownload } from "../src/workbench/scan.js";
-import { parseWorkbenchPort, startWorkbenchServer } from "../src/workbench/server.js";
-import { workbenchPiSessionId } from "../src/workbench/pi-session.js";
+} from "../engine/workbench/chat.js";
+import { attachStrictJsonlLineReader, buildWorkbenchRpcPrompt, handlePiJsonLine } from "../engine/workbench/chat-runtime.js";
+import { workbenchDataPath } from "../engine/workbench/data-root.js";
+import { executeNotebookCell, readNotebookExecutionRecords } from "../engine/workbench/notebook-execution.js";
+import { generateWorkbenchPlan, updateWorkbenchPlanAction, updateWorkbenchPlanStep } from "../engine/workbench/plan.js";
+import { buildWorkbenchState, readWorkbenchFile, readWorkbenchFileDownload } from "../engine/workbench/scan.js";
+import { parseWorkbenchPort, startWorkbenchServer } from "../engine/workbench/server.js";
+import { workbenchPiSessionId } from "../engine/workbench/pi-session.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-"));
@@ -95,11 +95,11 @@ function makeReactAppRoot(): string {
 	writeFileSync(join(root, "dist", "workbench-web", "index.html"), [
 		"<!doctype html>",
 		"<html>",
-		"<head><title>Feynman Science</title></head>",
+		"<head><title>Axorbis Research Workspace</title></head>",
 		"<body><div id=\"root\"></div><script type=\"module\" src=\"/app-shell/assets/app.js\"></script></body>",
 		"</html>",
 	].join(""));
-	writeFileSync(join(root, "dist", "workbench-web", "assets", "app.js"), "console.log('react-shell');\n");
+	writeFileSync(join(root, "dist", "workbench-web", "assets", "app.js"), "console.log('axorbis-shell');\n");
 	return root;
 }
 
@@ -929,7 +929,7 @@ test("workbench server requires the launch token for app and API routes", async 
 			headers: { cookie: "feynman_workbench=test-token" },
 		});
 		assert.equal(asset.status, 200);
-		assert.match(await asset.text(), /react-shell/);
+		assert.match(await asset.text(), /axorbis-shell/);
 
 		const state = await fetch(`${handle.url}api/state`, {
 			headers: { cookie: "feynman_workbench=test-token" },

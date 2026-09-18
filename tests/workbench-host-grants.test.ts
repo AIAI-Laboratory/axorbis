@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-host-grants-"));

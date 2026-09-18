@@ -7,7 +7,7 @@ import {
 	ensureSupportedNodeVersion,
 	getUnsupportedNodeVersionLines,
 	isSupportedNodeVersion,
-} from "../src/system/node-version.js";
+} from "../engine/system/node-version.js";
 
 test("isSupportedNodeVersion enforces the exact minimum floor", () => {
 	assert.equal(isSupportedNodeVersion(MIN_NODE_VERSION), true);

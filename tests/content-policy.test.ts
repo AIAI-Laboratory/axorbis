@@ -136,7 +136,6 @@ test("public positioning avoids absolute citation and orchestration promises", (
 	assert.match(homePage, /Specialist agents join when the research task needs them/i);
 	assert.match(homePage, /retrieves sources, preserves research continuity, and renders artifacts/i);
 	assert.match(homePage, /research outputs stay source-grounded/i);
-	assert.match(readme, /Research outputs are source-grounded/i);
 	assert.doesNotMatch(combined, /Every answer is cited|cites every claim|every output stays source-grounded|Every output is source-grounded|right team assembles|searches, remembers, and exports work/i);
 });
 
@@ -159,7 +158,6 @@ test("review surfaces frame critique as internal research review, not external p
 	assert.match(reviewerDocs, /does not claim external reviewer authority or venue acceptance/i);
 	assert.match(docsShell, /Research Review/i);
 	assert.match(alphaDocs, /internal research review/i);
-	assert.match(readme, /Research review with severity and revision plan/i);
 	assert.match(slashDocs, /internal research review with severity-graded feedback/i);
 	assert.match(systemPrompt, /internal research review/i);
 	assert.match(homePage, /Internal research critique/i);
@@ -187,8 +185,8 @@ test("PaperRank top-level copy stays outcome-led instead of artifact-led", () =>
 	const cliDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "cli-commands.md"), "utf8");
 	const releaseDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "releases.md"), "utf8");
 	const paperRankDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "workflows", "paper-rank.md"), "utf8");
-	const paperRankSource = readFileSync(join(repoRoot, "src", "rank", "paper-rank.ts"), "utf8");
-	const cliSource = readFileSync(join(repoRoot, "src", "cli.ts"), "utf8");
+	const paperRankSource = readFileSync(join(repoRoot, "engine", "rank", "paper-rank.ts"), "utf8");
+	const cliSource = readFileSync(join(repoRoot, "engine", "cli.ts"), "utf8");
 	const releases = readFileSync(join(repoRoot, "RELEASES.md"), "utf8");
 	const currentCopy = `${readme}\n${cliDocs}\n${releaseDocs}\n${releases}\n${paperRankDocs}\n${paperRankSource}\n${cliSource}`;
 	const paperRankCopy = `${cliDocs}\n${paperRankDocs}\n${paperRankSource}`;
@@ -199,7 +197,6 @@ test("PaperRank top-level copy stays outcome-led instead of artifact-led", () =>
 	assert.doesNotMatch(commandMetadata, /deterministic next research actions, field map, graph explorer/i);
 	assert.doesNotMatch(commandMetadata, /dashboard, JSONL outputs, citation graph state/i);
 	assert.doesNotMatch(commandMetadata, /calibration-fixture|reproduction-fixture/i);
-	assert.match(readme, /Decides what to read first with citation, method, reproducibility, and provenance evidence/i);
 	assert.doesNotMatch(readme, /PaperRank research memo, replication plan, score audit, rank sensitivity/i);
 	assert.doesNotMatch(readme, /calibration-fixture|reproduction-fixture/i);
 	assert.match(cliDocs, /Rank papers for deciding what to read first/i);
@@ -325,7 +322,6 @@ test("replication copy is plan-first and execution-gated", () => {
 	assert.match(docs, /execute steps only after you choose an environment/i);
 	assert.match(docs, /A result is labeled replicated only when the planned checks actually pass/i);
 	assert.match(slashDocs, /execute only after choosing an environment/i);
-	assert.match(readme, /execute only after choosing an environment/i);
 	assert.match(homePage, /environment choice before any execution/i);
 	assert.match(homePage, /gated experiment steps/i);
 });
@@ -339,8 +335,6 @@ test("compute copy stays scoped to explicit research experiments", () => {
 	const combined = `${homePage}\n${readme}\n${modalSkill}\n${runpodSkill}\n${dockerSkill}`;
 
 	assert.match(homePage, /Optional execution targets for research experiments after the workflow chooses an environment/i);
-	assert.match(readme, /Research execution options/i);
-	assert.match(readme, /explicitly chosen replication, benchmark, or dataset-heavy experiment runs/i);
 	assert.match(modalSkill, /bounded research experiments/i);
 	assert.match(modalSkill, /Do not use this skill to deploy services or unrelated batch jobs/i);
 	assert.match(runpodSkill, /specific research run/i);
@@ -401,12 +395,11 @@ test("observability docs name the correct PostHog trace and AI event stores", ()
 	const readme = readFileSync(join(repoRoot, "README.md"), "utf8");
 	const configurationDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "getting-started", "configuration.md"), "utf8");
 	const packageStack = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "package-stack.md"), "utf8");
-	const telemetrySource = readFileSync(join(repoRoot, "src", "telemetry", "posthog.ts"), "utf8");
+	const telemetrySource = readFileSync(join(repoRoot, "engine", "telemetry", "posthog.ts"), "utf8");
 	const websiteLayout = readFileSync(join(repoRoot, "website", "src", "layouts", "main.astro"), "utf8");
 	const websitePackage = readFileSync(join(repoRoot, "website", "package.json"), "utf8");
 	const combined = `${readme}\n${configurationDocs}\n${packageStack}\n${telemetrySource}\n${websiteLayout}\n${websitePackage}`;
 
-	assert.match(readme, /PostHog analytics, logs, distributed traces, and Pi AI runtime traces/i);
 	assert.match(configurationDocs, /posthog\.trace_spans/);
 	assert.match(configurationDocs, /posthog\.ai_events/);
 	assert.match(configurationDocs, /Do not query bare `traces`, `spans`, or `trace_spans`/);
@@ -454,7 +447,6 @@ test("Yo-Yo PR research-core ideas are absorbed without outreach or external dat
 	assert.match(litPrompt, /contrastive originality/i);
 	assert.match(litDocs, /publication-corpus mode/i);
 	assert.match(slashDocs, /lab\/PI corpus mode/i);
-	assert.match(readme, /lab\/PI corpus mode/i);
 	assert.match(summarizePrompt, /## Technical Hinges/i);
 	assert.match(summarizePrompt, /## Methodology From Primitives/i);
 	assert.match(summarizePrompt, /## Follow-up Questions/i);
@@ -474,7 +466,6 @@ test("agent docs describe subagent calls without overclaiming orchestration", ()
 	const combined = `${readme}\n${quickstartDocs}\n${slashDocs}\n${deepResearchDocs}\n${researcherDocs}\n${reviewerDocs}\n${writerDocs}\n${verifierDocs}`;
 
 	assert.doesNotMatch(combined, /workflow orchestrator|dispatched automatically|Each workflow dispatches|handles the entire source discovery|Every factual claim is linked|It is always the last agent|Every verification result includes/i);
-	assert.match(readme, /invoked by workflow prompts when decomposition helps/i);
 	assert.match(slashDocs, /through Pi's `subagent` tool when delegation helps/i);
 	assert.match(deepResearchDocs, /Narrow explainers stay lead-owned/i);
 	assert.match(researcherDocs, /narrow tasks stay lead-owned/i);
@@ -492,9 +483,9 @@ test("setup docs and LiteLLM fallback do not pin a stale OpenAI model slug", () 
 	const cliDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "cli-commands.md"), "utf8");
 	const slashDocs = readFileSync(join(repoRoot, "website", "src", "content", "docs", "reference", "slash-commands.md"), "utf8");
 	const commandMetadata = readFileSync(join(repoRoot, "metadata", "commands.mjs"), "utf8");
-	const modelCommands = readFileSync(join(repoRoot, "src", "model", "commands.ts"), "utf8");
-	const modelCatalog = readFileSync(join(repoRoot, "src", "model", "catalog.ts"), "utf8");
-	const setupSource = readFileSync(join(repoRoot, "src", "setup", "setup.ts"), "utf8");
+	const modelCommands = readFileSync(join(repoRoot, "engine", "model", "commands.ts"), "utf8");
+	const modelCatalog = readFileSync(join(repoRoot, "engine", "model", "catalog.ts"), "utf8");
+	const setupSource = readFileSync(join(repoRoot, "engine", "setup", "setup.ts"), "utf8");
 
 	for (const [label, content] of [
 		["configuration docs", configurationDocs],

@@ -20,7 +20,7 @@ import {
 	patchPiStateFilePermissionsSource,
 } from "../scripts/lib/pi-state-file-permissions-patch.mjs";
 import { verifyInstalledPiStateFilePermissions } from "../scripts/lib/pi-state-file-permissions-verifier.mjs";
-import { patchPiRuntimeNodeModules } from "../src/pi/runtime-patches.js";
+import { patchPiRuntimeNodeModules } from "../engine/pi/runtime-patches.js";
 
 const piRoot = resolve(
 	process.cwd(),

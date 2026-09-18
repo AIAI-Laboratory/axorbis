@@ -9,11 +9,11 @@ import {
 	readWorkbenchEditableArtifact,
 	suggestWorkbenchArtifactRefinement,
 	updateWorkbenchArtifactContent,
-} from "../src/workbench/artifact-edit.js";
-import { workbenchDataPath } from "../src/workbench/data-root.js";
-import type { WorkbenchPromptRequest } from "../src/workbench/chat.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
+} from "../engine/workbench/artifact-edit.js";
+import { workbenchDataPath } from "../engine/workbench/data-root.js";
+import type { WorkbenchPromptRequest } from "../engine/workbench/chat.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-artifact-edit-"));

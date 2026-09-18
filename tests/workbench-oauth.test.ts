@@ -5,11 +5,11 @@ import { platform, tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { getWorkbenchDataRoot } from "../src/workbench/data-root.js";
-import { authorizationHeaderForConnector, readWorkbenchOAuthTokens } from "../src/workbench/oauth-store.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
-import { upsertWorkbenchSettingsRecord } from "../src/workbench/settings-store.js";
+import { getWorkbenchDataRoot } from "../engine/workbench/data-root.js";
+import { authorizationHeaderForConnector, readWorkbenchOAuthTokens } from "../engine/workbench/oauth-store.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
+import { upsertWorkbenchSettingsRecord } from "../engine/workbench/settings-store.js";
 
 async function readRequestBody(request: NodeJS.ReadableStream): Promise<string> {
 	let body = "";

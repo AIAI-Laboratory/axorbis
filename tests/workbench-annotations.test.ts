@@ -8,12 +8,12 @@ import {
 	readWorkbenchArtifactAnnotations,
 	removeWorkbenchArtifactAnnotation,
 	upsertWorkbenchArtifactAnnotation,
-} from "../src/workbench/annotations.js";
-import { buildWorkbenchRpcPrompt } from "../src/workbench/chat-runtime.js";
-import { workbenchDataPath } from "../src/workbench/data-root.js";
-import { readWorkbenchPdfText } from "../src/workbench/pdf-text.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
+} from "../engine/workbench/annotations.js";
+import { buildWorkbenchRpcPrompt } from "../engine/workbench/chat-runtime.js";
+import { workbenchDataPath } from "../engine/workbench/data-root.js";
+import { readWorkbenchPdfText } from "../engine/workbench/pdf-text.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
 
 function minimalPdf(text: string): Buffer {
 	const escaped = text.replace(/[\\()]/g, "\\$&");

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { validateResearchRun, type ResearchRun } from "../src/research/contracts.js";
+import { validateResearchRun, type ResearchRun } from "../engine/research/contracts.js";
 import {
 	abstractFromInvertedIndex,
 	buildFullTextAccessPlan,
@@ -40,12 +40,12 @@ import {
 	runPaperRank,
 	scorePapers,
 	slugifyTopic,
-} from "../src/rank/paper-rank.js";
+} from "../engine/rank/paper-rank.js";
 
 const fixturePath = resolve(process.cwd(), "tests", "fixtures", "openalex-rank.json");
 const calibrationFixturePath = resolve(process.cwd(), "tests", "fixtures", "paper-rank-calibration.json");
 const reproductionFixturePath = resolve(process.cwd(), "tests", "fixtures", "paper-rank-reproduction.json");
-const cliEntryPath = resolve(process.cwd(), "src", "index.ts");
+const cliEntryPath = resolve(process.cwd(), "engine", "index.ts");
 const tsxLoaderPath = resolve(process.cwd(), "node_modules", "tsx", "dist", "loader.mjs");
 
 function readJsonl(path: string): unknown[] {
@@ -1942,7 +1942,7 @@ test("feynman rank works end to end through the CLI with a fixture source", () =
 		[
 			"--import",
 			"tsx",
-			"src/index.ts",
+			"engine/index.ts",
 			"rank",
 			"mechanistic interpretability sparse autoencoders",
 			"--limit",
@@ -2055,7 +2055,7 @@ test("feynman rank default output is concise and decision-first", () => {
 		[
 			"--import",
 			"tsx",
-			"src/index.ts",
+			"engine/index.ts",
 			"rank",
 			"mechanistic interpretability sparse autoencoders",
 			"--limit",
@@ -2153,7 +2153,7 @@ test("feynman paper works end to end through the CLI with a fixture source", () 
 		[
 			"--import",
 			"tsx",
-			"src/index.ts",
+			"engine/index.ts",
 			"paper",
 			"10.0000/foundation",
 			"--source-fixture",
@@ -2205,7 +2205,7 @@ test("feynman paper default output names the best access route", () => {
 		[
 			"--import",
 			"tsx",
-			"src/index.ts",
+			"engine/index.ts",
 			"paper",
 			"10.0000/foundation",
 			"--source-fixture",
@@ -2287,7 +2287,7 @@ test("feynman rank accepts a preference file through the CLI", () => {
 		[
 			"--import",
 			"tsx",
-			"src/index.ts",
+			"engine/index.ts",
 			"rank",
 			"mechanistic interpretability sparse autoencoders",
 			"--limit",
@@ -2334,7 +2334,7 @@ test("feynman rank accepts reproduction notes through the CLI", () => {
 		[
 			"--import",
 			"tsx",
-			"src/index.ts",
+			"engine/index.ts",
 			"rank",
 			"mechanistic interpretability sparse autoencoders",
 			"--limit",

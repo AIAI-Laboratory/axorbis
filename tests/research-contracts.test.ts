@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildResearchRunId, createResearchArtifact, validateResearchRun, type ResearchRun } from "../src/research/contracts.js";
-import { validateFeynmanPluginManifest } from "../src/research/plugin-manifest.js";
+import { buildResearchRunId, createResearchArtifact, validateResearchRun, type ResearchRun } from "../engine/research/contracts.js";
+import { validateFeynmanPluginManifest } from "../engine/research/plugin-manifest.js";
 
 test("ResearchRun validation requires a bounded typed artifact spine", () => {
 	const run: ResearchRun = {

@@ -4,17 +4,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { ensureWorkbenchChatSession, type WorkbenchChatSession } from "../src/workbench/chat.js";
-import { buildWorkbenchRpcPrompt } from "../src/workbench/chat-runtime.js";
-import { workbenchDataPath } from "../src/workbench/data-root.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
+import { ensureWorkbenchChatSession, type WorkbenchChatSession } from "../engine/workbench/chat.js";
+import { buildWorkbenchRpcPrompt } from "../engine/workbench/chat-runtime.js";
+import { workbenchDataPath } from "../engine/workbench/data-root.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
 import {
 	mutateWorkbenchTranscriptAnnotation,
 	readWorkbenchTranscriptAnnotations,
 	removeWorkbenchTranscriptAnnotation,
 	upsertWorkbenchTranscriptAnnotation,
-} from "../src/workbench/transcript-annotations.js";
+} from "../engine/workbench/transcript-annotations.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-transcript-annotations-"));

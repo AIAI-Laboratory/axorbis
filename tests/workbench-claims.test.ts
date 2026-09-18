@@ -4,9 +4,7 @@ import { join } from "node:path";
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { artifactMetadataPayload } from "../workbench-web/src/artifact-actions.js";
-import { artifactClaimsForPath } from "../workbench-web/src/artifacts.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
 
 function makeClaimsWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-claims-"));
@@ -42,14 +40,9 @@ test("workbench state exposes explicit research claims and links checks to claim
 		assert.ok(state.claims.some((claim) => claim.id === check?.claimId && claim.status === "verified"));
 		assert.equal(state.summary.claimCount, state.claims.length);
 
-		const artifactClaims = artifactClaimsForPath(state, "outputs/claim-ledger.md");
-		assert.ok(artifactClaims.some((claim) => claim.id === explicit?.id));
-		assert.ok(artifactClaims.some((claim) => claim.id === finding?.id));
-
 		const artifact = state.artifacts.find((item) => item.path === "outputs/claim-ledger.md");
 		assert.ok(artifact, "expected claim artifact");
-		const metadata = artifactMetadataPayload(artifact, state) as { claims?: Array<{ id: string; claim: string }> };
-		assert.ok(metadata.claims?.some((claim) => claim.id === explicit?.id));
+		assert.ok(state.claims.some((claim) => claim.id === explicit?.id && claim.evidencePaths.includes(artifact.path)));
 	} finally {
 		rmSync(root, { recursive: true, force: true });
 	}

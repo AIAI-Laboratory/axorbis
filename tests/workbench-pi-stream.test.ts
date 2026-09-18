@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { handlePiJsonLine } from "../src/workbench/chat-runtime.js";
+import { handlePiJsonLine } from "../engine/workbench/chat-runtime.js";
 
 test("workbench Pi RPC stream accepts Pi 0.84 delta-only message updates", async () => {
 	const toolEvents = new Map();

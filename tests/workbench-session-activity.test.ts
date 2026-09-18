@@ -4,11 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { ensureWorkbenchChatSession, type WorkbenchChatSession } from "../src/workbench/chat.js";
-import { workbenchDataPath } from "../src/workbench/data-root.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { buildWorkbenchSessionActivity } from "../src/workbench/session-activity.js";
-import { upsertWorkbenchFrameReadCursor } from "../src/workbench/read-cursors.js";
+import { ensureWorkbenchChatSession, type WorkbenchChatSession } from "../engine/workbench/chat.js";
+import { workbenchDataPath } from "../engine/workbench/data-root.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { buildWorkbenchSessionActivity } from "../engine/workbench/session-activity.js";
+import { upsertWorkbenchFrameReadCursor } from "../engine/workbench/read-cursors.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-session-activity-"));

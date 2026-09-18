@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { upsertProviderConfig } from "../src/model/models-json.js";
+import { upsertProviderConfig } from "../engine/model/models-json.js";
 
 test("upsertProviderConfig creates models.json and merges provider config", () => {
 	const dir = mkdtempSync(join(tmpdir(), "feynman-models-"));

@@ -9,7 +9,7 @@ import {
 	PI_CODING_AGENT_FORWARD_FIX_TARGETS,
 	patchPiCodingAgentForwardFixSource,
 } from "../scripts/lib/pi-runtime-correctness-patch.mjs";
-import { patchPiRuntimeNodeModules } from "../src/pi/runtime-patches.js";
+import { patchPiRuntimeNodeModules } from "../engine/pi/runtime-patches.js";
 
 const appRoot = process.cwd();
 patchPiRuntimeNodeModules(appRoot);

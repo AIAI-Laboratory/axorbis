@@ -7,7 +7,7 @@ import {
 	assertPiAgentCorePatchSource,
 	patchPiAgentCoreSource,
 } from "../scripts/lib/pi-agent-core-patch.mjs";
-import { patchPiRuntimeNodeModules } from "../src/pi/runtime-patches.js";
+import { patchPiRuntimeNodeModules } from "../engine/pi/runtime-patches.js";
 
 const TOOL_SOURCE = `
 async function prepareToolCall(currentContext, assistantMessage, toolCall, config, signal) {

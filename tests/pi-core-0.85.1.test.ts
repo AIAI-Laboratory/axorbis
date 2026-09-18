@@ -77,7 +77,8 @@ async function importPatched(pkg: string, file: string, source: string, override
 			(specifier.startsWith(".") ? new URL(specifier, url).href : import.meta.resolve(specifier));
 		return `from ${JSON.stringify(target)};`;
 	});
-	return import(`data:text/javascript;base64,${Buffer.from(linked).toString("base64")}`);
+	const executable = linked.replace(/^\/\/# sourceMappingURL=.*$/gm, "");
+	return import(`data:text/javascript;base64,${Buffer.from(executable).toString("base64")}`);
 }
 
 test("current catalogue preserves upstream corrected modality and all manifest bytes", () => {

@@ -23,31 +23,15 @@ test("npm uses the personal package and transferred repository", () => {
 	assert.equal(manifest.bugs.url, `${repository}/issues`);
 });
 
-test("release and consumer workflows use only the personal Feynman scope", () => {
-	const manifest = JSON.parse(read("package.json"));
-	const tarballPrefix = manifest.name.replace(/^@/, "").replaceAll("/", "-");
-	for (const path of [".github/workflows/publish.yml", ".github/workflows/e2e.yml"]) {
-		const content = read(path);
-		assert.ok(content.includes("@advaitpaliwal/feynman"), path);
-		assert.doesNotMatch(content, /@companion-ai\/feynman/, path);
-		assert.doesNotMatch(content, /["']@companion-ai["']\s*,\s*["']feynman["']/, path);
-		assert.doesNotMatch(content, /companion-ai-feynman-/, path);
-		assert.ok(content.includes(`${tarballPrefix}-`), path);
-	}
-	assert.ok(read(".github/workflows/e2e.yml").includes(`runner.temp }}/${tarballPrefix}-*.tgz`));
-});
-
 test("research source request identities use the transferred repository", () => {
 	for (const name of readdirSync("extensions/research-tools").filter((name) => name.endsWith(".ts"))) {
 		assert.doesNotMatch(read(`extensions/research-tools/${name}`), /github\.com\/companion-(?:ai|inc)\/feynman/i, name);
 	}
 });
 
-test("installation docs include the ordered one-time npm scope migration", () => {
-	for (const path of ["README.md", "website/src/content/docs/getting-started/installation.md"]) {
-		const content = read(path);
-		assert.ok(content.includes("npm uninstall -g @companion-ai/feynman\nnpm install -g @advaitpaliwal/feynman"), path);
-	}
+test("upstream installation docs retain the one-time npm scope migration", () => {
+	const content = read("website/src/content/docs/getting-started/installation.md");
+	assert.ok(content.includes("npm uninstall -g @companion-ai/feynman\nnpm install -g @advaitpaliwal/feynman"));
 });
 
 test("installers and their public copies use the new owner directly", () => {
@@ -64,15 +48,12 @@ test("installers and their public copies use the new owner directly", () => {
 	}
 });
 
-test("public source links do not depend on old-owner redirects", () => {
-	for (const path of [
-		"README.md",
-		"CONTRIBUTING.md",
-		"website/src/layouts/main.astro",
-		"website/src/pages/index.astro",
-	]) {
-		const content = read(path);
-		assert.ok(content.includes(repository), path);
-		assert.doesNotMatch(content, /companion-inc(?:\/|%2f)feynman/i);
+test("public source links distinguish Axorbis from the upstream engine", () => {
+	for (const path of ["README.md", "CONTRIBUTING.md"]) {
+		assert.ok(read(path).includes("https://github.com/AIAI-Laboratory/axorbis"), path);
 	}
+	for (const path of ["website/src/layouts/main.astro", "website/src/pages/index.astro"]) {
+		assert.ok(read(path).includes(repository), path);
+	}
+	assert.ok(read("README.md").includes(repository));
 });

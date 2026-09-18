@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { registerWorkbenchContextTool } from "../extensions/research-tools/workbench-context.js";
-import { workbenchDataPath } from "../src/workbench/data-root.js";
+import { workbenchDataPath } from "../engine/workbench/data-root.js";
 
 type RegisteredTool = {
 	execute: (toolCallId: string, params: { includeDiagnostics?: boolean }) => Promise<{

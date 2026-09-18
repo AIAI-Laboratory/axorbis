@@ -7,10 +7,10 @@ import test from "node:test";
 import {
 	readWorkbenchFrameReadCursors,
 	upsertWorkbenchFrameReadCursor,
-} from "../src/workbench/read-cursors.js";
-import { workbenchDataPath } from "../src/workbench/data-root.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
+} from "../engine/workbench/read-cursors.js";
+import { workbenchDataPath } from "../engine/workbench/data-root.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-read-cursors-"));

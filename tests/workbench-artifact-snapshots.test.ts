@@ -5,11 +5,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { submitWorkbenchChatMessage } from "../src/workbench/chat.js";
-import { executeNotebookCell } from "../src/workbench/notebook-execution.js";
-import { readArtifactSnapshotRecords } from "../src/workbench/artifact-snapshots.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { createWorkbenchProject } from "../src/workbench/projects.js";
+import { submitWorkbenchChatMessage } from "../engine/workbench/chat.js";
+import { executeNotebookCell } from "../engine/workbench/notebook-execution.js";
+import { readArtifactSnapshotRecords } from "../engine/workbench/artifact-snapshots.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { createWorkbenchProject } from "../engine/workbench/projects.js";
 
 function makeSnapshotWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-snapshots-"));

@@ -8,8 +8,8 @@ import {
 	installPackageSources,
 	reconcileManagedCorePackageInstalls,
 	updateConfiguredPackages,
-} from "../src/pi/package-ops.js";
-import { CORE_PACKAGE_SOURCES, shouldPruneLegacyDefaultPackages } from "../src/pi/package-presets.js";
+} from "../engine/pi/package-ops.js";
+import { CORE_PACKAGE_SOURCES, shouldPruneLegacyDefaultPackages } from "../engine/pi/package-presets.js";
 
 function createInstalledPackage(packageDir: string, packageName: string, version = "1.0.0"): void {
 	mkdirSync(packageDir, { recursive: true });

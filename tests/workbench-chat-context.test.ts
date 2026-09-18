@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { buildWorkbenchRpcPrompt } from "../src/workbench/chat-runtime.js";
-import { executeNotebookCell } from "../src/workbench/notebook-execution.js";
-import { upsertWorkbenchSettingsRecord } from "../src/workbench/settings-store.js";
+import { buildWorkbenchRpcPrompt } from "../engine/workbench/chat-runtime.js";
+import { executeNotebookCell } from "../engine/workbench/notebook-execution.js";
+import { upsertWorkbenchSettingsRecord } from "../engine/workbench/settings-store.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-chat-context-"));

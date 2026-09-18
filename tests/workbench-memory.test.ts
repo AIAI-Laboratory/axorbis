@@ -4,10 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { readWorkbenchMemory, removeWorkbenchMemoryRecord, removeWorkbenchNoteRecord, upsertWorkbenchMemoryRecord, upsertWorkbenchNoteRecord } from "../src/workbench/memory.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
-import { memoriesForScope, notesForTarget } from "../workbench-web/src/memory.js";
+import { readWorkbenchMemory, removeWorkbenchMemoryRecord, removeWorkbenchNoteRecord, upsertWorkbenchMemoryRecord, upsertWorkbenchNoteRecord } from "../engine/workbench/memory.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
 
 function makeMemoryWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-memory-"));
@@ -51,8 +50,8 @@ test("workbench memory store persists scoped memories and target notes", () => {
 		assert.equal(state.resources.find((group) => group.id === "memory")?.resources.find((resource) => resource.id === "session-memory-context")?.description.includes("1 memory and 1 note"), true);
 
 		const artifact = state.artifacts.find((item) => item.path === "outputs/result.md");
-		assert.equal(notesForTarget(state.notes, state.runs[0], artifact)[0]?.id, "artifact-note");
-		assert.equal(memoriesForScope(state.memories, "project", state.projects[0], state.runs[0], artifact)[0]?.id, "project-finding");
+		assert.equal(state.notes.find((note) => note.targetArtifactPath === artifact?.path)?.id, "artifact-note");
+		assert.equal(state.memories.find((memory) => memory.scope === "project" && memory.projectId === "workspace")?.id, "project-finding");
 
 		removeWorkbenchMemoryRecord(root, "project-finding");
 		removeWorkbenchNoteRecord(root, "artifact-note");

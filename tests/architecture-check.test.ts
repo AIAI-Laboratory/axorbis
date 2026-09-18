@@ -8,8 +8,8 @@ test("architecture guard passes while naming current split debt", () => {
 	});
 
 	assert.match(output, /checked \d+ source files/);
-	assert.match(output, /src\/rank\/paper-rank\.ts: \d+ lines/);
-	assert.match(output, /src\/cli\.ts: \d+ lines/);
+	assert.match(output, /engine\/rank\/paper-rank\.ts: \d+ lines/);
+	assert.match(output, /engine\/cli\.ts: \d+ lines/);
 	assert.match(output, /tests\/paper-rank\.test\.ts: \d+ lines/);
-	assert.match(output, /src\/model\/commands\.ts: \d+ lines/);
+	assert.match(output, /engine\/model\/commands\.ts: \d+ lines/);
 });

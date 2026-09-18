@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildModelStatusSnapshotFromRecords, isProClassModelSpec } from "../src/model/catalog.js";
+import { buildModelStatusSnapshotFromRecords, isProClassModelSpec } from "../engine/model/catalog.js";
 
 test("buildModelStatusSnapshotFromRecords returns empty guidance when model is set and valid", () => {
 	const snapshot = buildModelStatusSnapshotFromRecords(

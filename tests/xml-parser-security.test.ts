@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, test } from "node:test";
 
-import { fetchEuropePmcPaperContent, resolvePaperAccess, type PaperRecord } from "../src/rank/paper-rank.js";
+import { fetchEuropePmcPaperContent, resolvePaperAccess, type PaperRecord } from "../engine/rank/paper-rank.js";
 
 const temporaryDirectories: string[] = [];
 

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { fetchLatestFeynmanVersion, getFeynmanUpgradeLines, isNewerVersion } from "../src/system/self-update.js";
+import { fetchLatestFeynmanVersion, getFeynmanUpgradeLines, isNewerVersion } from "../engine/system/self-update.js";
 
 test("release discovery requests the personal package registry", async (t) => {
 	const requests: unknown[] = [];

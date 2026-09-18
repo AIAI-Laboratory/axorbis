@@ -9,10 +9,10 @@ import {
 	ensureWorkbenchChatSession,
 	submitWorkbenchChatMessage,
 	updateWorkbenchChatSessionConfig,
-} from "../src/workbench/chat.js";
-import { workbenchDataPath } from "../src/workbench/data-root.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
+} from "../engine/workbench/chat.js";
+import { workbenchDataPath } from "../engine/workbench/data-root.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
 
 function makeFrameWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-frames-"));

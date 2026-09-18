@@ -16,12 +16,12 @@ import {
 	resolveRankSynthesisModelSpec,
 	resolveThinkingConfig,
 	shouldRunInteractiveSetup,
-} from "../src/cli.js";
-import { buildModelStatusSnapshotFromRecords, chooseRecommendedModel, getAvailableModelRecords } from "../src/model/catalog.js";
-import { isLocalModelProvider, resolveModelProviderForCommand, setDefaultModelSpec } from "../src/model/commands.js";
-import { createModelRegistry } from "../src/model/registry.js";
-import { supportsNativePackageSources } from "../src/pi/package-presets.js";
-import { canonicalizeModelSpec, parseModelSpec } from "../src/pi/settings.js";
+} from "../engine/cli.js";
+import { buildModelStatusSnapshotFromRecords, chooseRecommendedModel, getAvailableModelRecords } from "../engine/model/catalog.js";
+import { isLocalModelProvider, resolveModelProviderForCommand, setDefaultModelSpec } from "../engine/model/commands.js";
+import { createModelRegistry } from "../engine/model/registry.js";
+import { supportsNativePackageSources } from "../engine/pi/package-presets.js";
+import { canonicalizeModelSpec, parseModelSpec } from "../engine/pi/settings.js";
 
 function createAuthPath(contents: Record<string, unknown>): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-auth-"));
@@ -177,7 +177,7 @@ test("resolveAlphaPassthroughArgs preserves alpha flags after leading cwd", () =
 test("feynman alpha reaches Alpha Hub help when cwd is supplied before alpha", () => {
 	const workingDir = mkdtempSync(join(tmpdir(), "feynman-alpha-cwd-"));
 	const homeDir = mkdtempSync(join(tmpdir(), "feynman-alpha-home-"));
-	const result = spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", "--cwd", workingDir, "alpha", "--help"], {
+	const result = spawnSync(process.execPath, ["--import", "tsx", "engine/index.ts", "--cwd", workingDir, "alpha", "--help"], {
 		cwd: process.cwd(),
 		encoding: "utf8",
 		env: {
@@ -196,7 +196,7 @@ test("feynman alpha reaches Alpha Hub help when cwd is supplied before alpha", (
 test("unknown CLI flags point users to Feynman help", () => {
 	const workingDir = mkdtempSync(join(tmpdir(), "feynman-unknown-option-cwd-"));
 	const homeDir = mkdtempSync(join(tmpdir(), "feynman-unknown-option-home-"));
-	const result = spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", "--cwd", workingDir, "update", "--extensions"], {
+	const result = spawnSync(process.execPath, ["--import", "tsx", "engine/index.ts", "--cwd", workingDir, "update", "--extensions"], {
 		cwd: process.cwd(),
 		encoding: "utf8",
 		env: {
@@ -221,7 +221,7 @@ test("packages CLI hides removed UI and bulk extras", () => {
 		FEYNMAN_TELEMETRY: "0",
 		NO_COLOR: "1",
 	};
-	const listResult = spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", "--cwd", workingDir, "packages", "list"], {
+	const listResult = spawnSync(process.execPath, ["--import", "tsx", "engine/index.ts", "--cwd", workingDir, "packages", "list"], {
 		cwd: process.cwd(),
 		encoding: "utf8",
 		env,
@@ -242,7 +242,7 @@ test("packages CLI hides removed UI and bulk extras", () => {
 	assert.doesNotMatch(listResult.stdout, /all-extras|generative-ui|pi-generative-ui/);
 
 	for (const preset of ["all-extras", "generative-ui"]) {
-		const installResult = spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", "--cwd", workingDir, "packages", "install", preset], {
+		const installResult = spawnSync(process.execPath, ["--import", "tsx", "engine/index.ts", "--cwd", workingDir, "packages", "install", preset], {
 			cwd: process.cwd(),
 			encoding: "utf8",
 			env,

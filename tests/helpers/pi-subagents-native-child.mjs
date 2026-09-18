@@ -17,7 +17,7 @@ const {runChildSession}=await import(pathToFileURL(path.join(sub,'src/runs/backg
 const piAi=await import(pathToFileURL(path.join(root,'.feynman/npm/node_modules/@earendil-works/pi-ai/dist/index.js')));
 const {Type}=await import(pathToFileURL(path.join(root,'.feynman/npm/node_modules/typebox/build/index.mjs')));
 const cwd=process.env.HOME;
-const {normalizeFeynmanSettings}=await import(pathToFileURL(path.join(root,'src/pi/settings.ts')));
+const {normalizeFeynmanSettings}=await import(pathToFileURL(path.join(root,'engine/pi/settings.ts')));
 const normalizedPath=path.join(cwd,'proof-settings.json');
 const emptySettings=path.join(cwd,'empty-settings.json'); fs.writeFileSync(emptySettings,'{}');
 await normalizeFeynmanSettings(normalizedPath,emptySettings,'medium',path.join(cwd,'empty-auth.json'),{researchToolsExtensionPath:path.join(root,'extensions/research-tools.ts')});

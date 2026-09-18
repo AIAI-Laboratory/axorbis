@@ -23,7 +23,7 @@ import {
 	PI_LLAMA_USAGE_REQUIRED_VERSION,
 	patchPiLlamaUsageSource,
 } from "../scripts/lib/pi-llama-usage-patch.mjs";
-import { patchPiRuntimeNodeModules } from "../src/pi/runtime-patches.js";
+import { patchPiRuntimeNodeModules } from "../engine/pi/runtime-patches.js";
 
 const appRoot = process.cwd();
 const providerPath = resolve(

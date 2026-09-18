@@ -4,13 +4,13 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { printSearchStatus } from "../src/search/commands.js";
+import { printSearchStatus } from "../engine/search/commands.js";
 import {
 	getPiWebAccessStatus,
 	getPiWebSearchConfigPath,
 	loadPiWebAccessConfig,
 	savePiWebAccessConfig,
-} from "../src/pi/web-access.js";
+} from "../engine/pi/web-access.js";
 
 function captureConsoleLog(fn: () => void): string[] {
 	const lines: string[] = [];

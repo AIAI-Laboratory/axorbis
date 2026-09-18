@@ -56,7 +56,7 @@ test("Pi 0.84.2 abort queue patch is exact, idempotent, drift-closed, and runtim
 		/const PI_AGENT_CORE_PATCH_REQUIRED_VERSION = "0\.84\.2";/,
 	);
 	const runtimePatchSource = readFileSync(
-		resolve(appRoot, "src", "pi", "runtime-patches.ts"),
+		resolve(appRoot, "engine", "pi", "runtime-patches.ts"),
 		"utf8",
 	);
 	const runtimeCorrectnessSource = readFileSync(

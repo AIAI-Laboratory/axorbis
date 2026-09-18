@@ -16,7 +16,7 @@ import {
 	assertPiAiForwardFixPackageTree,
 	resolvePiAiForwardFixVerificationTargets,
 } from "../scripts/lib/pi-ai-forward-fixes-verifier.mjs";
-import { patchPiRuntimeNodeModules } from "../src/pi/runtime-patches.js";
+import { patchPiRuntimeNodeModules } from "../engine/pi/runtime-patches.js";
 
 const appRoot = process.cwd();
 patchPiRuntimeNodeModules(appRoot);

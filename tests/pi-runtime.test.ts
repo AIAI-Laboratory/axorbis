@@ -17,8 +17,8 @@ import {
 	resolvePiPaths,
 	toNodeImportSpecifier,
 	validatePiInstallation,
-} from "../src/pi/runtime.js";
-import { resolveBundledAlphaCliPath } from "../src/cli.js";
+} from "../engine/pi/runtime.js";
+import { resolveBundledAlphaCliPath } from "../engine/cli.js";
 import {
 	assertPiCliArgsPatchSource,
 	patchPiCliArgsSource,
@@ -573,10 +573,10 @@ test("package ships source modules required by source-loaded research extensions
 	const packagedFiles = new Set(manifest.files ?? []);
 
 	for (const path of [
-		"src/config/paths.ts",
-		"src/workbench/data-root.ts",
-		"src/workbench/oauth-store.ts",
-		"src/workbench/settings-store.ts",
+		"engine/config/paths.ts",
+		"engine/workbench/data-root.ts",
+		"engine/workbench/oauth-store.ts",
+		"engine/workbench/settings-store.ts",
 	]) {
 		assert.equal(packagedFiles.has(path), true, `${path} must ship with the source-loaded research extension`);
 	}
@@ -616,7 +616,7 @@ test("resolveBundledAlphaCliPath prefers package-local alpha and falls back to t
 });
 
 test("pi-cli wrapper derives FEYNMAN_PI_CLI_PATH from the Pi main module", () => {
-	const source = readFileSync(join(process.cwd(), "src", "pi", "pi-cli-wrapper.ts"), "utf8");
+	const source = readFileSync(join(process.cwd(), "engine", "pi", "pi-cli-wrapper.ts"), "utf8");
 
 	assert.match(source, /join\(dirname\(piMainPath\), "cli\.js"\)/);
 	assert.match(source, /process\.env\.FEYNMAN_PI_CLI_PATH = piCliPath/);

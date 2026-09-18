@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { startWorkbenchServer } from "../src/workbench/server.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-no-auth-"));
@@ -20,11 +20,11 @@ function makeReactAppRoot(): string {
 	writeFileSync(join(root, "dist", "workbench-web", "index.html"), [
 		"<!doctype html>",
 		"<html>",
-		"<head><title>Feynman Science</title></head>",
+		"<head><title>Axorbis Research Workspace</title></head>",
 		"<body><div id=\"root\"></div><script type=\"module\" src=\"/app-shell/assets/app.js\"></script></body>",
 		"</html>",
 	].join(""));
-	writeFileSync(join(root, "dist", "workbench-web", "assets", "app.js"), "console.log('react-shell');\n");
+	writeFileSync(join(root, "dist", "workbench-web", "assets", "app.js"), "console.log('axorbis-shell');\n");
 	return root;
 }
 

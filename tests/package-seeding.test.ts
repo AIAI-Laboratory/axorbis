@@ -8,7 +8,7 @@ import {
 	getMissingConfiguredPackages,
 	resolveAdjacentNpmCommand,
 	seedBundledWorkspacePackages,
-} from "../src/pi/package-ops.js";
+} from "../engine/pi/package-ops.js";
 import { RUNTIME_INPUT_FILES } from "../scripts/lib/runtime-workspace-integrity.mjs";
 
 function createBundledWorkspace(
@@ -36,7 +36,7 @@ test("Pi runtime fallback version follows the bundled Pi runtime version", async
 	const manifest = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8")) as { dependencies?: Record<string, string> };
 	const version = manifest.dependencies?.["@earendil-works/pi-coding-agent"];
 	assert.match(version ?? "", /^\d+\.\d+\.\d+$/);
-	const packageOpsSource = readFileSync(resolve(process.cwd(), "src", "pi", "package-ops.ts"), "utf8");
+	const packageOpsSource = readFileSync(resolve(process.cwd(), "engine", "pi", "package-ops.ts"), "utf8");
 	const runtimeWorkspaceSource = readFileSync(resolve(process.cwd(), "scripts", "prepare-runtime-workspace.mjs"), "utf8");
 
 	assert.match(packageOpsSource, new RegExp(`PI_RUNTIME_FALLBACK_VERSION = "${version}"`));

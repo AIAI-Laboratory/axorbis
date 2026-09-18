@@ -5,11 +5,11 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
-import { getFeynmanOrgDatabasePath } from "../src/config/paths.js";
-import { REFERENCE_LEDGER_TABLE_NAMES } from "../src/workbench/org-database-ledgers.js";
-import { materializeWorkbenchOrgDatabase } from "../src/workbench/org-database.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import type { WorkbenchState } from "../src/workbench/types.js";
+import { getFeynmanOrgDatabasePath } from "../engine/config/paths.js";
+import { REFERENCE_LEDGER_TABLE_NAMES } from "../engine/workbench/org-database-ledgers.js";
+import { materializeWorkbenchOrgDatabase } from "../engine/workbench/org-database.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import type { WorkbenchState } from "../engine/workbench/types.js";
 
 function withFeynmanHome<T>(homeParent: string, callback: () => T): T {
 	const previousHome = process.env.FEYNMAN_HOME;

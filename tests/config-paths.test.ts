@@ -17,7 +17,7 @@ import {
 	getFeynmanOrgDatabasePath,
 	getFeynmanOrgsDir,
 	getFeynmanStateDir,
-} from "../src/config/paths.js";
+} from "../engine/config/paths.js";
 
 test("getFeynmanHome uses FEYNMAN_HOME env var when set", () => {
 	const previous = process.env.FEYNMAN_HOME;

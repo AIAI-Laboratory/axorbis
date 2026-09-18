@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import type { WorkbenchState } from "../src/workbench/types.js";
+import type { WorkbenchState } from "../engine/workbench/types.js";
 
 const REFERENCE_TABLES = [
 	"agent_skill_assignments",
@@ -132,7 +132,7 @@ test("reference workbench tables have Feynman-owned state coverage", () => {
 });
 
 test("reference legacy create-drop migrations stay absent from Feynman state", () => {
-	const orgDatabaseSource = readFileSync(new URL("../src/workbench/org-database.ts", import.meta.url), "utf8");
+	const orgDatabaseSource = readFileSync(new URL("../engine/workbench/org-database.ts", import.meta.url), "utf8");
 	assert.equal(REFERENCE_TABLES.includes("canvas_drafts" as never), false);
 	assert.equal("canvasDrafts" in ({} as WorkbenchState), false);
 	assert.equal(orgDatabaseSource.includes("canvas_drafts"), false);

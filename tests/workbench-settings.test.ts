@@ -4,13 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
 import {
 	readWorkbenchSettings,
 	removeWorkbenchSettingsRecord,
 	upsertWorkbenchSettingsRecord,
-} from "../src/workbench/settings-store.js";
+} from "../engine/workbench/settings-store.js";
 
 function makeSettingsWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-settings-"));
@@ -132,10 +132,7 @@ test("buildWorkbenchState exposes mutable science settings resources", () => {
 			const literatureGraph = connectors.find((item) => item.name === "Literature Graph" && item.section === "Featured");
 			assert.equal(literatureGraph?.tools?.[0]?.description, "Built-in read-only Literature Graph search source: openalex.");
 			assert.equal(biomart?.tools?.[0]?.description, "Built-in read-only BioMart search source: biomart.");
-			const ketcher = connectors.find((item) => item.name === "Ketcher Chemistry" && item.section === "Featured");
-			assert.equal(ketcher?.status, "configured");
-			assert.equal(ketcher?.source, "Built-in science workbench tool");
-			assert.equal(ketcher?.tools?.some((tool) => tool.name === "feynman_open_chemistry_sketcher"), true);
+			assert.equal(connectors.some((item) => item.name === "Ketcher Chemistry"), false);
 		assert.equal(connectors.some((resource) => resource.name === "Google Drive" && resource.section === "Organization"), true);
 
 		const labConnector = connectors.find((resource) => resource.name === "Lab MCP");

@@ -10,7 +10,7 @@ import {
 	getPiWebSearchConfigPath,
 	loadPiWebAccessConfig,
 	savePiWebAccessConfig,
-} from "../src/pi/web-access.js";
+} from "../engine/pi/web-access.js";
 
 test("loadPiWebAccessConfig returns empty config when Pi web config is missing", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-pi-web-"));

@@ -18,8 +18,8 @@ import {
 	streamSimple,
 } from "@earendil-works/pi-ai/compat";
 
-import { resolveRankSynthesisTerminalText } from "../src/cli.js";
-import { runPaperRank } from "../src/rank/paper-rank.js";
+import { resolveRankSynthesisTerminalText } from "../engine/cli.js";
+import { runPaperRank } from "../engine/rank/paper-rank.js";
 
 const fixturePath = resolve(process.cwd(), "tests", "fixtures", "openalex-rank.json");
 

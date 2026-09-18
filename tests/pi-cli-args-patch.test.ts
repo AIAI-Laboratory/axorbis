@@ -18,8 +18,8 @@ import {
 	ensureLegacyPiRuntimeAliases,
 	patchPiCliArgsSource,
 } from "../scripts/lib/pi-cli-args-patch.mjs";
-import { buildPiArgs } from "../src/pi/runtime.js";
-import { patchPiRuntimeNodeModules } from "../src/pi/runtime-patches.js";
+import { buildPiArgs } from "../engine/pi/runtime.js";
+import { patchPiRuntimeNodeModules } from "../engine/pi/runtime-patches.js";
 
 const installedArgsPath = resolve(
 	process.cwd(),
@@ -202,7 +202,8 @@ async function importInstalledParser(source: string) {
 		.replace(
 			'import { APP_NAME, CONFIG_DIR_NAME, ENV_AGENT_DIR, ENV_SESSION_DIR } from "../config.js";',
 			'const APP_NAME = "pi", CONFIG_DIR_NAME = ".pi", ENV_AGENT_DIR = "PI_AGENT_DIR", ENV_SESSION_DIR = "PI_SESSION_DIR";',
-		);
+		)
+		.replace(/^\/\/# sourceMappingURL=.*$/gm, "");
 	const url = `data:text/javascript;base64,${Buffer.from(executableSource).toString("base64")}#${Date.now()}`;
 	return import(url) as Promise<{
 		parseArgs(args: string[]): {

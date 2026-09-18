@@ -9,7 +9,7 @@ import {
 	normalizeServiceTier,
 	resolveProviderServiceTier,
 	setConfiguredServiceTier,
-} from "../src/model/service-tier.js";
+} from "../engine/model/service-tier.js";
 
 test("normalizeServiceTier accepts supported values only", () => {
 	assert.equal(normalizeServiceTier("priority"), "priority");

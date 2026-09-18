@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
-import { isSupportedNodeVersion } from "../src/system/node-version.js";
+import { isSupportedNodeVersion } from "../engine/system/node-version.js";
 
 // Official https://nodejs.org/dist/v24.20.0/SHASUMS256.txt
 // Retrieved 2026-09-06; index.json identifies v24.20.0 as latest LTS (Krypton).
@@ -30,12 +30,9 @@ test("native Node release pins all six official LTS archives without importing t
 	assert.equal(manifest.engines.node, ">=22.22.0 <26");
 });
 
-test("release workflow Node 24 lanes match the native release pin", () => {
-	for (const file of [".github/workflows/e2e.yml", ".github/workflows/publish.yml"]) {
-		const source = readFileSync(resolve(root, file), "utf8");
-		assert.doesNotMatch(source, /24\.18\.0/);
-		assert.match(source, /node: "24\.20\.0"/);
-		assert.match(source, /node: "22\.22\.0"/);
-		assert.match(source, /node: "25"/);
-	}
+test("Axorbis desktop release uses the native Node pin", () => {
+	const source = readFileSync(resolve(root, ".github/workflows/axorbis-desktop-release.yml"), "utf8");
+	assert.equal(readFileSync(resolve(root, ".nvmrc"), "utf8").trim(), "24.20.0");
+	assert.match(source, /node-version-file: \.nvmrc/);
+	assert.doesNotMatch(source, /24\.18\.0/);
 });

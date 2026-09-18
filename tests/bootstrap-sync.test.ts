@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { syncBundledAssets } from "../src/bootstrap/sync.js";
+import { syncBundledAssets } from "../engine/bootstrap/sync.js";
 
 function createAppRoot(): string {
 	const appRoot = mkdtempSync(join(tmpdir(), "feynman-app-"));

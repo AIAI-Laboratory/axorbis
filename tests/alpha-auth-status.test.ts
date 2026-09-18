@@ -4,7 +4,7 @@ import test from "node:test";
 import {
 	ALPHAXIV_USERINFO_ENDPOINT,
 	verifyAlphaAuthStatus,
-} from "../src/alpha-auth-status.js";
+} from "../engine/alpha-auth-status.js";
 
 test("alpha auth status rejects missing and expired credentials", async () => {
 	let fetchCalls = 0;

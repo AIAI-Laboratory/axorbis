@@ -15,7 +15,7 @@ import {
 	assertPiAgentCorePatchSource,
 	patchPiAgentCoreSource,
 } from "../scripts/lib/pi-agent-core-patch.mjs";
-import { patchPiRuntimeNodeModules } from "../src/pi/runtime-patches.js";
+import { patchPiRuntimeNodeModules } from "../engine/pi/runtime-patches.js";
 import { writePiOtelFixture } from "./helpers/pi-otel-fixture.js";
 import { reviewedPiSource } from "./helpers/pi-runtime-0851-fixture.js";
 import { ESBUILD_OPTIONAL_DEPENDENCIES } from "../scripts/lib/pi-esbuild-package-patch.mjs";

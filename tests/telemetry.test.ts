@@ -23,7 +23,7 @@ import {
 	sanitizeTelemetryException,
 	shutdownPostHogTelemetry,
 	telemetryErrorProperties,
-} from "../src/telemetry/posthog.js";
+} from "../engine/telemetry/posthog.js";
 
 test("resolvePostHogTelemetryConfig defaults to the Feynman PostHog project", () => {
 	const home = mkdtempSync(join(tmpdir(), "feynman-telemetry-home-"));

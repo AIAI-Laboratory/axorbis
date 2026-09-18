@@ -5,18 +5,18 @@ import { join } from "node:path";
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { executeNotebookCell } from "../src/workbench/notebook-execution.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { executeNotebookCell } from "../engine/workbench/notebook-execution.js";
 import {
 	managedNotebookEnvironmentRoot,
 	managedPythonExecutable,
 	managedRLibraryDir,
 	notebookRuntimeProcessEnv,
-} from "../src/workbench/notebook-runtimes.js";
+} from "../engine/workbench/notebook-runtimes.js";
 import {
 	manageNotebookEnvironment,
 	readNotebookEnvironmentActions,
-} from "../src/workbench/notebook-managed-environments.js";
+} from "../engine/workbench/notebook-managed-environments.js";
 
 function tempWorkspace(): string {
 	return mkdtempSync(join(tmpdir(), "feynman-managed-env-"));

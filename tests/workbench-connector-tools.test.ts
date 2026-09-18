@@ -6,8 +6,8 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { testableWorkbenchConnectors } from "../extensions/research-tools/workbench-connectors.js";
-import { upsertWorkbenchOAuthToken } from "../src/workbench/oauth-store.js";
-import { readWorkbenchSettings, upsertWorkbenchSettingsRecord } from "../src/workbench/settings-store.js";
+import { upsertWorkbenchOAuthToken } from "../engine/workbench/oauth-store.js";
+import { readWorkbenchSettings, upsertWorkbenchSettingsRecord } from "../engine/workbench/settings-store.js";
 
 type RecordedMcpRequest = {
 	body: Record<string, unknown>;

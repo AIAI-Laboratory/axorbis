@@ -4,14 +4,14 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { ensureWorkbenchChatSession, updateWorkbenchChatSessionConfig } from "../src/workbench/chat.js";
-import { buildWorkbenchRpcPrompt } from "../src/workbench/chat-runtime.js";
-import { readWorkbenchOnboardingProfile } from "../src/workbench/onboarding.js";
-import { createWorkbenchProject } from "../src/workbench/projects.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { ensureOpenScienceSeedFixtures } from "../src/workbench/seed-fixtures.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
-import { readWorkbenchSettings } from "../src/workbench/settings-store.js";
+import { ensureWorkbenchChatSession, updateWorkbenchChatSessionConfig } from "../engine/workbench/chat.js";
+import { buildWorkbenchRpcPrompt } from "../engine/workbench/chat-runtime.js";
+import { readWorkbenchOnboardingProfile } from "../engine/workbench/onboarding.js";
+import { createWorkbenchProject } from "../engine/workbench/projects.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { ensureOpenScienceSeedFixtures } from "../engine/workbench/seed-fixtures.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
+import { readWorkbenchSettings } from "../engine/workbench/settings-store.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-new-session-"));

@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { buildPiCommandResourceGroup, mergePiCommandResourceGroup, normalizePiCommands } from "../src/workbench/pi-commands.js";
-import type { WorkbenchResourceGroup } from "../src/workbench/types.js";
+import { buildPiCommandResourceGroup, mergePiCommandResourceGroup, normalizePiCommands } from "../engine/workbench/pi-commands.js";
+import type { WorkbenchResourceGroup } from "../engine/workbench/types.js";
 
 test("Pi command discovery normalizes live RPC commands into resources", () => {
 	const root = mkdtempSync(join(tmpdir(), "feynman-command-resources-"));

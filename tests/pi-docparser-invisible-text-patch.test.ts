@@ -10,7 +10,7 @@ import {
 	patchPiDocparserInvisibleTextSource,
 } from "../scripts/lib/pi-docparser-invisible-text-patch.mjs";
 import { verifyInstalledDocparser } from "../scripts/verify-installed-docparser.mjs";
-import { patchPiRuntimeNodeModules } from "../src/pi/runtime-patches.js";
+import { patchPiRuntimeNodeModules } from "../engine/pi/runtime-patches.js";
 
 const workerPath = resolve(
 	process.cwd(),

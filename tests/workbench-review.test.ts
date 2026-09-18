@@ -8,8 +8,8 @@ import {
 	requestWorkbenchReview,
 	selectWorkbenchReviewArtifact,
 	workbenchReviewMessage,
-} from "../src/workbench/review.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
+} from "../engine/workbench/review.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
 
 function makeReviewWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-review-"));

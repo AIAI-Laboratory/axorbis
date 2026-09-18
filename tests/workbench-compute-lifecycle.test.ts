@@ -4,14 +4,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { readComputePendingTerminateRecords } from "../src/workbench/compute-lifecycle.js";
+import { readComputePendingTerminateRecords } from "../engine/workbench/compute-lifecycle.js";
 import {
 	cancelNotebookExecution,
 	executeNotebookCell,
 	listActiveNotebookExecutionRecords,
-} from "../src/workbench/notebook-execution.js";
-import { buildWorkbenchState } from "../src/workbench/scan.js";
-import { startWorkbenchServer } from "../src/workbench/server.js";
+} from "../engine/workbench/notebook-execution.js";
+import { buildWorkbenchState } from "../engine/workbench/scan.js";
+import { startWorkbenchServer } from "../engine/workbench/server.js";
 
 function makeWorkspace(): string {
 	const root = mkdtempSync(join(tmpdir(), "feynman-workbench-compute-"));
