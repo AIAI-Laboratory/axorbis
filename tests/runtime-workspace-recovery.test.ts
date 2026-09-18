@@ -82,11 +82,11 @@ function writeRestoreJournal(
 	assert.equal(stageDir.endsWith(stageName), true);
 	mkdirSync(stageDir, { recursive: true });
 	writeFileSync(
-		join(stageDir, ".feynman-runtime-restore-owner.json"),
+		join(stageDir, ".axorbis-runtime-restore-owner.json"),
 		`${JSON.stringify({ pid, createdAt, token })}\n`,
 	);
 	writeFileSync(
-		join(stageDir, ".feynman-runtime-restore-journal.json"),
+		join(stageDir, ".axorbis-runtime-restore-journal.json"),
 		`${JSON.stringify({
 			version: 1,
 			pid,

@@ -684,7 +684,7 @@ function buildPermissionResources(workingDir: string, settings: WorkbenchSetting
 			status: existsSync(resolve(workingDir, ".axorbis", "settings.json")) ? "configured" : "available",
 			source: "Pi security model",
 			section: "Trust boundary",
-			path: ".feynman/settings.json",
+			path: ".axorbis/settings.json",
 			tags: ["trust", "packages", "extensions"],
 		},
 		{

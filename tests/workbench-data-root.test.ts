@@ -100,7 +100,7 @@ test("workbench app data migrates from legacy home-level workbench storage", () 
 			assert.notEqual(migratedSettingsPath, join(legacyRoot, "settings.json"));
 			assert.equal(existsSync(migratedSettingsPath), true);
 			assert.match(readFileSync(migratedSettingsPath, "utf8"), /legacy-lab/);
-			assert.match(migratedSettingsPath, /\/\.feynman\/orgs\/[0-9a-f-]{36}\/workbench\/workspaces\//);
+			assert.match(migratedSettingsPath, /\/\.axorbis\/orgs\/[0-9a-f-]{36}\/workbench\/workspaces\//);
 		});
 	} finally {
 		rmSync(root, { recursive: true, force: true });

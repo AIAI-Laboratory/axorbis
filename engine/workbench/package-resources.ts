@@ -193,7 +193,7 @@ function packageDiagnostics(
 	const installPath = installedPackageRelPath(workingDir, entry.source);
 	return [
 		options.configured
-			? "Project config: enabled in .feynman/settings.json."
+			? "Project config: enabled in .axorbis/settings.json."
 			: options.core
 				? "Project config: core package is known but not enabled in this workspace."
 				: "Project config: available preset, not enabled in this workspace.",

@@ -464,7 +464,7 @@ test("materializeWorkbenchOrgDatabase writes Feynman-owned reference-shaped tabl
 			});
 
 			const summary = materializeWorkbenchOrgDatabase(state);
-			assert.match(summary.path, /\/\.feynman\/orgs\/[0-9a-f-]{36}\/feynman-workbench\.db$/);
+			assert.match(summary.path, /\/\.axorbis\/orgs\/[0-9a-f-]{36}\/feynman-workbench\.db$/);
 			assert.equal(summary.path.includes(".claude-science"), false);
 			assert.equal(summary.path.includes("operon-cli"), false);
 			assert.equal(summary.counts.projects, 1);
