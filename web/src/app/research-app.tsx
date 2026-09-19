@@ -421,12 +421,39 @@ export function ResearchApp() {
 	</div>;
 }
 
+import quotesCsvRaw from "../../../app/ui/quotes.csv?raw";
+
+const QUOTES = quotesCsvRaw
+	.trim()
+	.split('\n')
+	.slice(1) // Skip header
+	.map(line => {
+		const match = line.match(/^"(.*)","(.*)","(.*)"$/);
+		if (match) return { en: match[1], vi: match[2], source: match[3] };
+		return null;
+	})
+	.filter((q): q is NonNullable<typeof q> => Boolean(q));
+
 function HomePage({ state, projects, recent, navigate, newProject }: { state: WorkbenchState; projects: WorkbenchProject[]; recent: { project: WorkbenchProject; run: WorkbenchRun }[]; navigate: (path: string) => void; newProject: () => void }) {
+	const quote = useMemo(() => QUOTES[Math.floor(Math.random() * QUOTES.length)], []);
 	const questionSlugs = new Set(recent.map(({ run }) => run.slug));
 	const needsEvidence = state.claims.filter((claim) => claim.status === "unverified" && (questionSlugs.has(claim.runSlug ?? "") || questionSlugs.has(claim.sessionId ?? ""))).length;
 	const sourceCount = new Set(projects.flatMap((project) => projectArtifacts(state, project).filter((item) => item.category === "paper").map((item) => item.path))).size;
 	const modelSetupNeeded = !state.modelStatus?.currentValid && !state.aiProviders?.some((provider) => Boolean(provider.defaultModel && (provider.kind === "ollama" || provider.kind === "lm-studio" || provider.credentialRoles.inference?.configured)));
-	return <div className="rw-page rw-home"><div className="rw-page-intro"><span className="rw-kicker">YOUR WORKSPACE</span><div className="rw-page-title-row"><div><h1>Keep the question in focus.</h1><p>Your projects and research, right where you left them.</p></div><button className="rw-button" type="button" onClick={newProject}><Plus size={17} /> New project</button></div></div>{modelSetupNeeded && <div className="rw-setup-note"><span className="rw-setup-symbol">!</span><span><strong>Model setup needed</strong> · Configure an AI provider to use research.</span><button className="rw-text-action" type="button" onClick={() => navigate("/settings/ai-providers")}>Open provider settings <ArrowRight size={15} /></button></div>}<div className="rw-summary-line"><div><strong>{projects.length}</strong><span className="rw-summary-label"><FolderOpen size={15} /> Projects</span></div><div><strong>{recent.length}</strong><span className="rw-summary-label"><BookOpen size={15} /> Questions</span></div><div><strong>{sourceCount}</strong><span className="rw-summary-label"><FileText size={15} /> Paper files</span></div><div><strong>{needsEvidence}</strong><span className="rw-summary-label"><Check size={15} /> Claims to verify</span></div></div><div className="rw-home-columns"><section><div className="rw-section-head"><h2>Continue researching</h2><span>{recent.length} questions</span></div>{recent.length ? <div className="rw-row-list">{recent.slice(0, 7).map(({ project, run }) => <button type="button" className="rw-work-row" key={`${project.id}:${run.slug}`} onClick={() => navigate(researchPath(project.id, run.slug))}><span className="rw-row-mark"><BookOpen size={18} /></span><span className="rw-row-copy"><strong>{run.title}</strong><small>{project.name} · Updated {formattedDate(run.updatedAt)}</small></span><ChevronRight size={18} /></button>)}</div> : <Empty title="Start with a project" detail="Create a project, then add a question to begin your research." onClick={newProject} action={<span className="rw-text-action">Create project <ArrowRight size={16} /></span>} />}</section><aside><div className="rw-section-head"><h2>Recent projects</h2><button type="button" className="rw-text-action" onClick={() => navigate("/projects")}>View all <ArrowRight size={15} /></button></div><div className="rw-quick-projects">{projects.slice(0, 5).map((item) => <button type="button" key={item.id} onClick={() => navigate(researchPath(item.id))}><span className="rw-project-initial">{item.name.charAt(0).toUpperCase()}</span><span>{item.name}</span><ArrowRight size={15} /></button>)}{!projects.length && <p>Projects you create will appear here.</p>}</div></aside></div></div>;
+	return <div className="rw-page rw-home">
+		<div className="rw-page-intro">
+			<span className="rw-kicker">YOUR WORKSPACE</span>
+			<div className="rw-page-title-row"><div><h1>Keep the question in focus.</h1></div><button className="rw-button" type="button" onClick={newProject}><Plus size={17} /> New project</button></div>
+			{quote && <blockquote className="rw-home-quote">
+				<p className="rw-quote-en">{quote.en}</p>
+				<p className="rw-quote-vi">{quote.vi}</p>
+				<footer>{quote.source}</footer>
+			</blockquote>}
+		</div>
+		{modelSetupNeeded && <div className="rw-setup-note"><span className="rw-setup-symbol">!</span><span><strong>Model setup needed</strong> · Configure an AI provider to use research.</span><button className="rw-text-action" type="button" onClick={() => navigate("/settings/ai-providers")}>Open provider settings <ArrowRight size={15} /></button></div>}
+		<div className="rw-summary-line"><div><strong>{projects.length}</strong><span className="rw-summary-label"><FolderOpen size={15} /> Projects</span></div><div><strong>{recent.length}</strong><span className="rw-summary-label"><BookOpen size={15} /> Questions</span></div><div><strong>{sourceCount}</strong><span className="rw-summary-label"><FileText size={15} /> Paper files</span></div><div><strong>{needsEvidence}</strong><span className="rw-summary-label"><Check size={15} /> Claims to verify</span></div></div>
+		<div className="rw-home-columns"><section><div className="rw-section-head"><h2>Continue researching</h2><span>{recent.length} questions</span></div>{recent.length ? <div className="rw-row-list">{recent.slice(0, 7).map(({ project, run }) => <button type="button" className="rw-work-row" key={`${project.id}:${run.slug}`} onClick={() => navigate(researchPath(project.id, run.slug))}><span className="rw-row-mark"><BookOpen size={18} /></span><span className="rw-row-copy"><strong>{run.title}</strong><small>{project.name} · Updated {formattedDate(run.updatedAt)}</small></span><ChevronRight size={18} /></button>)}</div> : <Empty title="Start with a project" detail="Create a project, then add a question to begin your research." onClick={newProject} action={<span className="rw-text-action">Create project <ArrowRight size={16} /></span>} />}</section><aside><div className="rw-section-head"><h2>Recent projects</h2><button type="button" className="rw-text-action" onClick={() => navigate("/projects")}>View all <ArrowRight size={15} /></button></div><div className="rw-quick-projects">{projects.slice(0, 5).map((item) => <button type="button" key={item.id} onClick={() => navigate(researchPath(item.id))}><span className="rw-project-initial">{item.name.charAt(0).toUpperCase()}</span><span>{item.name}</span><ArrowRight size={15} /></button>)}{!projects.length && <p>Projects you create will appear here.</p>}</div></aside></div>
+	</div>;
 }
 
 function NotesPage({ notes, setNotes }: { notes: WorkbenchNote[]; setNotes: (notes: WorkbenchNote[]) => void }) {
