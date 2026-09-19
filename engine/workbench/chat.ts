@@ -20,6 +20,7 @@ import {
 	type WorkbenchArtifactSnapshotBaseline,
 } from "./artifact-snapshots.js";
 import { isInsideDirectory, legacyWorkbenchDataPath, migratedWorkbenchDataPath, resolveWorkbenchStoredPath } from "./data-root.js";
+import { isLegacyEmptyWorkbenchReply, resolveEmptyWorkbenchReply } from "./empty-chat-reply.js";
 
 export type WorkbenchChatRole = "assistant" | "system" | "user";
 export type WorkbenchChatStatus = "complete" | "error" | "queued" | "running" | "stopped";
@@ -226,8 +227,17 @@ function chatPath(workingDir: string, sessionId: string): string {
 
 function readSessionPath(path: string): WorkbenchChatSession {
 	const parsed = JSON.parse(readFileSync(path, "utf8")) as WorkbenchChatSession;
+	const messages = parsed.messages.map((message, index) => {
+		if (message.role !== "assistant" || !isLegacyEmptyWorkbenchReply(message.content)) return message;
+		const userMessage = parsed.messages.slice(0, index).reverse().find((item) => item.role === "user")?.content ?? "";
+		return { ...message, ...resolveEmptyWorkbenchReply(userMessage, message.toolEvents ?? [], message.status) };
+	});
+	const lastMessageWasLegacy = parsed.messages.at(-1)?.role === "assistant"
+		&& isLegacyEmptyWorkbenchReply(parsed.messages.at(-1)!.content);
 	return {
 		...parsed,
+		...(lastMessageWasLegacy ? { status: messages.at(-1)!.status } : {}),
+		messages,
 		config: normalizeSessionConfig(parsed.config),
 		piSession: normalizeWorkbenchPiSessionInfo(parsed.piSession, parsed.id),
 		attachments: normalizeAttachments(parsed.attachments),
@@ -591,15 +601,18 @@ export async function submitWorkbenchChatMessage(
 	try {
 		const executor = options.executor ?? runFeynmanWorkbenchPrompt;
 		const result = await executor({ ...options, session, message, viewportContext: input.viewportContext });
+		const finalReply = result.content.trim()
+			? { content: result.content.trim(), status: result.status ?? "complete" }
+			: resolveEmptyWorkbenchReply(message, result.toolEvents ?? [], result.status ?? "complete");
 		const assistantMessage = createMessage(
 			"assistant",
-			result.content.trim() || "Feynman finished without text output.",
-			result.status ?? "complete",
+			finalReply.content,
+			finalReply.status,
 			result.toolEvents ?? [],
 		);
 		session = {
 			...session,
-			status: result.status ?? "complete",
+			status: finalReply.status,
 			updatedAt: nowIso(),
 			messages: [...session.messages, assistantMessage],
 		};
@@ -728,12 +741,15 @@ export async function streamWorkbenchChatMessage(
 			for (const toolEvent of result.toolEvents ?? []) await emit({ type: "tool", toolEvent });
 		}
 		const currentToolEvents = messageById(session, assistantMessage.id)?.toolEvents ?? [];
+		const finalReply = result.content.trim()
+			? { content: result.content.trim(), status: result.status ?? "complete" }
+			: resolveEmptyWorkbenchReply(message, result.toolEvents ?? currentToolEvents, result.status ?? "complete");
 		session = updateMessage(session, assistantMessage.id, {
-			content: result.content.trim() || "Feynman finished without text output.",
-			status: result.status ?? "complete",
+			content: finalReply.content,
+			status: finalReply.status,
 			toolEvents: result.toolEvents ?? currentToolEvents,
 		});
-		session = { ...session, status: result.status ?? "complete", updatedAt: nowIso() };
+		session = { ...session, status: finalReply.status, updatedAt: nowIso() };
 		const currentAssistant = messageById(session, assistantMessage.id) ?? assistantMessage;
 		recordChatTurnSnapshots(options, snapshotBaseline, session, currentAssistant);
 		session = await refreshWorkbenchPiSession(options, session);

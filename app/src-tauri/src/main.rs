@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    feynman_desktop::run();
+    axorbis_desktop::run();
 }

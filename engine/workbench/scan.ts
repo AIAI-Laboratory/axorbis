@@ -48,6 +48,7 @@ import { listWorkbenchChatSessions } from "./chat.js";
 import { buildWorkbenchClaims, claimIdForText } from "./claims.js";
 import { mergeWorkbenchChatRuns } from "./chat-runs.js";
 import { buildComputeJobsFromModelEndpointRecords } from "./model-endpoint-usage.js";
+import { listAiProviders } from "./ai-providers.js";
 import { readWorkbenchMemory } from "./memory.js";
 import { buildWorkbenchSessionActivity } from "./session-activity.js";
 import { buildWorkbenchStateLedgers } from "./state-ledgers.js";
@@ -1101,6 +1102,7 @@ export function buildWorkbenchState(options: BuildWorkbenchStateOptions): Workbe
 		...(options.version ? { version: options.version } : {}),
 		generatedAt: new Date().toISOString(),
 		...(options.modelStatus ? { modelStatus: options.modelStatus } : {}),
+		aiProviders: listAiProviders(workingDir),
 		summary: buildWorkbenchSummary(artifacts, projects.length, runs.length, memory.notes.length, claims.length, sessionActivity, transcriptAnnotations.length),
 		onboarding: readWorkbenchOnboardingProfile(workingDir),
 		projects,

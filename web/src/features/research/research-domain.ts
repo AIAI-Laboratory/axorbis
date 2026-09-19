@@ -23,6 +23,17 @@ export function questionArtifacts(state: WorkbenchState, run: WorkbenchRun): Wor
 	return state.artifacts.filter((artifact) => artifact.slug === run.slug || paths.has(artifact.path));
 }
 
+export function groupProjectFiles(files: WorkbenchArtifact[], questions: WorkbenchRun[]): { question?: WorkbenchRun; files: WorkbenchArtifact[] }[] {
+	const groups = questions.map((question) => ({ question, files: [] as WorkbenchArtifact[] }));
+	const other: WorkbenchArtifact[] = [];
+	for (const file of files) {
+		const owner = groups.find(({ question }) => question.slug === file.slug)
+			?? groups.find(({ question }) => question.artifactPaths?.includes(file.path));
+		(owner?.files ?? other).push(file);
+	}
+	return [...groups, ...(other.length ? [{ files: other }] : [])];
+}
+
 export function researchPath(projectId: string, runSlug?: string): string {
 	const projectPath = `/projects/${encodeURIComponent(projectId)}`;
 	return runSlug ? `${projectPath}/questions/${encodeURIComponent(runSlug)}` : projectPath;

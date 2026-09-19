@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
-import type { ServerResponse } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { extname, join, resolve, sep } from "node:path";
 
 type WorkbenchWebOptions = {
@@ -68,8 +68,26 @@ function webAssetContentType(path: string): string {
 	}
 }
 
-export function sendWorkbenchWeb(response: ServerResponse, options: WorkbenchWebOptions, url: URL, headers: Record<string, string>): boolean {
+function redirectToDevelopmentWorkbench(response: ServerResponse, request: IncomingMessage, url: URL, headers: Record<string, string>): boolean {
+	const developmentUrl = process.env.AXORBIS_WORKBENCH_DEV_URL;
+	const host = request.headers.host;
+	if (!developmentUrl || !host) return false;
+	try {
+		const target = new URL(developmentUrl);
+		if (target.protocol !== "http:" || !["127.0.0.1", "localhost"].includes(target.hostname)) return false;
+		const backend = new URL(`${url.pathname}${url.search}`, `http://${host}`);
+		target.searchParams.set("backend", backend.toString());
+		response.writeHead(302, { ...headers, location: target.toString() });
+		response.end();
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+export function sendWorkbenchWeb(response: ServerResponse, options: WorkbenchWebOptions, url: URL, headers: Record<string, string>, request?: IncomingMessage): boolean {
 	if (!url.pathname.startsWith(WORKBENCH_WEB_PREFIX) && !isWorkbenchWebIndexPath(url.pathname)) return false;
+	if (request && isWorkbenchWebIndexPath(url.pathname) && redirectToDevelopmentWorkbench(response, request, url, headers)) return true;
 	const distDir = workbenchWebDistDir(options);
 	const indexPath = join(distDir, "index.html");
 	if (!existsSync(indexPath)) {

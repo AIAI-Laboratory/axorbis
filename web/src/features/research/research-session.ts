@@ -54,8 +54,29 @@ export function researchMessageForSubmission(text: string, mode: ResearchMode, c
 	return command ? `/${command} ${text}` : text;
 }
 
+/**
+ * In desktop development the React app is served by Vite while the authenticated
+ * research API stays on its ephemeral local Feynman port. Production keeps the
+ * same-origin path, so no auth URL is exposed outside the local desktop process.
+ */
+export function workbenchApiUrl(path: string): string {
+	const backend = new URLSearchParams(window.location.search).get("backend");
+	if (!backend) return path;
+	try {
+		const base = new URL(backend);
+		if (base.protocol !== "http:" || !["127.0.0.1", "localhost"].includes(base.hostname)) return path;
+		// WebKit can reject a direct authenticated localhost request after the
+		// desktop window changes origins. Keep browser requests same-origin and
+		// let the Vite development server relay them to the local backend.
+		const separator = path.includes("?") ? "&" : "?";
+		return `/app-shell/__feynman_proxy__${path}${separator}backend=${encodeURIComponent(base.toString())}`;
+	} catch {
+		return path;
+	}
+}
+
 export async function apiJson<T>(url: string, body?: Record<string, unknown>): Promise<T> {
-	const response = await fetch(url, body ? {
+	const response = await fetch(workbenchApiUrl(url), body ? {
 		method: "POST",
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(body),
@@ -75,7 +96,7 @@ export async function streamResearchMessage(
 	callbacks: SessionCallbacks,
 ): Promise<void> {
 	const message = researchMessageForSubmission(input.text, input.mode, input.continuePlan === true);
-	const response = await fetch("/api/chat/message/stream", {
+	const response = await fetch(workbenchApiUrl("/api/chat/message/stream"), {
 		method: "POST",
 		headers: { accept: "text/event-stream", "content-type": "application/json" },
 		body: JSON.stringify({ sessionId: input.sessionId, projectId: input.projectId, title: input.title, message }),

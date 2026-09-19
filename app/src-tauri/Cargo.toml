@@ -1,7 +1,7 @@
 [package]
-name = "feynman-desktop"
+name = "axorbis-desktop"
 version = "0.3.49"
-description = "Native desktop launcher for the Feynman research workspace"
+description = "Native desktop launcher for the Axorbis research workspace"
 authors = ["Advait Paliwal"]
 edition = "2021"
 

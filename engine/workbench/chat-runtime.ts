@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 
 import {
@@ -30,6 +31,8 @@ import { readNotebookExecutionRecords, type WorkbenchNotebookExecutionRecord } f
 import { findWorkbenchProject } from "./projects.js";
 import { formatWorkbenchRuntimeContextForPrompt } from "./runtime-context.js";
 import { buildWorkbenchState, readWorkbenchFile } from "./scan.js";
+import { aiProviderIdForModel, assertAiProviderBudget, defaultAiProviderModel, getAiProviderRuntimeEnv, normalizeAiProviderModel, recordAiProviderUsage, syncAiProviderPiConfig } from "./ai-providers.js";
+import { isDeepResearchApproval, pendingDeepResearchPlan, resolveEmptyWorkbenchReply } from "./empty-chat-reply.js";
 
 export type WorkbenchPromptStreamUpdate = {
 	content?: string;
@@ -69,6 +72,7 @@ type ActiveRpcRun = {
 	status: WorkbenchChatStatus;
 	timeout: NodeJS.Timeout;
 	toolEvents: Map<string, WorkbenchToolEvent>;
+	usageContext: { workingDir: string; sessionId: string; providerId?: string; model?: string };
 };
 
 function formatAttachmentForPrompt(attachment: WorkbenchAttachment): string[] {
@@ -286,6 +290,10 @@ function viewportContextForPrompt(request: WorkbenchPromptRequest): string[] {
 }
 
 export function buildWorkbenchRpcPrompt(request: WorkbenchPromptRequest): string {
+	const pendingPlanPath = pendingDeepResearchPlan(request.session.messages);
+	if (pendingPlanPath && isDeepResearchApproval(request.message)) {
+		return `The user explicitly approves the Deep Research plan at ${pendingPlanPath}. Continue the original research topic from that plan now. Treat this as plan approval, not as a new topic. Follow the approved workflow and write the required cited output and provenance.`;
+	}
 	if (isRawPiInput(request.message)) return request.message;
 
 	const attachments = request.session.attachments.flatMap(formatAttachmentForPrompt);
@@ -352,6 +360,8 @@ function ensureRuntimeReady(request: WorkbenchPromptRequest) {
 
 async function spawnWorkbenchPi(request: WorkbenchPromptRequest, mode: ChildMode): Promise<WorkbenchPiChild> {
 	const { paths, useDevPolyfill, wrapperPath } = ensureRuntimeReady(request);
+	const modelSpec = normalizeAiProviderModel(request.workingDir, request.session.config.model || defaultAiProviderModel(request.workingDir));
+	assertAiProviderBudget(request.workingDir, request.session.id, modelSpec);
 	const runtimeOptions: PiRuntimeOptions = {
 		appRoot: request.appRoot!,
 		workingDir: request.workingDir,
@@ -360,8 +370,9 @@ async function spawnWorkbenchPi(request: WorkbenchPromptRequest, mode: ChildMode
 		feynmanVersion: request.feynmanVersion,
 		sessionId: request.session.piSession.id,
 		mode,
-		explicitModelSpec: request.session.config.model || undefined,
+		explicitModelSpec: modelSpec,
 	};
+	syncAiProviderPiConfig(request.workingDir, resolve(runtimeOptions.feynmanAgentDir, "models.json"), modelSpec);
 	const importArgs = useDevPolyfill
 		? ["--import", toNodeImportSpecifier(paths.tsxLoaderPath), "--import", toNodeImportSpecifier(paths.promisePolyfillSourcePath)]
 		: ["--import", toNodeImportSpecifier(paths.promisePolyfillPath)];
@@ -376,7 +387,7 @@ async function spawnWorkbenchPi(request: WorkbenchPromptRequest, mode: ChildMode
 	], {
 		cwd: request.workingDir,
 		stdio: ["pipe", "pipe", "pipe"],
-		env: buildPiEnv(runtimeOptions, paths, executables),
+		env: { ...buildPiEnv(runtimeOptions, paths, executables), ...getAiProviderRuntimeEnv(request.workingDir, modelSpec) },
 	});
 }
 
@@ -566,6 +577,12 @@ class WorkbenchPiRpcClient {
 			status: "running",
 			timeout: setTimeout(() => undefined, 0),
 			toolEvents,
+			usageContext: {
+				workingDir: request.workingDir,
+				sessionId: request.session.id,
+				providerId: aiProviderIdForModel(request.workingDir, request.session.config.model || defaultAiProviderModel(request.workingDir)),
+				model: normalizeAiProviderModel(request.workingDir, request.session.config.model || defaultAiProviderModel(request.workingDir)),
+			},
 		};
 		clearTimeout(activeRun.timeout);
 		const done = new Promise<void>((resolve, reject) => {
@@ -590,6 +607,9 @@ class WorkbenchPiRpcClient {
 			clearTimeout(activeRun.timeout);
 			if (this.activeRun === activeRun) this.activeRun = undefined;
 		}
+		const finalReply = activeRun.content.trim()
+			? { content: activeRun.content.trim(), status: activeRun.status }
+			: resolveEmptyWorkbenchReply(request.message, [...activeRun.toolEvents.values()], activeRun.status);
 		if (!activeRun.toolEvents.size) {
 			const id = randomUUID();
 			activeRun.toolEvents.set(id, {
@@ -599,8 +619,8 @@ class WorkbenchPiRpcClient {
 			});
 		}
 		return {
-			content: activeRun.content.trim() || "Feynman finished without text output.",
-			status: activeRun.status,
+			content: finalReply.content,
+			status: finalReply.status,
 			toolEvents: [...activeRun.toolEvents.values()],
 		};
 	}
@@ -668,7 +688,7 @@ class WorkbenchPiRpcClient {
 				}
 				if (normalized.status) activeRun.status = normalized.status;
 				await activeRun.onUpdate(normalized);
-			}));
+			}, activeRun.usageContext));
 	}
 
 	private rejectPending(error: Error): void {
@@ -742,6 +762,21 @@ function messageText(message: unknown): string {
 		const typed = block as { type?: unknown; text?: unknown };
 		return typed.type === "text" && typeof typed.text === "string" ? typed.text : "";
 	}).filter(Boolean).join("\n");
+}
+
+/**
+ * Pi keeps provider failures on the assistant message rather than in its text
+ * content. Preserve that detail in the workbench transcript so a failed turn
+ * is actionable instead of appearing as an empty successful response.
+ */
+function messageErrorText(message: unknown): string {
+	const record = unknownRecord(message);
+	if (!record) return "";
+	const direct = record.errorMessage;
+	if (typeof direct === "string" && direct.trim()) return boundedText(direct.trim());
+	const error = unknownRecord(record.error);
+	const nested = error?.message;
+	return typeof nested === "string" && nested.trim() ? boundedText(nested.trim()) : "";
 }
 
 function toolOutput(value: unknown): string | undefined {
@@ -819,6 +854,7 @@ export async function handlePiJsonLine(
 	line: string,
 	toolEvents: Map<string, WorkbenchToolEvent>,
 	onUpdate: (update: PiWorkbenchPromptStreamUpdate) => void | Promise<void>,
+	usageContext?: { workingDir: string; sessionId: string; providerId?: string; model?: string },
 ): Promise<void> {
 	let event: Record<string, unknown>;
 	try {
@@ -843,8 +879,13 @@ export async function handlePiJsonLine(
 	if (event.type === "message_update" || event.type === "message_end") {
 		const message = event.message;
 		if (message && typeof message === "object" && (message as { role?: unknown }).role === "assistant") {
-			const content = messageText(message);
-			const stopReason = (message as { stopReason?: unknown }).stopReason;
+			const messageRecord = message as Record<string, unknown>;
+			const stopReason = messageRecord.stopReason;
+			const content = messageText(message) || (stopReason === "error" ? messageErrorText(message) : "");
+			if (event.type === "message_end" && usageContext && usageContext.providerId) {
+				const usage = unknownRecord(messageRecord.usage);
+				if (usage) recordAiProviderUsage(usageContext.workingDir, { ...usageContext, usage });
+			}
 			await onUpdate({
 				content,
 				status: stopReason === "aborted" ? "stopped" : stopReason === "error" ? "error" : event.type === "message_end" ? "complete" : "running",

@@ -35,7 +35,7 @@ pub fn run() {
             }
         })
         .build(tauri::generate_context!())
-        .expect("error while building the Feynman desktop application")
+        .expect("error while building the Axorbis desktop application")
         .run(move |_app, event| {
             if matches!(event, RunEvent::Exit | RunEvent::ExitRequested { .. }) {
                 shutdown_backend.stop();

@@ -1,14 +1,15 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="loading-only">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <title>Axorbis</title>
+    <link rel="stylesheet" href="./fonts/fonts.css" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
-    <div class="desktop-app">
+  <body class="loading-only">
+    <div class="desktop-app loading-only">
       <header class="topbar">
         <div class="brand">
           <span class="brand-icon" aria-hidden="true">A</span>
@@ -48,43 +49,47 @@
         </aside>
 
         <main>
-          <div class="page-intro">
-            <span class="kicker">DESKTOP SETUP</span>
-            <h1>Open your research workspace</h1>
-            <p>Choose the folder where Axorbis will keep research questions, evidence, papers, outputs, and notes.</p>
-          </div>
-
-          <section class="setup-note" aria-label="Local workspace information">
-            <span class="setup-symbol">A</span>
-            <span>The desktop app runs the same authenticated, local-first research workspace as the web interface.</span>
+          <section id="loading-view" class="loading-view" aria-live="polite">
+            <img src="./loading.svg" alt="" class="loading-mark" />
+            <div class="page-intro">
+              <span class="kicker">DESKTOP SETUP</span>
+              <h1>Starting your research workspace</h1>
+              <p>Axorbis is preparing your local research runtime.</p>
+            </div>
+            <div id="loading-feedback" class="feedback"><span id="status" class="status">Preparing the desktop app…</span><p id="loading-error" class="error" role="alert" hidden></p></div>
           </section>
 
-          <section class="workspace-section" aria-labelledby="workspace-title">
-            <div class="section-head">
-              <h2 id="workspace-title">Workspace folder</h2>
-              <span>Stored locally</span>
+          <section id="provider-view" class="setup-view" hidden aria-labelledby="provider-title">
+            <div class="page-intro">
+              <span class="kicker">FIRST LAUNCH</span>
+              <h1 id="provider-title">Connect your AI provider.</h1>
+              <p>Add a key and choose the model Axorbis should use for research. The key is encrypted by the local backend and is never returned to this screen.</p>
             </div>
-            <div class="workspace-row">
-              <span class="folder-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"></path></svg>
-              </span>
-              <span class="workspace-copy">
-                <strong id="workspace">Loading…</strong>
-                <small>Outputs, papers, notes, and session state</small>
-              </span>
-              <button id="choose" class="text-action" type="button">Choose folder</button>
-            </div>
+            <form id="provider-form" class="setup-card">
+              <label><span>Provider</span><select id="setup-provider"></select></label>
+              <label><span>Inference API key <em id="key-hint">Required for hosted providers</em></span><input id="setup-api-key" type="password" autocomplete="new-password" placeholder="Paste your API key" /></label>
+              <label><span>Model</span><select id="setup-model-select"></select></label>
+              <label id="custom-model-row" hidden><span>Custom model id</span><input id="setup-model" placeholder="e.g. claude-sonnet-4-20250514" autocomplete="off" /></label>
+              <label id="endpoint-row" hidden><span>Endpoint</span><input id="setup-endpoint" type="url" autocomplete="url" /></label>
+              <fieldset class="setup-access">
+                <legend>Research access <em>Optional</em></legend>
+                <label><span>Web search provider</span><select id="setup-search-provider"></select></label>
+                <label><span>Search API key <em id="search-key-hint">Choose a provider to add its key</em></span><input id="setup-search-api-key" type="password" autocomplete="new-password" placeholder="Choose a provider first" disabled /></label>
+                <label class="setup-checkbox"><input id="setup-alpha-login" type="checkbox" /><span><strong>Connect alphaXiv</strong><small>Opens a secure browser sign-in for paper search and reading. alphaXiv does not use a static API key.</small></span></label>
+              </fieldset>
+              <div id="provider-error" class="error" role="alert" hidden></div>
+              <div class="setup-actions"><span id="setup-security" class="setup-security">Model key is encrypted at rest</span><button id="provider-submit" class="primary" type="submit">Save and continue <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg></button></div>
+            </form>
           </section>
 
-          <div id="feedback" class="feedback">
-            <span id="status" class="status" role="status" aria-live="polite">Preparing the desktop app…</span>
-            <p id="error" class="error" role="alert" hidden></p>
-          </div>
-
-          <button id="launch" class="primary" type="button" disabled>
-            Open workspace
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
-          </button>
+          <section id="workspace-view" class="workspace-view" hidden aria-labelledby="workspace-title">
+            <div class="page-intro"><span class="kicker">YOUR WORKSPACE</span><h1 id="workspace-title">Choose a research workspace.</h1><p>Projects, papers, notes, and sessions stay in this local folder.</p></div>
+            <section class="workspace-section">
+              <div class="workspace-row"><span class="folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"></path></svg></span><span class="workspace-copy"><strong id="workspace">Loading…</strong><small>Outputs, papers, notes, and session state</small></span><button id="choose" class="text-action" type="button">Choose folder</button></div>
+            </section>
+            <div id="workspace-feedback" class="feedback"><span id="workspace-status" class="status" role="status" aria-live="polite">Ready to open your workspace.</span><p id="error" class="error" role="alert" hidden></p></div>
+            <button id="launch" class="primary" type="button">Open workspace <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg></button>
+          </section>
         </main>
       </div>
 

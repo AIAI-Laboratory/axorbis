@@ -74,11 +74,12 @@
     "build:workbench-web": "vite build --config web/vite.config.ts",
     "build:native-bundle": "node ./scripts/build-native-bundle.mjs",
     "dev": "tsx engine/index.ts",
+    "dev:workbench-web": "vite --config web/vite.config.ts --host 127.0.0.1 --port 1420 --strictPort",
     "prepack": "node ./scripts/clean-publish-artifacts.mjs && npm run build && node ./scripts/patch-embedded-pi.mjs && node ./scripts/prepare-runtime-workspace.mjs --rebuild && node ./scripts/prune-publish-deps.mjs",
     "runtime:lock": "node ./scripts/prepare-runtime-workspace.mjs --refresh-lock",
     "start": "tsx engine/index.ts",
     "start:dist": "node ./bin/feynman.js",
-    "test": "node ./scripts/patch-embedded-pi.mjs && node --import tsx --test --test-concurrency=1 tests/*.test.ts",
+    "test": "node ./scripts/patch-embedded-pi.mjs && node --import tsx --test --test-concurrency=1 tests/*.test.ts tests/*.test.mjs",
     "typecheck": "tsc --noEmit && npm run typecheck:workbench-web",
     "typecheck:workbench-web": "tsc -p web/tsconfig.json --noEmit",
     "architecture:check": "node ./scripts/check-architecture.mjs",
@@ -87,7 +88,7 @@
     "desktop:build": "npm run tauri:build --prefix app",
     "desktop:stage-runtime": "node ./scripts/stage-desktop-runtime.mjs",
     "desktop:release-build": "npm run build && npm run build:native-bundle && npm run desktop:stage-runtime && npm run desktop:build",
-    "desktop:icons": "npm run tauri icon --prefix app"
+    "desktop:icons": "node ./scripts/generate-desktop-icons.mjs"
   },
   "keywords": [
     "pi-package",
@@ -128,6 +129,7 @@
     "@opentelemetry/semantic-conventions": "^1.43.0",
     "brace-expansion": "5.0.9",
     "fast-xml-parser": "5.11.1",
+    "marked": "18.0.5",
     "pdfjs-dist": "^6.3.289",
     "posthog-node": "^5.51.6",
     "semver": "^7.8.5",

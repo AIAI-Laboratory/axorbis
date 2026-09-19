@@ -1,4 +1,5 @@
 import type { ModelStatusSnapshot } from "../model/catalog.js";
+import type { AiProviderPublic } from "./ai-providers.js";
 import type { WorkbenchMemoryRecord, WorkbenchNoteRecord } from "./memory.js";
 import type {
 	WorkbenchCustomMcpServer,
@@ -746,6 +747,7 @@ export type WorkbenchState = {
 	version?: string;
 	generatedAt: string;
 	modelStatus?: ModelStatusSnapshot;
+	aiProviders?: AiProviderPublic[];
 	summary: WorkbenchSummary;
 	onboarding: WorkbenchOnboardingProfile;
 	projects: WorkbenchProject[];

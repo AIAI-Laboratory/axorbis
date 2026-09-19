@@ -5,7 +5,7 @@ section: Getting Started
 order: 3
 ---
 
-The `feynman setup` wizard configures your model provider, API keys, and optional packages. It runs automatically on first launch, but you can re-run it at any time to change your configuration.
+The desktop app opens its first-launch setup automatically when no valid default model is configured. Add a provider and model there; credentials stay in the local backend vault. **Settings → Search and alphaXiv** can configure an optional Exa, Perplexity, or Gemini web-search key and start alphaXiv sign-in at any time. alphaXiv uses browser OAuth rather than a static API key. The `feynman setup` wizard remains available for terminal-only workflows and optional package setup.
 
 ## Running setup
 
@@ -38,6 +38,17 @@ For API key providers, you are prompted to paste your key directly:
 ```
 
 Keys are encrypted at rest and never sent anywhere except the provider's API endpoint.
+
+### Web search and alphaXiv
+
+In **Settings → Search and alphaXiv**, choose **Exa**, **Perplexity**, or **Gemini** under **Web search provider** and add that provider's key. Leave it on **Auto** to skip a new search key. The key is saved only in Feynman's local search configuration and is never returned to the screen.
+
+Select **Connect alphaXiv** to open its browser sign-in flow. alphaXiv does not accept a static API key; its OAuth session is stored by the bundled alphaXiv client. For terminal-only workflows, use:
+
+```bash
+feynman search set exa <api-key>
+feynman alpha login
+```
 
 ### Amazon Bedrock
 

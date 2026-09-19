@@ -24,7 +24,7 @@ Execute the workflow. Do not answer by describing the protocol, do not explain t
 
 Derive a short slug from the topic: lowercase, hyphenated, no filler words, at most 5 words.
 
-Every run must leave these files on disk:
+Before the user approves the plan, create only `outputs/.plans/<slug>.md`. Do not create empty draft, final, or provenance placeholders. After approval, every run must leave these files on disk:
 - `outputs/.plans/<slug>.md`
 - `outputs/.drafts/<slug>-draft.md`
 - `outputs/.drafts/<slug>-cited.md`
@@ -47,7 +47,7 @@ Make the scale decision before assigning owners in the plan. If the topic is a n
 
 Also save the plan with `memory_remember` using key `deepresearch.<slug>.plan` if that tool is available. If it is not available, continue without it.
 
-After writing the plan, stop and ask for explicit confirmation before gathering evidence. Summarize the plan briefly and ask:
+After writing the plan, stop and ask for explicit confirmation before gathering evidence or creating any other artifacts. Summarize the plan briefly and ask:
 
 `Proceed with this deep research plan? Reply "yes" to continue, or tell me what to change.`
 
@@ -198,4 +198,9 @@ Before responding, verify on disk that all required artifacts exist. If verifica
 
 Before responding, also verify that any fixes claimed in the provenance are reflected in the final candidate. If a fix removed a phrase, number, source, or claim, run a targeted `rg`/`grep` check for the removed content and a second check for the corrected content. Do not claim "all patches applied", "all checks pass", or "fixed" unless these commands or reads succeed.
 
-Final response should be brief: link the final file, provenance file, and any blocked checks.
+Before responding, read the final candidate and give the user a useful synthesis rather than only an artifact-completion notice. The final response must include:
+- A concise `## Research synthesis` with the answer to the research question, 3–6 material findings, and important caveats or open questions. Keep every statement consistent with the final candidate and its verification status.
+- A `## Files` list containing the final report, provenance sidecar, plan, and supporting research/verification artifacts when present.
+- Every workspace artifact path wrapped in inline code, for example `` `outputs/<slug>.md` ``. The workbench turns those paths into controls that open the individual file.
+
+Do not respond only that the research completed, that artifacts exist, or that they were verified. If an artifact is blocked or partial, state that plainly in the synthesis and Files list.

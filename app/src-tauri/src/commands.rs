@@ -95,7 +95,8 @@ fn home_dir() -> Option<PathBuf> {
 }
 
 fn default_workspace_path() -> PathBuf {
-    env::var_os("FEYNMAN_DESKTOP_WORKSPACE")
+    env::var_os("AXORBIS_DESKTOP_WORKSPACE")
+        .or_else(|| env::var_os("FEYNMAN_DESKTOP_WORKSPACE"))
         .filter(|value| !value.is_empty())
         .map(PathBuf::from)
         .or_else(home_dir)
@@ -122,7 +123,10 @@ fn executable_candidate(path: impl AsRef<Path>) -> Option<PathBuf> {
 }
 
 fn configured_launch_spec(app: &AppHandle) -> Result<LaunchSpec, String> {
-    if let Some(configured) = env::var_os("FEYNMAN_DESKTOP_CLI").filter(|value| !value.is_empty()) {
+    if let Some(configured) = env::var_os("AXORBIS_DESKTOP_CLI")
+        .or_else(|| env::var_os("FEYNMAN_DESKTOP_CLI"))
+        .filter(|value| !value.is_empty())
+    {
         let program = PathBuf::from(configured);
         if !program.is_file() {
             return Err(format!(
@@ -133,7 +137,9 @@ fn configured_launch_spec(app: &AppHandle) -> Result<LaunchSpec, String> {
         if program.extension().and_then(|value| value.to_str()) == Some("js") {
             return Ok(LaunchSpec {
                 program: PathBuf::from(
-                    env::var_os("FEYNMAN_DESKTOP_NODE").unwrap_or_else(|| "node".into()),
+                    env::var_os("AXORBIS_DESKTOP_NODE")
+                        .or_else(|| env::var_os("FEYNMAN_DESKTOP_NODE"))
+                        .unwrap_or_else(|| "node".into()),
                 ),
                 prefix_args: vec![program.to_string_lossy().into_owned()],
             });
@@ -142,6 +148,24 @@ fn configured_launch_spec(app: &AppHandle) -> Result<LaunchSpec, String> {
             program,
             prefix_args: Vec::new(),
         });
+    }
+
+    // In development, always launch the current checkout. A bundled runtime
+    // may be present in a Tauri debug resource directory and would otherwise
+    // mask fresh TypeScript/frontend changes.
+    if cfg!(debug_assertions) {
+        let repository_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let source_entry = repository_root.join("bin/feynman.js");
+        if source_entry.is_file() {
+            return Ok(LaunchSpec {
+                program: PathBuf::from(
+                    env::var_os("AXORBIS_DESKTOP_NODE")
+                        .or_else(|| env::var_os("FEYNMAN_DESKTOP_NODE"))
+                        .unwrap_or_else(|| "node".into()),
+                ),
+                prefix_args: vec![source_entry.to_string_lossy().into_owned()],
+            });
+        }
     }
 
     if let Ok(resource_dir) = app.path().resource_dir() {
@@ -153,19 +177,6 @@ fn configured_launch_spec(app: &AppHandle) -> Result<LaunchSpec, String> {
             return Ok(LaunchSpec {
                 program,
                 prefix_args: Vec::new(),
-            });
-        }
-    }
-
-    if cfg!(debug_assertions) {
-        let repository_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let source_entry = repository_root.join("bin/feynman.js");
-        if source_entry.is_file() {
-            return Ok(LaunchSpec {
-                program: PathBuf::from(
-                    env::var_os("FEYNMAN_DESKTOP_NODE").unwrap_or_else(|| "node".into()),
-                ),
-                prefix_args: vec![source_entry.to_string_lossy().into_owned()],
             });
         }
     }
@@ -219,16 +230,23 @@ fn spawn_backend(app: &AppHandle, workspace: PathBuf) -> Result<(Child, String),
         "0".into(),
     ]);
 
-    let mut child = Command::new(&launch.program)
+    let mut command = Command::new(&launch.program);
+    command
         .args(args)
         .current_dir(&workspace)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::inherit())
+        .stderr(Stdio::inherit());
+    // `tauri dev` starts Vite before this local backend. Production never receives
+    // this variable, so its bundled workbench remains self-contained.
+    #[cfg(debug_assertions)]
+    command.env("AXORBIS_WORKBENCH_DEV_URL", "http://127.0.0.1:1420/app-shell/");
+
+    let mut child = command
         .spawn()
         .map_err(|error| {
             format!(
-                "Could not start Feynman with {}: {error}. Install the Feynman CLI or set FEYNMAN_DESKTOP_CLI.",
+                "Could not start Feynman with {}: {error}. Install the Feynman CLI or set AXORBIS_DESKTOP_CLI.",
                 launch.program.display()
             )
         })?;

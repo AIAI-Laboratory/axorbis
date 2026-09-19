@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
+import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
+import { dirname } from "node:path";
 
 import { openUrl } from "../system/open-url.js";
 import {
@@ -37,7 +39,7 @@ import { createWorkbenchProject } from "./projects.js";
 import { upsertWorkbenchFrameReadCursor } from "./read-cursors.js";
 import { requestWorkbenchReview } from "./review.js";
 import { readWorkbenchPdfText } from "./pdf-text.js";
-import { buildWorkbenchState, loadWorkbenchModelStatus, readWorkbenchFile, readWorkbenchFileDownload, type BuildWorkbenchStateOptions } from "./scan.js";
+import { buildWorkbenchState, loadWorkbenchModelStatus, readWorkbenchFile, readWorkbenchFileDownload, resolveWorkbenchPath, type BuildWorkbenchStateOptions } from "./scan.js";
 import { ensureOpenScienceSeedFixtures } from "./seed-fixtures.js";
 import { readWorkbenchSettings, removeWorkbenchSettingsRecord, upsertWorkbenchSettingsRecord, type WorkbenchSettingsCollection, type WorkbenchCustomConnector } from "./settings-store.js";
 import { diffArtifactVersionSnapshot, restoreArtifactVersionSnapshot } from "./artifact-snapshot-actions.js";
@@ -45,7 +47,12 @@ import { hostForUrl, logWorkbenchRequestError, normalizeHost, requestCookie, req
 import { sendWorkbenchWeb } from "./static-shell.js";
 import { mutateWorkbenchTranscriptAnnotation } from "./transcript-annotations.js";
 import { cachedLatestAxorbisRelease } from "./update-announcement.js";
+import { removeAiProvider, removeAiProviderCredential, testAiProviderConnection, upsertAiProvider, type AiCredentialRole } from "./ai-providers.js";
 import type { WorkbenchArtifactVersion, WorkbenchPlanStepStatus } from "./types.js";
+import { isLoggedIn as isAlphaLoggedIn, login as loginAlpha } from "@advaitpaliwal/alpha-hub/lib";
+import { getValidToken as getValidAlphaToken } from "@advaitpaliwal/alpha-hub/lib/auth";
+import { verifyAlphaAuthStatus } from "../alpha-auth-status.js";
+import { getPiWebAccessStatus, savePiWebAccessConfig, type PiWebSearchProvider } from "../pi/web-access.js";
 
 export { parseWorkbenchPort } from "./server-utils.js";
 
@@ -79,6 +86,9 @@ type ServeWorkbenchOptions = WorkbenchServerOptions & {
 function send(response: ServerResponse, status: number, body: string, headers: Record<string, string> = {}): void {
 	response.writeHead(status, {
 		"cache-control": "no-store",
+		"access-control-allow-origin": "*",
+		"access-control-allow-headers": "content-type, x-feynman-token",
+		"access-control-allow-methods": "GET, POST, OPTIONS",
 		...headers,
 	});
 	response.end(body);
@@ -105,6 +115,21 @@ function isAuthorized(request: IncomingMessage, url: URL, token: string): boolea
 
 function tokenCookie(token: string): string {
 	return `feynman_workbench=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=/`;
+}
+
+function revealWorkbenchArtifact(workingDir: string, requestedPath: string): void {
+	const { absPath } = resolveWorkbenchPath(workingDir, requestedPath);
+	// Validate that the request resolves to an artifact before delegating to the
+	// operating system. The desktop server only receives authenticated local calls.
+	readWorkbenchFileDownload(workingDir, requestedPath);
+	const folder = dirname(absPath);
+	const [command, args] = process.platform === "darwin"
+		? ["open", [folder]]
+		: process.platform === "win32"
+			? ["explorer", [folder]]
+			: ["xdg-open", [folder]];
+	const child = spawn(command, args, { detached: true, stdio: "ignore" });
+	child.unref();
 }
 
 function newWorkbenchSessionId(): string {
@@ -254,6 +279,12 @@ function settingsRecordField(body: Record<string, unknown>): Record<string, unkn
 	return value as Record<string, unknown>;
 }
 
+function searchProviderField(body: Record<string, unknown>): PiWebSearchProvider {
+	const provider = stringField(body, "provider");
+	if (provider === "auto" || provider === "exa" || provider === "gemini" || provider === "perplexity") return provider;
+	throw new Error("Search provider must be auto, exa, gemini, or perplexity.");
+}
+
 function connectorField(options: WorkbenchRequestHandlerOptions, body: Record<string, unknown>): WorkbenchCustomConnector {
 	const connectorId = stringField(body, "connectorId").trim();
 	const connector = readWorkbenchSettings(options.workingDir).customConnectors.find((item) => item.id === connectorId);
@@ -346,7 +377,12 @@ async function handleWorkbenchRequest(
 	request: IncomingMessage,
 	response: ServerResponse,
 ): Promise<void> {
-		const url = new URL(request.url ?? "/", "http://localhost");
+	const url = new URL(request.url ?? "/", "http://localhost");
+
+		if (request.method === "OPTIONS") {
+			send(response, 204, "");
+			return;
+		}
 
 		if (url.pathname === "/api/health") {
 			sendJson(response, 200, { ok: true });
@@ -403,7 +439,7 @@ async function handleWorkbenchRequest(
 		}
 
 		try {
-			if (sendWorkbenchWeb(response, options, url, headers)) {
+			if (sendWorkbenchWeb(response, options, url, headers, request)) {
 				return;
 			}
 			if (url.pathname === "/api/update" && request.method === "GET") {
@@ -699,6 +735,92 @@ async function handleWorkbenchRequest(
 					settings,
 					state: buildServedWorkbenchState(options),
 				}, headers);
+				return;
+			}
+
+			if (url.pathname === "/api/ai-providers" && request.method === "POST") {
+				const body = expectObject(await readJsonBody(request));
+				const action = stringField(body, "action");
+				if (action === "upsert") {
+					const provider = upsertAiProvider(options.workingDir, settingsRecordField(body));
+					sendJson(response, 200, { provider, state: buildServedWorkbenchState(options) }, headers);
+					return;
+				}
+				if (action === "remove") {
+					removeAiProvider(options.workingDir, stringField(body, "id"));
+					sendJson(response, 200, { state: buildServedWorkbenchState(options) }, headers);
+					return;
+				}
+				if (action === "removeCredential") {
+					const role = stringField(body, "role");
+					if (role !== "inference" && role !== "usage_admin") throw new Error("Unknown AI provider credential role.");
+					const provider = removeAiProviderCredential(options.workingDir, stringField(body, "id"), role as AiCredentialRole);
+					sendJson(response, 200, { provider, state: buildServedWorkbenchState(options) }, headers);
+					return;
+				}
+				if (action === "test") {
+					const result = await testAiProviderConnection(options.workingDir, stringField(body, "id"));
+					sendJson(response, 200, { result, state: buildServedWorkbenchState(options) }, headers);
+					return;
+				}
+				throw new Error("Unknown AI provider action.");
+			}
+
+			if (url.pathname === "/api/search" && request.method === "POST") {
+				const body = expectObject(await readJsonBody(request));
+				if (stringField(body, "action") !== "upsert") throw new Error("Unknown search action.");
+				const provider = searchProviderField(body);
+				const apiKey = optionalStringField(body, "apiKey");
+				if (provider === "auto" && apiKey) throw new Error("Auto search does not accept an API key.");
+				const keyField = provider === "exa" ? "exaApiKey" : provider === "gemini" ? "geminiApiKey" : provider === "perplexity" ? "perplexityApiKey" : undefined;
+				const status = getPiWebAccessStatus();
+				const savedKeyAvailable = provider === "exa"
+					? status.exaConfigured
+					: provider === "gemini"
+						? status.geminiApiConfigured
+						: provider === "perplexity" ? status.perplexityConfigured : false;
+				if (provider !== "auto" && !apiKey && !savedKeyAvailable) throw new Error(`Enter an API key for ${provider} search.`);
+				savePiWebAccessConfig({
+					provider,
+					searchProvider: provider,
+					workflow: "none",
+					geminiBrowser: false,
+					route: undefined,
+					...(keyField && apiKey ? { [keyField]: apiKey } : {}),
+				});
+				sendJson(response, 200, { search: getPiWebAccessStatus() }, headers);
+				return;
+			}
+
+			if (url.pathname === "/api/research-access" && request.method === "GET") {
+				const search = getPiWebAccessStatus();
+				// A stale local alphaXiv browser session must not prevent the research
+				// workspace itself from opening. Treat an unreadable session as signed out.
+				let alphaAuthenticated = false;
+				try {
+					alphaAuthenticated = isAlphaLoggedIn();
+				} catch {
+					alphaAuthenticated = false;
+				}
+				sendJson(response, 200, {
+					search: {
+						searchProvider: search.searchProvider,
+						exaConfigured: search.exaConfigured,
+						geminiApiConfigured: search.geminiApiConfigured,
+						perplexityConfigured: search.perplexityConfigured,
+					},
+					alpha: { authenticated: alphaAuthenticated },
+				}, headers);
+				return;
+			}
+
+			if (url.pathname === "/api/alpha-auth" && request.method === "POST") {
+				const body = expectObject(await readJsonBody(request));
+				if (stringField(body, "action") !== "login") throw new Error("Unknown alphaXiv auth action.");
+				await loginAlpha();
+				const auth = await verifyAlphaAuthStatus({ getValidToken: getValidAlphaToken });
+				if (!auth.authenticated) throw new Error("alphaXiv sign-in did not return a valid session.");
+				sendJson(response, 200, { auth }, headers);
 				return;
 			}
 
@@ -1067,13 +1189,24 @@ async function handleWorkbenchRequest(
 					return;
 				}
 
-				if (url.pathname === "/api/file") {
-					const path = url.searchParams.get("path");
+			if (url.pathname === "/api/file") {
+				const path = url.searchParams.get("path");
 				if (!path) {
 					send(response, 400, "Missing artifact path.");
 					return;
 				}
 				sendJson(response, 200, readWorkbenchFile(options.workingDir, path), headers);
+				return;
+			}
+
+			if (url.pathname === "/api/file/reveal" && request.method === "POST") {
+				const path = url.searchParams.get("path");
+				if (!path) {
+					send(response, 400, "Missing artifact path.");
+					return;
+				}
+				revealWorkbenchArtifact(options.workingDir, path);
+				sendJson(response, 200, { revealed: true }, headers);
 				return;
 			}
 
@@ -1127,6 +1260,28 @@ function listen(server: Server, port: number, host: string): Promise<void> {
 	});
 }
 
+function delay(milliseconds: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function listenWithRetry(server: Server, requestedPort: number, host: string): Promise<void> {
+	let port = requestedPort;
+	for (let attempt = 0; attempt < 3; attempt += 1) {
+		try {
+			await listen(server, port, host);
+			return;
+		} catch (error) {
+			const code = (error as NodeJS.ErrnoException).code;
+			const retryable = code === "EADDRINUSE" || code === "ENOBUFS" || code === "EMFILE";
+			if (!retryable || attempt === 2) throw error;
+			// A fixed default can collide; a transient socket-buffer or file-descriptor
+			// shortage may also clear while the desktop host is still starting.
+			port = 0;
+			await delay(100 * (attempt + 1));
+		}
+	}
+}
+
 export async function startWorkbenchServer(options: WorkbenchServerOptions): Promise<WorkbenchServerHandle> {
 	if (options.appRoot) {
 		ensureOpenScienceSeedFixtures({
@@ -1151,15 +1306,7 @@ export async function startWorkbenchServer(options: WorkbenchServerOptions): Pro
 		...(options.version ? { version: options.version } : {}),
 		promptExecutor: options.promptExecutor,
 	}));
-	try {
-		await listen(server, requestedPort, host);
-	} catch (error) {
-		if (requestedPort !== 0 && (error as NodeJS.ErrnoException).code === "EADDRINUSE") {
-			await listen(server, 0, host);
-		} else {
-			throw error;
-		}
-	}
+	await listenWithRetry(server, requestedPort, host);
 
 	const address = server.address() as AddressInfo;
 	const url = `http://${hostForUrl(host)}:${address.port}/`;

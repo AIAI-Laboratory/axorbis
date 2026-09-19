@@ -4,6 +4,42 @@ Workspace lab notebook for long-running or resumable research work.
 
 Use this file to track chronology, not release notes. Keep entries short, factual, and operational.
 
+### 2026-09-19 — project-files-markdown
+
+- Objective: Make research replies and plans readable and expose the files counted on project pages.
+- Changed: Rendered activity and Markdown artifact previews as safe structured Markdown, improved reading spacing, and grouped project files under their owning research question. File content stays closed until selected, then opens in a focused side reader without replacing the question overview; search, type filters, preview/download, display-name editing, starring, and recoverable trash/undo remain available. Updated public Workbench descriptions.
+- Verified: `npm run typecheck`, the desktop-triggered full build, three targeted rendering/file-list tests, and five existing artifact-action/shell integration tests pass. In the user's actual project, all 17 files render under its two research questions (5 and 12), with no unassigned files; selecting a Markdown file opens the right-side reader without changing the project URL, and Escape closes it while restoring focus to that file. Gracefully stopped the prior Axorbis process tree and launched the verified desktop build.
+
+### 2026-09-18 — desktop-brand-assets
+
+- Objective: Apply the supplied Axorbis icon and banner to the desktop product documentation and native bundle.
+- Changed: Regenerated Tauri desktop icon assets from `img/icon.png`, configured macOS/Windows/Linux bundle icons, and rewrote the root README around desktop development with `img/banner.png`.
+- Verified: icon generation completed; `git diff --check` reports no whitespace errors. Mobile icon outputs were omitted because this repository targets desktop.
+
+### 2026-09-18 — desktop-feynman-autostart
+
+- Objective: Make opening the native app launch the Feynman runtime and Workbench automatically.
+- Changed: The Tauri splash now resolves the remembered/default workspace, starts the managed Feynman backend immediately, and redirects into the authenticated Workbench; retry remains available only after startup failure.
+- Verified: `node --check app/ui/main.js`, Rust formatting, and Workbench web typecheck pass.
+
+### 2026-09-18 — axorbis-desktop-rename
+
+- Objective: Rename the native desktop package from `feynman-desktop` to `axorbis-desktop`.
+- Changed: Updated the npm package, Rust crate, generated Cargo lock metadata, native launcher text, and desktop environment variable names. Legacy `FEYNMAN_DESKTOP_*` variables remain accepted as compatibility aliases.
+- Verified: Cargo metadata reports `axorbis-desktop`; Rust formatting and Workbench web typecheck pass.
+
+### 2026-09-18 — desktop-first-runtime
+
+- Objective: Make desktop development use the current checkout and make the desktop app the supported product surface.
+- Changed: Tauri debug launcher now prefers the repository runtime before bundled resources, preventing stale desktop builds from masking fresh UI/backend changes. README and desktop docs now describe `desktop:dev`; the `web/` tree is documented as bundled desktop UI source rather than a separate web product.
+- Verified: `npm run desktop:check` completed native formatting/check/test compilation. Next: use `npm run desktop:dev` after source changes; use `npm run desktop:release-build` for a packaged runtime.
+
+### 2026-09-18 — workbench-ai-providers
+
+- Objective: Add secure BYOK provider configuration and usage/budget controls to the Axorbis Workbench without creating a second secret or provider-state path.
+- Changed: Added generic provider metadata, encrypted-at-rest credential vault, sanitized state/API surfaces, provider connection checks, Pi launch environment injection, token/cost usage ledgers, budget guards, and the Settings → AI Providers UI. Hosted providers use budgets; LM Studio and Ollama use resource limits.
+- Verified: targeted provider tests and `npm run typecheck` pass. Full suite is pending; it requires localhost and org-home write permissions. Next: run the full suite outside the sandbox and inspect any regression.
+
 ### 2026-09-17 — axorbis-readme
 
 - Objective: Make the repository landing page describe Axorbis instead of the upstream Feynman release and installer.
@@ -5100,3 +5136,97 @@ Use this file to track chronology, not release notes. Keep entries short, factua
 - A first standalone archive passed package validation and production audit but failed Tauri packaging because copied npm links pointed at a removed temporary directory. Fixed native and staging copies to preserve relative links; added checks that reject broken or escaping links, plus regression tests. The rebuilt archive and staged runtime have zero broken links.
 - Verified: typecheck, web/CLI build, architecture check, Cargo checks, 159/159 workbench/desktop tests, website static build, production runtime audit (0 vulnerabilities), packaged runtime `--version`, and checksum-valid 257 MB local DMG with Axorbis resources. The local `.app` has only an ad-hoc binary signature and fails full bundle signature verification; no Developer ID identity is installed. Website dependency audit still reports one moderate `devalue` advisory, separate from the desktop runtime.
 - Blocked publication: this session has no GitHub write connection or local Apple Developer ID identity; repository signing secrets are unverified. The release workflow has not run against a tag, and no public release was created. Next: connect GitHub access, confirm/configure the six Apple secrets, review/commit the dirty checkout, tag the matching version, then require the signed CI artifact and notarization checks before publication.
+
+### 2026-09-18 — desktop-model-setup
+
+- Replaced the terminal-only “Run `feynman setup`” notice with an automatic redirect to Settings → AI Providers when no valid default model is available. The Home notice now offers the same route explicitly if the user returns later.
+- This keeps setup non-blocking for the desktop host: provider credentials continue through the backend vault and are never guessed, copied into browser state, or written as plaintext.
+- Verified: `npm run typecheck:workbench-web` and `npm run build` pass. State: `verified` for the frontend setup flow. Next: configure one provider in the desktop app and confirm the model status becomes valid.
+
+### 2026-09-18 — desktop-first-run-wizard
+
+- Reworked the native first launch into a minimal loading screen using `app/ui/loading.svg`, followed by an in-app provider/key/model form and then workspace selection. Existing configured workspaces still launch directly on later starts.
+- Added localhost CORS and Tauri `connect-src` permissions for the authenticated setup API, fixing the desktop WebView `TypeError: Load failed` while preserving token authorization.
+- Verified: `node --check app/ui/main.js`, `npm run typecheck:workbench-web`, `npm run build`, and a successful `npm run desktop:dev` native launch. State: `verified`.
+
+### 2026-09-18 — desktop-loading-fit
+
+- Made the first-run loading state viewport-locked: no Workbench chrome, excess canvas, or scrollbar is rendered while Axorbis starts.
+- Verified: `npm run build`, desktop shell tests 2/2, and a restarted native `npm run desktop:dev` launch.
+
+### 2026-09-18 — provider-logo-selector
+
+- Replaced the long AI provider card list with a compact provider-logo selector. Unconfigured providers stay dimmed; configured providers light up, and only the selected provider opens its detailed form.
+- Verified: `npm run typecheck:workbench-web`, `npm run build`, and a restarted native desktop launch.
+
+### 2026-09-18 — home-layout-pass
+
+- Tightened the Home layout for scanability: smaller vertical rhythm, more balanced research/project columns, compact statistics, and a shorter empty state so the main action is visible without excess whitespace.
+- Verified: Workbench web typecheck/build and restarted native desktop launch.
+
+### 2026-09-18 — empty-state-mark
+
+- Replaced the stray red dot in empty-state cards with a compact red plus icon, matching the create-project action and improving visual hierarchy.
+- Verified: Workbench web typecheck/build and restarted native desktop launch.
+
+### 2026-09-18 — empty-state-alignment
+
+- Normalized empty-state vertical rhythm so the icon, title, description, and action align consistently; prevented the card from stretching with its neighboring column.
+- Verified: Workbench web typecheck/build and restarted native desktop launch.
+
+### 2026-09-18 — clickable-project-empty-state
+
+- Made the empty “Start with a project” card a full-width CTA; clicking anywhere opens the project dialog, with a visible dashed border and hover/focus treatment.
+- Verified: Workbench web typecheck/build and restarted native desktop launch.
+
+### 2026-09-18 — simplify-recent-projects-sidebar
+
+- Removed the duplicate create-project plus button from the “Recent projects” sidebar heading; project creation remains available from Home and Projects.
+- Verified: Workbench web typecheck/build. State: `verified`.
+
+### 2026-09-18 — home-summary-icons
+
+- Added compact red icons to the Home summary metrics for projects, questions, paper files, and claims, improving scanability without changing the layout.
+- Verified: Workbench web typecheck/build. State: `verified`.
+
+### 2026-09-18 — home-sticky-note
+
+- Added a Quick note sticky-note panel to Home with inline editing, character count, clear action, and local persistence across app launches.
+- Verified: Workbench web typecheck/build. State: `verified`.
+
+### 2026-09-18 — notes-checklists
+
+- Moved notes into a dedicated Notes workspace section with support for multiple locally persisted notes, editable titles, checklist items, completion toggles, item removal, and note deletion.
+- Migrated the previous Home quick note into the first checklist note when present.
+- Verified: Workbench web typecheck/build. State: `verified`.
+
+### 2026-09-18 — project-question-create-flow
+
+- Made the entire empty project question card open the question form and made question creation report a clear error instead of silently doing nothing when no project is selected.
+- Verified: Workbench web typecheck/build, backend session creation smoke check, and restarted native desktop launch. State: `verified`.
+
+### 2026-09-18 — question-route-state-sync
+
+- Fixed newly created question routes falling through to “Question not found” when the returned state was briefly stale; creation now refreshes state when needed and resolves chat runs directly from the project state as a fallback.
+- Verified: Workbench web typecheck/build and restarted native desktop launch. State: `verified`.
+
+### 2026-09-18 — provider-error-feedback
+
+- Preserved Pi assistant `errorMessage` values in Workbench chat transcripts when a provider or model fails, replacing the misleading “Feynman finished without text output.” fallback with the actionable provider error.
+- Normalized the legacy Gemini `Flash2.5-lite` alias to the canonical `google/gemini-2.5-flash-lite` runtime id so existing desktop setup can recover without re-entering credentials.
+- Added a regression test covering empty assistant content with `stopReason: "error"`.
+- Verified: `npm run typecheck:workbench-web`, `npm run build`, and targeted provider/stream tests (5/5). State: `verified`.
+
+### 2026-09-18 — deepresearch-empty-reply
+
+- Diagnosed a Gemini turn that wrote a research plan and empty placeholder files, then ended with `stopReason: stop` and no assistant text. The previous Workbench fallback incorrectly displayed this as a completed answer.
+- Added a plan-aware response for tool-only `/deepresearch` turns, repaired the old placeholder at session read time, and marked unrelated empty replies as errors. Clarified the prompt so only the plan is written before user approval.
+- Fixed Deep Research mode prepending `/deepresearch` to a plan approval reply and taught the Pi handoff to resume the latest plan, including sessions already affected by `/deepresearch yes`.
+- Verified: TypeScript build, targeted approval/stream tests (6/6), and the user's saved session resolving to the latest plan with an approval prompt. Next: restart desktop and confirm the live UI shows the repaired session.
+
+### 2026-09-18 — axorbis-research-visual-system
+
+- Refined the desktop setup and Workbench visual system around compact research-software typography, spacing, borders, and restrained geometry. Bundled OFL-licensed Space Grotesk and JetBrains Mono locally, including Vietnamese subsets; technical metadata uses mono selectively while interface copy remains in Space Grotesk.
+- Reduced oversized headings, navigation and panel spacing, card roundness, shadows, and decorative gradients across Home, projects, research questions, activity, notes, AI providers, dialogs, and first-run screens without changing workflows.
+- Regenerated the desktop icon from the supplied SVG with a transparent optical safe area so the Dock artwork appears smaller; the original source artwork is untouched. Updated the icon generator to emit only desktop assets into the repository.
+- Verified: Workbench typecheck/build, desktop and Axorbis shell tests (5/5), native desktop launch with a live Feynman backend, and generated icon inspection. Architecture check remains blocked by the existing oversized `engine/workbench/server.ts`, unrelated to this CSS/icon pass. Native UI screenshot inspection was unavailable because computer-use permission was denied. Next: visually review Home, Research, Providers, and Dock at normal and magnified sizes on the running app.

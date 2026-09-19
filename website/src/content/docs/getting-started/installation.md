@@ -163,7 +163,7 @@ On Windows:
 
 ## Post-install setup
 
-After installation, run the guided setup wizard to configure your model provider and API keys:
+After installation, the desktop app opens Settings → AI Providers automatically when setup is needed. For terminal-only workflows, run the guided setup wizard to configure your model provider and API keys:
 
 ```bash
 feynman setup

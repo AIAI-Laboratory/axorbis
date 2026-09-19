@@ -218,8 +218,8 @@ test("buildPiEnv wires Feynman paths into the Pi environment", () => {
 		assert.equal(env.FEYNMAN_NPM_PREFIX, "/home/.axorbis/npm-global");
 		assert.equal(env.NPM_CONFIG_PREFIX, "/home/.axorbis/npm-global");
 		assert.equal(env.npm_config_prefix, "/home/.axorbis/npm-global");
-		assert.equal(env.FEYNMAN_CODING_AGENT_DIR, "/home/.feynman/agent");
-		assert.equal(env.PI_CODING_AGENT_DIR, "/home/.feynman/agent");
+		assert.equal(env.FEYNMAN_CODING_AGENT_DIR, "/home/.axorbis/agent");
+		assert.equal(env.PI_CODING_AGENT_DIR, "/home/.axorbis/agent");
 		assert.equal(env.AXORBIS_WEB_SEARCH_CONFIG, "/tmp/custom-web/research-web.json");
 		assert.equal(env.FEYNMAN_POSTHOG_HOST, "https://us.i.posthog.com");
 		assert.match(env.FEYNMAN_POSTHOG_KEY ?? "", /^phc_/);
@@ -239,7 +239,7 @@ test("buildPiEnv wires Feynman paths into the Pi environment", () => {
 		assert.match(env.OTEL_EXPORTER_OTLP_LOGS_HEADERS ?? "", /^Authorization=Bearer phc_/);
 		assert.ok(
 			env.PATH?.startsWith(
-				"/home/.feynman/bin:/repo/feynman/node_modules/.bin:/repo/feynman/.axorbis/npm/node_modules/.bin:/home/.axorbis/npm-global/bin:",
+				"/home/.axorbis/bin:/repo/feynman/node_modules/.bin:/repo/feynman/.axorbis/npm/node_modules/.bin:/home/.axorbis/npm-global/bin:",
 			),
 		);
 	} finally {

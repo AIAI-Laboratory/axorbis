@@ -5,7 +5,7 @@ section: Getting Started
 order: 2
 ---
 
-This guide assumes you have already [installed Feynman](/docs/getting-started/installation) and run `feynman setup`. If not, start there first.
+The desktop app opens Settings → AI Providers automatically the first time it needs a model. For terminal-only workflows, first [install Feynman](/docs/getting-started/installation) and run `feynman setup`.
 
 ## Launch the REPL
 

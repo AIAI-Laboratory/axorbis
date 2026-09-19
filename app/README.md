@@ -1,6 +1,6 @@
 # Axorbis Desktop
 
-The desktop app is a Tauri host for the Axorbis interface backed by the same local, authenticated workbench served by `feynman serve`.
+The desktop app is the supported Axorbis product surface: a Tauri host for the local, authenticated Feynman workbench. The web UI source is bundled into this app and is not developed or shipped as a separate web product.
 
 ## Development
 
@@ -12,7 +12,9 @@ npm ci --prefix app
 npm run desktop:dev
 ```
 
-The launcher uses the same visual system as the web interface, lets you select a research workspace, starts Feynman on an available localhost port, waits for the tokenized URL, and then opens the workbench. Closing the window keeps it available in the system tray; use **Quit Axorbis** to stop the app and its managed server.
+The development command runs the web workbench through Vite, so edits under `web/` hot reload in the desktop window. Changes to the Rust host still restart the native process.
+
+Opening the app first shows a minimal loading screen, then checks model setup through the local backend. On first launch, the setup screen accepts an inference key and model, stores the key in the encrypted backend vault, and can also save an optional Exa, Perplexity, or Gemini web-search key. The same Search and alphaXiv controls remain available in **Settings** after launch. alphaXiv uses browser OAuth rather than a static API key. The app then asks for a workspace folder. Later launches start Feynman and its local managed Workbench backend, wait for the tokenized URL, and open the remembered workspace automatically. Closing the window keeps it available in the system tray; use **Quit Axorbis** to stop the app and its managed server.
 
 ## Build and checks
 
@@ -29,8 +31,8 @@ When a newer stable release is published, the running Axorbis workspace shows a 
 
 Development builds use this checkout's `bin/feynman.js`. A packaged launcher resolves the runtime in this order:
 
-1. `FEYNMAN_DESKTOP_CLI`, for an explicit launcher or `bin/feynman.js` path.
+1. `AXORBIS_DESKTOP_CLI`, for an explicit launcher or `bin/feynman.js` path.
 2. A bundled `runtime/feynman` resource, supplied by `desktop:release-build`.
 3. A standard user installation such as `~/.local/bin/feynman`, Homebrew, or `feynman` on `PATH`.
 
-`FEYNMAN_DESKTOP_NODE` can select Node when `FEYNMAN_DESKTOP_CLI` points to a JavaScript entrypoint. `FEYNMAN_DESKTOP_WORKSPACE` changes the first suggested workspace.
+`AXORBIS_DESKTOP_NODE` can select Node when `AXORBIS_DESKTOP_CLI` points to a JavaScript entrypoint. `AXORBIS_DESKTOP_WORKSPACE` changes the first suggested workspace. The former `FEYNMAN_DESKTOP_*` variables remain accepted for compatibility.
