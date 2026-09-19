@@ -79,12 +79,7 @@ export function ensureAxorbisWorkspaceScaffold(
 	workingDir: string,
 	createDirectory: typeof mkdirSync = mkdirSync,
 ): boolean {
-	for (const relPath of [
-		"outputs/.plans",
-		"outputs/.drafts",
-		"papers",
-		"notes",
-	]) {
+	for (const relPath of [".axorbis/artifacts/projects"]) {
 		try {
 			createDirectory(resolve(workingDir, relPath), { recursive: true });
 		} catch (error) {

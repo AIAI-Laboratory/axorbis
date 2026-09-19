@@ -2,7 +2,7 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { relative, resolve, sep } from "node:path";
 
 export const OPEN_SCIENCE_SEED_FIXTURE_DIR = "fixtures/open-science-seeds";
-export const OPEN_SCIENCE_SEED_WORKSPACE_DIR = "outputs/open-science-seeds";
+export const OPEN_SCIENCE_SEED_WORKSPACE_DIR = ".axorbis/artifacts/open-science-seeds";
 
 export const OPEN_SCIENCE_SEED_WORKFLOWS = [
 	"example_crispr_screen",

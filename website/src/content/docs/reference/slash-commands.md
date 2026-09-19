@@ -51,7 +51,7 @@ Research workflows call `subagent` directly for one child or use `workflowScript
 
 ```json
 {
-  "workflowScript": "return await runs.all([{key:'papers',agent:'researcher',task:'Read outputs/.plans/<slug>-papers.md.',output:'<slug>-research-papers.md'},{key:'web',agent:'researcher',task:'Read outputs/.plans/<slug>-web.md.',output:'<slug>-research-web.md'}]);",
+  "workflowScript": "return await runs.all([{key:'papers',agent:'researcher',task:'Read .axorbis/artifacts/.plans/<slug>-papers.md.',output:'<slug>-research-papers.md'},{key:'web',agent:'researcher',task:'Read .axorbis/artifacts/.plans/<slug>-web.md.',output:'<slug>-research-web.md'}]);",
   "async": true,
   "globalConcurrencyLimit": 4
 }

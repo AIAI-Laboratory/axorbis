@@ -3,13 +3,12 @@ import { existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 import type { WorkbenchHostGrant } from "./types.js";
+import { AXORBIS_ARTIFACT_ROOT } from "./artifact-roots.js";
 
 const LOCAL_USER_ID = "local-workbench";
 
 const GRANTED_PATHS: Array<{ relPath: string; mountName: string; mode: "ro" | "rw"; source: string }> = [
-	{ relPath: "outputs", mountName: "outputs", mode: "rw", source: "Workbench artifacts" },
-	{ relPath: "papers", mountName: "papers", mode: "rw", source: "Workbench artifacts" },
-	{ relPath: "notes", mountName: "notes", mode: "rw", source: "Workbench artifacts" },
+	{ relPath: AXORBIS_ARTIFACT_ROOT, mountName: "axorbis-artifacts", mode: "rw", source: "Axorbis research artifacts" },
 	{ relPath: "CHANGELOG.md", mountName: "lab-notebook", mode: "ro", source: "Workspace lab notebook" },
 ];
 

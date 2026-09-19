@@ -3,10 +3,10 @@ import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSyn
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 
 import { migratedWorkbenchDataPath, resolveWorkbenchStoredPath, workbenchDataPath } from "./data-root.js";
+import { isWorkbenchArtifactPath } from "./artifact-roots.js";
 import type { WorkbenchArtifact, WorkbenchArtifactActionItem } from "./types.js";
 
 const ARTIFACT_ACTIONS_SCHEMA = "feynman.workbenchArtifactActions.v1";
-const ACTION_ROOTS = ["outputs", "papers", "notes"] as const;
 const MAX_DISPLAY_NAME_CHARS = 180;
 
 export type WorkbenchArtifactActionRecord = {
@@ -86,7 +86,7 @@ function safeArtifactPath(workingDir: string, artifactPath: string): string {
 	if (!relPath || relPath.startsWith("../") || relPath === ".." || relPath.split("/").includes("..")) {
 		throw new Error("Artifact action target must stay inside the workspace.");
 	}
-	if (!ACTION_ROOTS.some((root) => relPath === root || relPath.startsWith(`${root}/`))) {
+	if (!isWorkbenchArtifactPath(relPath)) {
 		throw new Error("Artifact actions are limited to research artifacts.");
 	}
 	return relPath;

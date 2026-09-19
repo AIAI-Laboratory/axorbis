@@ -27,7 +27,7 @@ You can use `/recipe` for tasks such as choosing an SFT dataset, reproducing a b
 
 ## How it works
 
-The workflow starts by writing a plan to `outputs/.plans/<slug>-recipe.md`, then continues automatically. It gathers evidence from papers, web sources, repositories, official docs, and Hugging Face Hub metadata.
+The workflow starts by writing a plan to `.axorbis/artifacts/.plans/<slug>-recipe.md`, then continues automatically. It gathers evidence from papers, web sources, repositories, official docs, and Hugging Face Hub metadata.
 
 For each candidate, Feynman links the reported result to the recipe that produced it: dataset, split/schema, method, hyperparameters, compute assumptions, benchmark, and implementation code. This result-to-recipe link is the core output. A paper that reports a strong result but does not expose usable data, code, or enough configuration detail is marked as a risk rather than treated as immediately runnable.
 
@@ -43,7 +43,7 @@ These tools use public Hub endpoints by default and use `HF_TOKEN` or `HUGGINGFA
 
 ## Output format
 
-The final artifact is written to `outputs/<slug>-recipe.md` with a provenance sidecar at `outputs/<slug>-recipe.provenance.md`.
+The final artifact is written to `.axorbis/artifacts/<slug>-recipe.md` with a provenance sidecar at `.axorbis/artifacts/<slug>-recipe.provenance.md`.
 
 The brief includes:
 

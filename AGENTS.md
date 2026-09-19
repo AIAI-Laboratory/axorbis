@@ -59,11 +59,11 @@ Before adding a command, prompt, tool, extension, dashboard, document page, or r
 
 ## Output conventions
 
-- Research outputs go in `outputs/`.
-- Paper-style drafts go in `papers/`.
-- Session logs go in `notes/`.
+- Research outputs go in `.axorbis/artifacts/projects/<project-id>/`.
+- Paper-style drafts go in `.axorbis/artifacts/projects/<project-id>/.papers/`.
+- Session logs go in `.axorbis/artifacts/projects/<project-id>/.notes/`.
 - The workspace-level lab notebook lives at `CHANGELOG.md`.
-- Plan artifacts for long-running workflows go in `outputs/.plans/`.
+- Plan artifacts for long-running workflows go in `.axorbis/artifacts/projects/<project-id>/.plans/`.
 - Intermediate research artifacts are written to disk by subagents and read by the lead agent. They are not returned inline unless the user explicitly asks for them.
 - Long-running workflows should treat the plan artifact as an externalized working memory, not a static outline. Keep task status and verification state there as the run evolves.
 - Long-running or resumable workflows should also treat `CHANGELOG.md` as the chronological lab notebook: what changed, what failed, what was verified, and what should happen next.
@@ -73,12 +73,12 @@ Before adding a command, prompt, tool, extension, dashboard, document page, or r
 
 Every workflow that produces artifacts must derive a short **slug** from the topic (lowercase, hyphens, no filler words, ≤5 words — e.g. `cloud-sandbox-pricing`). All files in a single run use that slug as a prefix:
 
-- Plan: `outputs/.plans/<slug>.md`
-- Intermediate research: `<slug>-research-web.md`, `<slug>-research-papers.md`, etc.
-- Draft: `outputs/.drafts/<slug>-draft.md`
+- Plan: `.axorbis/artifacts/projects/<project-id>/.plans/<slug>.md`
+- Intermediate research: `.axorbis/artifacts/projects/<project-id>/.drafts/<slug>-research-web.md`, `.axorbis/artifacts/projects/<project-id>/.drafts/<slug>-research-papers.md`, etc.
+- Draft: `.axorbis/artifacts/projects/<project-id>/.drafts/<slug>-draft.md`
 - Cited brief: `<slug>-brief.md`
 - Verification: `<slug>-verification.md`
-- Final output: `outputs/<slug>.md` or `papers/<slug>.md`
+- Final output: `.axorbis/artifacts/projects/<project-id>/<slug>.md` or `.axorbis/artifacts/projects/<project-id>/.papers/<slug>.md`
 - Provenance: `<slug>.provenance.md` (next to the final output)
 
 Never use generic names like `research.md`, `draft.md`, `brief.md`, or `summary.md`. Concurrent runs must not collide.

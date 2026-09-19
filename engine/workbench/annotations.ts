@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { dirname, relative, resolve, sep } from "node:path";
 
 import { migratedWorkbenchDataPath } from "./data-root.js";
+import { isWorkbenchArtifactPath } from "./artifact-roots.js";
 import type {
 	WorkbenchArtifactAnnotation,
 	WorkbenchArtifactAnnotationAnchorKind,
@@ -14,7 +15,6 @@ const ANNOTATION_SCHEMA = "feynman.workbenchAnnotations.v1";
 const MAX_ANNOTATION_BODY_CHARS = 8_000;
 const MAX_ANCHOR_CHARS = 1_200;
 const MAX_SELECTION_PREFIX_CHARS = 800;
-const ANNOTATION_ROOTS = ["outputs", "papers", "notes"] as const;
 
 type WorkbenchAnnotationStore = {
 	schema: typeof ANNOTATION_SCHEMA;
@@ -111,7 +111,7 @@ function safeArtifactPath(workingDir: string, artifactPath: string): string {
 	if (!relPath || relPath.startsWith("../") || relPath === ".." || relPath.split("/").includes("..")) {
 		throw new Error("Annotation target must be inside the workspace.");
 	}
-	if (!ANNOTATION_ROOTS.some((root) => relPath === root || relPath.startsWith(`${root}/`))) {
+	if (!isWorkbenchArtifactPath(relPath)) {
 		throw new Error("Annotations are limited to research artifacts.");
 	}
 	return relPath;

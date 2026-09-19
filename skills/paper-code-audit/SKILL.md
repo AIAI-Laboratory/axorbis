@@ -9,4 +9,4 @@ Run the `/audit` workflow. The slash command expands the full workflow instructi
 
 Agents used: `researcher`, `verifier`
 
-Output: audit report in `outputs/`.
+Output: audit report in `.axorbis/artifacts/`.

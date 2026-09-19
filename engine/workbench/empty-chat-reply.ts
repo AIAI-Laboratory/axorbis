@@ -1,4 +1,5 @@
 import type { WorkbenchChatMessage, WorkbenchChatStatus, WorkbenchToolEvent } from "./chat.js";
+import { AXORBIS_ARTIFACT_ROOT } from "./artifact-roots.js";
 
 const EMPTY_REPLY = "Feynman finished without text output.";
 
@@ -8,7 +9,7 @@ function successfulPlanWrite(event: WorkbenchToolEvent): { path: string; content
 	try { args = JSON.parse(event.input); } catch { return undefined; }
 	if (!args || typeof args !== "object") return undefined;
 	const { path, content } = args as { path?: unknown; content?: unknown };
-	if (typeof path !== "string" || !/^outputs\/\.plans\/[a-z0-9][a-z0-9-]{0,99}\.md$/u.test(path)) return undefined;
+	if (typeof path !== "string" || !/^(?:\.axorbis\/artifacts(?:\/projects\/[a-z0-9._-]+)?|outputs)\/\.plans\/[a-z0-9][a-z0-9-]{0,99}\.md$/u.test(path)) return undefined;
 	return { path, content: typeof content === "string" ? content : "" };
 }
 
@@ -26,7 +27,7 @@ function completedArtifactWrite(event: WorkbenchToolEvent): CompletedArtifactWri
 }
 
 function isFinalReportWrite(write: CompletedArtifactWrite): boolean {
-	return /^(?:outputs|papers)\/(?!\.plans\/|\.drafts\/).+\.md$/u.test(write.path)
+	return new RegExp(`^(?:${AXORBIS_ARTIFACT_ROOT.replace(".", "\\.")}(?:/projects/[a-z0-9._-]+)?|outputs|papers)/(?!\\.plans/|\\.drafts/).+\\.md$`, "u").test(write.path)
 		&& !write.path.endsWith(".provenance.md");
 }
 

@@ -709,7 +709,7 @@ function buildPermissionResources(workingDir: string, settings: WorkbenchSetting
 		{
 			id: "workspace-artifact-scope",
 			name: "Workspace artifact scope",
-			description: "Preview and downloads are constrained to outputs, papers, notes, and the lab notebook.",
+			description: "Preview and downloads are constrained to .axorbis/artifacts, legacy research folders, and the lab notebook.",
 			status: "read-only",
 			source: "Workbench server",
 			section: "File access",
@@ -876,12 +876,12 @@ function buildStorageResources(workingDir: string, artifacts: WorkbenchArtifact[
 		{
 			id: "research-artifact-roots",
 			name: "Research artifact roots",
-			description: `${pluralize(artifacts.length, "artifact")} indexed from outputs, papers, and notes.`,
+			description: `${pluralize(artifacts.length, "artifact")} indexed from .axorbis/artifacts, outputs, papers, and notes.`,
 			status: "configured",
 			source: "Workspace",
 			section: "Local data",
-			detail: `outputs/, papers/, notes/, CHANGELOG.md | ${humanBytes(artifactBytes)}`,
-			tags: ["outputs", "papers", "notes"],
+			detail: `.axorbis/artifacts/ (organized by project), CHANGELOG.md | ${humanBytes(artifactBytes)}`,
+			tags: [".axorbis/artifacts", "projects", "notes", "papers"],
 		},
 		{
 			id: "workbench-chat-sessions",

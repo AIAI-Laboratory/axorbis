@@ -9,4 +9,4 @@ Run the `/draft` workflow. The slash command expands the full workflow instructi
 
 Agents used: `writer`, `verifier`
 
-Output: paper draft in `papers/`.
+Output: paper draft in `.axorbis/artifacts/.papers/`.

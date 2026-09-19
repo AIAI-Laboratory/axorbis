@@ -9,4 +9,4 @@ Run the `/recipe` workflow. The slash command expands the full workflow instruct
 
 Agents used: `researcher`, optionally `verifier`
 
-Output: ranked recipe brief in `outputs/` with dataset, method, code, and source provenance.
+Output: ranked recipe brief in `.axorbis/artifacts/` with dataset, method, code, and source provenance.

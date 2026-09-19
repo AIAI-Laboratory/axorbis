@@ -177,7 +177,7 @@ function sanitizeWorkbenchContext(cwd: string, includeDiagnostics: boolean | und
 			diagnostics: [
 				"Credential values are not returned.",
 				"Streamable HTTP, SSE, and local command custom MCP connectors can be discovered with feynman_connector_tools and called through feynman_connector_call.",
-				"Scientific model endpoints can be called with feynman_model_endpoint_call and save output artifacts under outputs/model-endpoints.",
+				"Scientific model endpoints can be called with feynman_model_endpoint_call and save output artifacts under .axorbis/artifacts/model-endpoints.",
 				"Connector assignedSpecialists and excludedTools are returned as policy metadata for specialist-scoped chat.",
 				"Deny grants are unavailable; ask grants create pending permission requests before execution.",
 			],

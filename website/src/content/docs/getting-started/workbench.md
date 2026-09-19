@@ -5,7 +5,7 @@ section: Getting Started
 order: 3
 ---
 
-The science workbench is the local app behind `feynman serve`. It gives Feynman a browser-based research control plane while keeping app-owned settings, sessions, uploads, snapshots, memory, OAuth tokens, and compute logs under `~/.feynman/orgs/<org_uuid>/workbench/workspaces/<workspace-id>/`. It also refreshes an org-level SQLite mirror at `~/.feynman/orgs/<org_uuid>/feynman-workbench.db` for core project, frame, message, artifact, execution, verification, memory, note, annotation, read-cursor, artifact-folder, compute-provider, MCP-grant, memory-category, routine-schedule, managed-endpoint, and capability-setting records, plus compact table envelopes for the remaining reference-shaped workbench ledgers Feynman already owns in state. Compute-provider rows include egress policy and Modal environment fields, existing local databases are upgraded in place, and connector ledgers include split science attachments, split MCP grants, and custom MCP resource identifiers. Research artifacts remain ordinary workspace files in `outputs/`, `papers/`, and `notes/`.
+The science workbench is the local app behind `feynman serve`. It gives Feynman a browser-based research control plane while keeping app-owned settings, sessions, uploads, snapshots, memory, OAuth tokens, and compute logs under `~/.feynman/orgs/<org_uuid>/workbench/workspaces/<workspace-id>/`. It also refreshes an org-level SQLite mirror at `~/.feynman/orgs/<org_uuid>/feynman-workbench.db` for core project, frame, message, artifact, execution, verification, memory, note, annotation, read-cursor, artifact-folder, compute-provider, MCP-grant, memory-category, routine-schedule, managed-endpoint, and capability-setting records, plus compact table envelopes for the remaining reference-shaped workbench ledgers Feynman already owns in state. Compute-provider rows include egress policy and Modal environment fields, existing local databases are upgraded in place, and connector ledgers include split science attachments, split MCP grants, and custom MCP resource identifiers. Research artifacts remain ordinary workspace files under `.axorbis/artifacts/projects/<project-id>/`.
 
 ```bash
 feynman serve
@@ -70,15 +70,15 @@ Credential rows are availability records, not secret dumps. They point to Feynma
 
 The workbench follows the same output conventions as the CLI:
 
-- Research outputs go in `outputs/`
-- Paper-style drafts go in `papers/`
-- Session notes go in `notes/`
-- Long-running plans go in `outputs/.plans/`
+- Each project's research files go in `.axorbis/artifacts/projects/<project-id>/`
+- Paper-style drafts go in `.axorbis/artifacts/projects/<project-id>/.papers/`
+- Session notes go in `.axorbis/artifacts/projects/<project-id>/.notes/`
+- Long-running plans go in `.axorbis/artifacts/projects/<project-id>/.plans/`
 - The chronological lab notebook is `CHANGELOG.md`
 
 Generated reports and provenance files remain ordinary workspace files, so they can be inspected from the app, terminal, editor, or git.
 
-Deep Research writes a plan under `outputs/.plans/` and asks for approval before gathering evidence or creating report files. Reply `yes` in the same question to continue, or describe the changes you want in the plan.
+Deep Research writes a plan under the active project's `.axorbis/artifacts/projects/<project-id>/.plans/` directory and asks for approval before gathering evidence or creating report files. Reply `yes` in the same question to continue, or describe the changes you want in the plan.
 
 When Deep Research completes, the chat response summarizes the final report's findings and caveats rather than only listing generated artifacts. Every artifact path in that response is clickable and opens the corresponding local file preview; this includes the report, provenance sidecar, plan, and supporting research or verification files.
 

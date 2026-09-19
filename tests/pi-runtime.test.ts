@@ -469,12 +469,12 @@ test("ensureAxorbisCommandShim creates a repo-local feynman launcher", () => {
 	assert.deepEqual(JSON.parse(result.stdout), { argv: ["alpha", "status"], bin: feynmanBinPath });
 });
 
-test("ensureAxorbisWorkspaceScaffold creates default artifact directories", () => {
+test("ensureAxorbisWorkspaceScaffold creates the project artifact container", () => {
 	const workingDir = mkdtempSync(join(tmpdir(), "feynman-workspace-scaffold-"));
 
 	assert.equal(ensureAxorbisWorkspaceScaffold(workingDir), true);
 
-	for (const relPath of ["outputs/.plans", "outputs/.drafts", "papers", "notes"]) {
+	for (const relPath of [".axorbis/artifacts/projects"]) {
 		assert.equal(existsSync(join(workingDir, relPath)), true, relPath);
 	}
 });

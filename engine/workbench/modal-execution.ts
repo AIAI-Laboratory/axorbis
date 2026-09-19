@@ -3,6 +3,7 @@ import { dirname, relative, resolve, sep } from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
 import { migratedWorkbenchDataPath, workbenchDataPath } from "./data-root.js";
+import { AXORBIS_ARTIFACT_ROOT, isWorkbenchArtifactPath } from "./artifact-roots.js";
 
 const MODAL_RESULT_MARKER = "__FEYNMAN_MODAL_RESULT__";
 
@@ -44,7 +45,6 @@ type ParsedModalResult = {
 	artifactError?: string;
 };
 
-const TRACKED_ARTIFACT_ROOTS = new Set(["outputs", "papers", "notes"]);
 
 function toPosixPath(path: string): string {
 	return path.split(sep).join("/");
@@ -118,7 +118,8 @@ function modalScriptSource(code: string, jobId: string, timeoutMs: number): stri
 		`USER_CODE = ${JSON.stringify(code)}`,
 		`RESULT_MARKER = ${JSON.stringify(MODAL_RESULT_MARKER)}`,
 		'ARTIFACT_ROOT = "/tmp/feynman-modal-artifacts"',
-		"TRACKED_ARTIFACT_ROOTS = {'outputs', 'papers', 'notes'}",
+		"TRACKED_ARTIFACT_ROOTS = set()",
+		"AXORBIS_ARTIFACT_ROOT = '.axorbis/artifacts'",
 		"MAX_ARTIFACT_FILES = 16",
 		"MAX_ARTIFACT_BYTES = 65536",
 		"MAX_ARTIFACT_TOTAL_BYTES = 262144",
@@ -141,7 +142,8 @@ function modalScriptSource(code: string, jobId: string, timeoutMs: number): stri
 		"        except ValueError:",
 		"            continue",
 		"        parts = rel_path.split('/')",
-		"        if not parts or parts[0] not in TRACKED_ARTIFACT_ROOTS or any(part in ('', '.', '..') for part in parts):",
+		"        is_axorbis_artifact = rel_path == AXORBIS_ARTIFACT_ROOT or rel_path.startswith(AXORBIS_ARTIFACT_ROOT + '/')",
+		"        if not parts or (parts[0] not in TRACKED_ARTIFACT_ROOTS and not is_axorbis_artifact) or any(part in ('', '.', '..') for part in parts):",
 		"            continue",
 		"        size = path.stat().st_size",
 		"        if size > MAX_ARTIFACT_BYTES or total_bytes + size > MAX_ARTIFACT_TOTAL_BYTES:",
@@ -229,8 +231,7 @@ function normalizeArtifactPath(workingDir: string, path: string): string | undef
 	const absPath = resolve(workspace, path);
 	const rel = toPosixPath(relative(workspace, absPath));
 	if (!rel || rel === ".." || rel.startsWith("../") || rel.split("/").includes("..")) return undefined;
-	const root = rel.split("/")[0] ?? "";
-	return TRACKED_ARTIFACT_ROOTS.has(root) ? rel : undefined;
+	return isWorkbenchArtifactPath(rel) ? rel : undefined;
 }
 
 function writeModalArtifacts(workingDir: string, artifacts: ModalArtifactTransfer[]): { outputPaths: string[]; warnings: string[] } {

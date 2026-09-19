@@ -19,7 +19,7 @@ Inspect active research work for this project.
 Requirements:
 - Use the `process` tool with the `list` action only when that tool is visible and the user is asking about research-run state; otherwise record `Process state: BLOCKED - process tool not available`.
 - Use scheduling tooling only when it is visible; otherwise record `Schedule state: BLOCKED - scheduling tool not available`.
-- Inspect durable state in `outputs/.plans/`, `outputs/`, `experiments/`, and `notes/` for watch baselines, autoresearch logs, replication runs, and recent research artifacts.
+- Inspect durable state in `.axorbis/artifacts/.plans/`, `.axorbis/artifacts/`, `.axorbis/artifacts/.experiments/`, and `.axorbis/artifacts/.notes/` for watch baselines, autoresearch logs, replication runs, and recent research artifacts.
 - Summarize:
   - active research-run background processes if the process tool is visible
   - queued or recurring research watches if scheduling tooling is visible

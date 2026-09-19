@@ -46,7 +46,7 @@ export function buildComputeProviders(workingDir: string): WorkbenchComputeProvi
 			family: "Feynman",
 			status: "available",
 			description: "Indexes research artifacts from this checkout without sending files to a hosted dashboard.",
-			capabilities: ["outputs", "papers", "notes", "plans", "drafts"],
+			capabilities: [".axorbis/artifacts", "plans", "drafts", "notes", "papers"],
 			enabled: computeProviderEnabled(settings, "local-workspace", true),
 			checked: computeProviderEnabled(settings, "local-workspace", true),
 			tierType: "local",
@@ -118,7 +118,7 @@ export function buildComputeProviders(workingDir: string): WorkbenchComputeProvi
 					? "Auth: NVIDIA_API_KEY is present; the value is not displayed."
 					: "Auth: NVIDIA_API_KEY is not present in the server environment.",
 				"Execution: feynman_model_endpoint_call runs hosted ESMFold when NVIDIA_API_KEY is present and self-hosted AlphaFold2 NIM by endpointUrl.",
-				"Artifacts: endpoint responses are saved under outputs/model-endpoints with a provenance sidecar.",
+				"Artifacts: endpoint responses are saved under .axorbis/artifacts/model-endpoints with a provenance sidecar.",
 			],
 			tools: [{ name: "feynman_model_endpoint_call", description: "Run hosted ESMFold or self-hosted AlphaFold2 NIM calls and save provenance-backed outputs." }],
 			actions: computeToggleAction(computeProviderEnabled(settings, "nvidia-bionemo", true)),

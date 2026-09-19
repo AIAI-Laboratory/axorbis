@@ -55,8 +55,9 @@ import { buildWorkbenchStateLedgers } from "./state-ledgers.js";
 import { buildWorkbenchSummary } from "./summary.js";
 import { readWorkbenchTranscriptAnnotations } from "./transcript-annotations.js";
 import { artifactPriority, augmentRunsWithExecutionArtifacts, runOwnsArtifact } from "./run-artifacts.js";
+import { AXORBIS_ARTIFACT_ROOT, axorbisArtifactRelativePath, isAxorbisArtifactPath, projectArtifactRoot, WORKBENCH_ARTIFACT_ROOTS } from "./artifact-roots.js";
 
-const ARTIFACT_ROOTS = ["outputs", "papers", "notes"] as const;
+const ARTIFACT_ROOTS = WORKBENCH_ARTIFACT_ROOTS;
 const VISUAL_EXTENSIONS = new Set([".gif", ".jpeg", ".jpg", ".m4v", ".mov", ".mp4", ".mpeg", ".mpg", ".ogv", ".pdf", ".png", ".svg", ".webm", ".webp"]);
 const DATA_EXTENSIONS = new Set([".csv", ".ipynb", ".json", ".jsonl", ".tsv", ".xlsx"]);
 const MAX_TITLE_READ_BYTES = 96_000;
@@ -200,11 +201,12 @@ function stripWorkbenchPlanSuffix(stem: string): string {
 }
 
 function slugForArtifact(relPath: string): string {
-	const segments = relPath.split("/");
-	if (segments[0] === "outputs" && segments[1] === ".plans") {
+	const axorbisArtifact = isAxorbisArtifactPath(relPath);
+	const segments = axorbisArtifact ? axorbisArtifactRelativePath(relPath)!.split("/") : relPath.split("/");
+	if ((segments[0] === "outputs" || axorbisArtifact) && segments[1] === ".plans") {
 		return stripWorkbenchPlanSuffix(segments[2]?.replace(/\.[^.]+$/, "") || "plans");
 	}
-	if (segments[0] === "outputs" && segments[1] === ".drafts") {
+	if ((segments[0] === "outputs" || axorbisArtifact) && segments[1] === ".drafts") {
 		return stripKnownSuffix(basename(relPath).replace(/\.[^.]+$/, ""));
 	}
 	if (segments[0] === "outputs" && segments[1] === "open-science-seeds" && segments[2]) {
@@ -225,10 +227,13 @@ function slugForArtifact(relPath: string): string {
 export function categoryForArtifact(relPath: string): ArtifactCategory {
 	const ext = extname(relPath).toLowerCase();
 	const name = basename(relPath).toLowerCase();
-	if (relPath.startsWith("outputs/.plans/")) return "plan";
-	if (relPath.startsWith("outputs/.drafts/")) return "draft";
+	const axorbisPath = axorbisArtifactRelativePath(relPath);
+	if (relPath.startsWith("outputs/.plans/") || axorbisPath?.startsWith(".plans/")) return "plan";
+	if (relPath.startsWith("outputs/.drafts/") || axorbisPath?.startsWith(".drafts/")) return "draft";
 	if (name.endsWith(".provenance.md") || name.includes("provenance")) return "provenance";
 	if (name.includes("verification") || name.includes("score-audit")) return "verification";
+	if (axorbisPath?.startsWith(".notes/")) return "note";
+	if (axorbisPath?.startsWith(".papers/")) return "paper";
 	if (relPath.startsWith("notes/")) return "note";
 	if (relPath.startsWith("papers/")) return "paper";
 	if (VISUAL_EXTENSIONS.has(ext)) return "visual";
@@ -392,7 +397,8 @@ function buildProject(
 
 function buildCustomProject(project: WorkbenchStoredProject, runs: WorkbenchRun[], artifacts: WorkbenchArtifact[]): WorkbenchProject {
 	const projectRuns = runs.filter((run) => run.projectId === project.id);
-	const projectArtifacts = artifacts.filter((artifact) => projectRuns.some((run) => runOwnsArtifact(run, artifact)));
+	const artifactRoot = `${projectArtifactRoot(project.id)}/`;
+	const projectArtifacts = artifacts.filter((artifact) => artifact.path.startsWith(artifactRoot) || projectRuns.some((run) => runOwnsArtifact(run, artifact)));
 	return buildProject(
 		project.id,
 		project.name,
@@ -442,7 +448,7 @@ function buildProjects(runs: WorkbenchRun[], artifacts: WorkbenchArtifact[], cus
 		...projectRuns(verificationSeed, (run) => run.hasVerification || run.hasProvenance),
 		...chatRunsForProject("verification"),
 	]);
-	const seedArtifacts = projectArtifacts((artifact) => artifact.path.startsWith("outputs/open-science-seeds/"));
+	const seedArtifacts = projectArtifacts((artifact) => artifact.path.startsWith(`${AXORBIS_ARTIFACT_ROOT}/open-science-seeds/`) || artifact.path.startsWith("outputs/open-science-seeds/"));
 	const seedRuns = projectRuns(seedArtifacts, (run) => seedArtifacts.some((artifact) => artifact.slug === run.slug));
 
 	const builtInProjects = [
@@ -691,7 +697,7 @@ function buildPermissionResources(workingDir: string): WorkbenchResource[] {
 		{
 			id: "workspace-artifact-scope",
 			name: "Workspace artifact scope",
-			description: "Preview and downloads are constrained to outputs, papers, notes, and the lab notebook.",
+			description: "Preview and downloads are constrained to .axorbis/artifacts, legacy research folders, and the lab notebook.",
 			status: "read-only",
 			source: "Workbench server",
 			path: toPosixPath(workingDir),
@@ -715,11 +721,11 @@ function buildStorageResources(workingDir: string, artifacts: WorkbenchArtifact[
 		{
 			id: "research-artifact-roots",
 			name: "Research artifact roots",
-			description: `${pluralize(artifacts.length, "artifact")} indexed from outputs, papers, and notes.`,
+			description: `${pluralize(artifacts.length, "artifact")} indexed from .axorbis/artifacts, outputs, papers, and notes.`,
 			status: "configured",
 			source: "Workspace",
-			detail: "outputs/, papers/, notes/, CHANGELOG.md",
-			tags: ["outputs", "papers", "notes"],
+			detail: ".axorbis/artifacts/ (organized by project), CHANGELOG.md",
+			tags: [".axorbis/artifacts", "projects", "notes", "papers"],
 		},
 		{
 			id: "workbench-chat-sessions",

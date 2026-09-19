@@ -26,6 +26,7 @@ export { closeNotebookKernelSessions } from "./notebook-kernels.js";
 
 export type WorkbenchNotebookLanguage = "bash" | "python" | "r";
 export type WorkbenchNotebookExecutionMode = "isolated" | "modal" | "session";
+const MENTIONED_ARTIFACT_PATH = /\b(?:\.axorbis\/artifacts|outputs|papers|notes)\/[A-Za-z0-9._/@+-][^\s"'`),;:\]]*/g;
 
 export type WorkbenchNotebookExecutionRecord = {
 	schema: "feynman.notebookExecution.v1";
@@ -322,7 +323,7 @@ function runProcess(
 function discoverMentionedPaths(workingDir: string, text: string): string[] {
 	const workspace = resolve(workingDir);
 	const matches = new Set<string>();
-	for (const match of text.matchAll(/\b(?:outputs|papers|notes)\/[A-Za-z0-9._/@+-][^\s"'`),;:\\]*/g)) {
+	for (const match of text.matchAll(MENTIONED_ARTIFACT_PATH)) {
 		const relPath = match[0].replace(/[.\]]+$/, "");
 		const absPath = resolve(workspace, relPath);
 		const rel = toPosixPath(relative(workspace, absPath));

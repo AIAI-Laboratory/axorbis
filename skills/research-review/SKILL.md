@@ -9,4 +9,4 @@ Run the `/review` workflow. The slash command expands the full workflow instruct
 
 Agents used: `researcher`, `reviewer`
 
-Output: structured review in `outputs/`.
+Output: structured review in `.axorbis/artifacts/`.

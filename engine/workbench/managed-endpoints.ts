@@ -3,6 +3,7 @@ import { existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { getWorkbenchDataRoot, migratedWorkbenchDataPath } from "./data-root.js";
+import { AXORBIS_ARTIFACT_ROOT } from "./artifact-roots.js";
 import { readWorkbenchRuntimeResources, type WorkbenchRuntimeModelEndpoint } from "./runtime-context.js";
 import type { WorkbenchManagedEndpoint } from "./types.js";
 
@@ -33,7 +34,7 @@ function endpointLivePath(value: string): string {
 
 function timestampSourceMs(workingDir: string): number {
 	const candidates = [
-		resolve(workingDir, "outputs", "model-endpoints"),
+		resolve(workingDir, AXORBIS_ARTIFACT_ROOT, "model-endpoints"),
 		migratedWorkbenchDataPath(workingDir, "settings.json"),
 		getWorkbenchDataRoot(workingDir),
 		workingDir,

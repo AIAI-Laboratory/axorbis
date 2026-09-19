@@ -21,7 +21,7 @@ From the CLI:
 feynman deepresearch "What are the current approaches to mechanistic interpretability in LLMs?"
 ```
 
-Both forms are equivalent. The workflow first writes a plan to `outputs/.plans/<slug>.md`, summarizes it, and waits for you to confirm or request changes. After you approve the plan, it streams progress as Feynman discovers and analyzes sources.
+Both forms are equivalent. The workflow first writes a plan to the active project's `.axorbis/artifacts/projects/<project-id>/.plans/<slug>.md`, summarizes it, and waits for you to confirm or request changes. After you approve the plan, it streams progress as Feynman discovers and analyzes sources.
 
 ## How it works
 
@@ -35,7 +35,7 @@ Third, Feynman reads and extracts key findings from the most relevant sources. I
 
 Fourth, a synthesis step cross-references findings across sources, identifies areas of consensus and disagreement, and organizes the material into a coherent narrative. The output is written as a research brief with sections for background, key findings, open questions, and references.
 
-Finally, Feynman verifies claims against cited sources to flag misattributions or unsupported assertions. The finished report and provenance sidecar are saved under `outputs/` and can be previewed as rendered HTML when a preview command is visible, or opened/rendered with shell tools such as `pandoc`.
+Finally, Feynman verifies claims against cited sources to flag misattributions or unsupported assertions. The finished report and provenance sidecar are saved under the active project's `.axorbis/artifacts/projects/<project-id>/` and can be previewed as rendered HTML when a preview command is visible, or opened/rendered with shell tools such as `pandoc`.
 
 ## Output format
 

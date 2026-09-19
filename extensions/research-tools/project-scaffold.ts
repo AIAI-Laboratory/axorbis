@@ -18,7 +18,7 @@ This file is read automatically at startup. It is the durable project memory for
 ## Ground Rules
 - Do not modify raw data in \`Data/Raw/\` or equivalent raw-data folders.
 - Read first, act second: inspect project structure and existing notes before making changes.
-- Prefer durable artifacts in \`notes/\`, \`outputs/\`, \`experiments/\`, and \`papers/\`.
+- Save new Axorbis research artifacts in the active project's \`.axorbis/artifacts/projects/<project-id>/\` directory. Legacy \`notes/\`, \`outputs/\`, \`experiments/\`, and \`papers/\` are read-only compatibility locations.
 - Keep strong claims source-grounded. Include direct URLs in final writeups.
 
 ## Current Status
@@ -40,7 +40,7 @@ This file is read automatically at startup. It is the durable project memory for
 - If a result looks cleaner than expected, assume it needs another check before it goes into the final artifact.
 
 ## Session Logging
-- Use \`/log\` at the end of meaningful sessions to write a durable session note into \`notes/session-logs/\`.
+- Use \`/log\` at the end of meaningful sessions to write a durable session note into the active project's \`.axorbis/artifacts/projects/<project-id>/.notes/session-logs/\` directory.
 
 ## Review Readiness
 - Known reviewer concerns:

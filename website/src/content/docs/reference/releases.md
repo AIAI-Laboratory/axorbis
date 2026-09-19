@@ -716,7 +716,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 - Added a Feynman-owned org database at `~/.feynman/orgs/<org_uuid>/feynman-workbench.db`, refreshed from the local workbench state with reference-shaped project, frame, message, artifact, artifact-version, execution, verification, memory, note, annotation, read-cursor, artifact-folder, compute-provider, MCP-grant, memory-category, routine-schedule, managed-endpoint, and capability-setting tables.
 - Added compact table envelopes in that database for the remaining reference-shaped workbench ledgers Feynman already owns in state, including agents, skills, credentials, OAuth tokens, events, notifications, session activity, claims, host logs, marketplace rows, and archive rows.
 - Compute-provider rows in the org database now persist egress policy and Modal environment fields, including in-place upgrades for existing local databases. Split science connector attachments, split MCP grants, and custom MCP resource identifiers are mirrored through Feynman's owned ledger rows.
-- Added a Feynman-owned chemistry sketcher tool that creates editable KET, Molfile, RXN, or SMILES artifacts under `outputs/chemistry-sketches/` for the local Ketcher editor, instead of requiring a reference-app MCP runtime.
+- Added a Feynman-owned chemistry sketcher tool that creates editable KET, Molfile, RXN, or SMILES artifacts under `.axorbis/artifacts/chemistry-sketches/` for the local Ketcher editor, instead of requiring a reference-app MCP runtime.
 - KET, RXN, CDXML, and CXSMILES chemistry artifacts now open as first-class molecule previews in the workbench. Feynman marks these scanner formats as previewable text artifacts, shows lightweight chemistry metadata, routes sketch files into the local Ketcher editor, and avoids trying to render Ketcher-only formats through RDKit.
 - Moved app-owned workbench state into `~/.feynman/orgs/<org_uuid>/workbench/workspaces/<workspace-id>/`, including workbench settings, chat sessions, uploads, memory, annotations, OAuth token references, notebook logs, Modal job scripts, managed Python/R environments, artifact snapshots, and cloud-export audit logs. Existing home-level `~/.feynman/workbench` records and checkout-local `.feynman/workbench` records are copied forward on first access.
 - Added Feynman-owned credential and setup-intent state so the workbench can show which research capabilities are available without exposing raw secrets or requiring another local app at runtime.
@@ -1131,7 +1131,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ### Fixes
 
-- Hardened `/review` so it writes a durable plan, evidence notes, and `outputs/<slug>-review.md` instead of stopping after a planning/narration response.
+- Hardened `/review` so it writes a durable plan, evidence notes, and `.axorbis/artifacts/<slug>-review.md` instead of stopping after a planning/narration response.
 - Added blocked-review fallback behavior for PDFs or external sources that cannot be parsed, so failed extraction still produces an explicit review artifact with `Verification: BLOCKED`.
 - Fixed subagent child-process spawning under Feynman's Pi wrapper so writer/reviewer subagents no longer treat `--mode` as a module path.
 - Made optional package presets platform-aware so Linux users do not see or attempt to install the macOS-only `generative-ui` package.
@@ -1152,10 +1152,10 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ### Fixes
 
-- Restored the `/deepresearch` confirmation gate: the workflow now writes `outputs/.plans/<slug>.md`, summarizes the plan, and waits for explicit user approval before searching, drafting, citing, or delivering final artifacts.
+- Restored the `/deepresearch` confirmation gate: the workflow now writes `.axorbis/artifacts/.plans/<slug>.md`, summarizes the plan, and waits for explicit user approval before searching, drafting, citing, or delivering final artifacts.
 - Changed top-level workflow invocation so `feynman deepresearch ...` behaves like the REPL workflow in a real terminal instead of forcing one-shot execution.
 - Added a Feynman wrapper around Pi's CLI entrypoint so completed print-mode runs exit cleanly after Pi finishes.
-- Tightened direct-mode `/deepresearch` artifact paths so research notes and verification files are written under `outputs/.drafts/`.
+- Tightened direct-mode `/deepresearch` artifact paths so research notes and verification files are written under `.axorbis/artifacts/.drafts/`.
 
 ### Features
 

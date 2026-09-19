@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { basename, dirname, relative, resolve } from "node:path";
 
 import type { WorkbenchRoutineSchedule } from "./types.js";
+import { AXORBIS_ARTIFACT_ROOT } from "./artifact-roots.js";
 
 const LOCAL_USER_ID = "local-workbench";
 const DEFAULT_EVERY_MINUTES = 10_080;
@@ -101,7 +102,9 @@ function pausedReason(text: string, enabled: boolean): string | undefined {
 function buildSchedule(workingDir: string, planPath: string): WorkbenchRoutineSchedule | undefined {
 	const text = readText(planPath);
 	const slug = slugFromPlanPath(planPath);
-	const baselinePath = `outputs/${slug}-baseline.md`;
+	const artifactDir = dirname(dirname(planPath));
+	const artifactRelativePath = relative(workingDir, artifactDir).split("\\").join("/");
+	const baselinePath = `${artifactRelativePath}/${slug}-baseline.md`;
 	const absBaselinePath = resolve(workingDir, baselinePath);
 	const baselineExists = existsSync(absBaselinePath);
 	if (!isWatchPlan(text, slug, baselineExists)) return undefined;
@@ -122,7 +125,7 @@ function buildSchedule(workingDir: string, planPath: string): WorkbenchRoutineSc
 		schema: "feynman.routineTick.v1",
 		kind: "watch",
 		prompt,
-		planPath: `outputs/.plans/${basename(planPath)}`,
+		planPath: relative(workingDir, planPath).split("\\").join("/"),
 		...(baselineExists ? { baselinePath } : {}),
 	};
 	const lastResults = {
@@ -158,11 +161,16 @@ function buildSchedule(workingDir: string, planPath: string): WorkbenchRoutineSc
 }
 
 export function buildWorkbenchRoutineSchedules(workingDir: string): WorkbenchRoutineSchedule[] {
-	const plansDir = resolve(workingDir, "outputs", ".plans");
-	if (!existsSync(plansDir)) return [];
-	return readdirSync(plansDir, { withFileTypes: true })
+	const root = resolve(workingDir, AXORBIS_ARTIFACT_ROOT);
+	const projectsDir = resolve(root, "projects");
+	const planDirs = [resolve(root, ".plans"), ...(
+		existsSync(projectsDir)
+			? readdirSync(projectsDir, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => resolve(projectsDir, entry.name, ".plans"))
+			: []
+	)].filter((dir) => existsSync(dir));
+	return planDirs.flatMap((plansDir) => readdirSync(plansDir, { withFileTypes: true })
 		.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
-		.map((entry) => buildSchedule(workingDir, resolve(plansDir, entry.name)))
+		.map((entry) => buildSchedule(workingDir, resolve(plansDir, entry.name))))
 		.filter((item): item is WorkbenchRoutineSchedule => Boolean(item))
 		.sort((a, b) => b.updatedAtMs - a.updatedAtMs || a.rootFrameId.localeCompare(b.rootFrameId));
 }

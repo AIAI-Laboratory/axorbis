@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import { resolve } from "node:path";
 
 import { readWorkbenchSettings } from "./settings-store.js";
+import { AXORBIS_ARTIFACT_ROOT } from "./artifact-roots.js";
 import type { WorkbenchComputeProvider, WorkbenchComputeProviderRecord } from "./types.js";
 
 function timestampFromIso(value: string | undefined): { iso?: string; ms?: number } {
@@ -34,9 +35,9 @@ function providerEnvironments(provider: WorkbenchComputeProvider): string[] {
 }
 
 function providerDataRoots(provider: WorkbenchComputeProvider): string[] {
-	if (provider.id === "nvidia-bionemo") return ["outputs/model-endpoints"];
-	if (provider.id === "artifact-provenance") return ["outputs", "papers", "notes", "CHANGELOG.md"];
-	return ["outputs", "papers", "notes"];
+	if (provider.id === "nvidia-bionemo") return [`${AXORBIS_ARTIFACT_ROOT}/model-endpoints`];
+	if (provider.id === "artifact-provenance") return [AXORBIS_ARTIFACT_ROOT, "CHANGELOG.md"];
+	return [AXORBIS_ARTIFACT_ROOT];
 }
 
 function providerProbeTimestamp(workingDir: string, provider: WorkbenchComputeProvider): { iso?: string; ms?: number } {

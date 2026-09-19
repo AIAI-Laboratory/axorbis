@@ -22,7 +22,7 @@ feynman rank "scaling laws" --limit 20 --synthesize --json
 
 ## Output
 
-Each run writes a topic slug under `outputs/`:
+Each run writes a topic slug under `.axorbis/artifacts/`:
 
 - `<slug>-research-run.json` -- typed run manifest that names the research jobs, sources, papers, tools, artifacts, verification state, constraints, and next actions for the run
 - `<slug>-paper-rank.md` -- readable ranked brief

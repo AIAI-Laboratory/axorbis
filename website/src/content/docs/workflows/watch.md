@@ -25,7 +25,7 @@ After creating a watch, Feynman writes the baseline artifact and the watch plan.
 
 ## How it works
 
-The workflow starts by writing a plan with the topic, monitored signals, meaningful-change criteria, and check frequency. It then runs a baseline sweep and saves the result under `outputs/`.
+The workflow starts by writing a plan with the topic, monitored signals, meaningful-change criteria, and check frequency. It then runs a baseline sweep and saves the result under `.axorbis/artifacts/`.
 
 When `schedule_prompt` is available, the workflow schedules the same search plan for a recurring or delayed follow-up. When it is unavailable, the baseline marks scheduling as blocked and includes the exact refresh prompt to run later.
 
@@ -39,7 +39,7 @@ Inspect current watch state:
 /jobs
 ```
 
-The `/jobs` command reports visible scheduler/process state when those tools are available and points to durable watch artifacts such as `outputs/.plans/<slug>.md` and `outputs/<slug>-baseline.md`.
+The `/jobs` command reports visible scheduler/process state when those tools are available and points to durable watch artifacts such as `.axorbis/artifacts/.plans/<slug>.md` and `.axorbis/artifacts/<slug>-baseline.md`.
 
 ## Output format
 

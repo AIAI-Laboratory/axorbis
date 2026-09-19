@@ -5,6 +5,8 @@ import { relative, resolve, sep } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
+import { AXORBIS_ARTIFACT_ROOT, projectArtifactRoot } from "../../engine/workbench/artifact-roots.js";
+
 type ModelEndpointModel = "alphafold2" | "esmfold";
 type ModelEndpointProvider = "nvidia-bionemo";
 
@@ -137,7 +139,10 @@ function writeArtifacts(cwd: string, result: Omit<ModelEndpointResult, "artifact
 	const artifact = responseBodyForArtifact(result.output);
 	const hash = createHash("sha256").update(`${result.model}:${result.endpoint}:${result.request.sequenceLength ?? result.sequenceLength}`).digest("hex").slice(0, 12);
 	const timestamp = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14);
-	const dir = resolve(cwd, "outputs", "model-endpoints");
+	const configuredRoot = process.env.AXORBIS_PROJECT_ARTIFACT_ROOT?.trim().replace(/^\/+|\/+$/g, "");
+	const projectId = process.env.AXORBIS_PROJECT_ID?.trim();
+	const artifactRoot = configuredRoot?.startsWith(`${AXORBIS_ARTIFACT_ROOT}/projects/`) ? configuredRoot : projectId ? projectArtifactRoot(projectId) : AXORBIS_ARTIFACT_ROOT;
+	const dir = resolve(cwd, artifactRoot, "model-endpoints");
 	const basename = `${result.model}-${hash}-${timestamp}`;
 	const outputPath = resolve(dir, `${basename}.${artifact.extension}`);
 	const provenancePath = resolve(dir, `${basename}.provenance.md`);

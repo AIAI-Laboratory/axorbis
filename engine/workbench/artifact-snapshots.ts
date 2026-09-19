@@ -3,6 +3,7 @@ import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statS
 import { dirname, extname, join, relative, resolve, sep } from "node:path";
 
 import { migratedWorkbenchDataPath } from "./data-root.js";
+import { isWorkbenchArtifactPath, WORKBENCH_ARTIFACT_ROOTS } from "./artifact-roots.js";
 
 export type WorkbenchArtifactSnapshotSource = "chat" | "notebook" | "pi" | "workspace";
 
@@ -47,7 +48,6 @@ type RecordArtifactSnapshotsOptions = {
 
 const SNAPSHOT_SCHEMA = "feynman.artifactSnapshot.v1";
 const MAX_SNAPSHOT_BYTES = 10 * 1024 * 1024;
-const TRACKED_ROOTS = ["outputs", "papers", "notes"];
 
 function toPosixPath(path: string): string {
 	return path.split(sep).join("/");
@@ -63,7 +63,7 @@ function normalizeArtifactPath(workingDir: string, path: string): string | undef
 }
 
 function isTrackedArtifactPath(path: string): boolean {
-	return TRACKED_ROOTS.some((root) => path === root || path.startsWith(`${root}/`));
+	return isWorkbenchArtifactPath(path);
 }
 
 function snapshotDir(workingDir: string): string {
@@ -120,7 +120,7 @@ function listTrackedArtifactPaths(workingDir: string): string[] {
 			if (rel) paths.push(rel);
 		}
 	};
-	for (const root of TRACKED_ROOTS) visit(resolve(workspace, root));
+	for (const root of WORKBENCH_ARTIFACT_ROOTS) visit(resolve(workspace, root));
 	return [...new Set(paths)].sort((a, b) => a.localeCompare(b));
 }
 

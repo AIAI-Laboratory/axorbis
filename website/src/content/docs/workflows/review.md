@@ -30,9 +30,9 @@ You can pass an arXiv ID, a URL, or a local file path. For arXiv papers, Feynman
 
 ## How it works
 
-The review workflow first writes a plan to `outputs/.plans/<slug>-review-plan.md`, then continues immediately into evidence gathering and final review generation. It does not stop to ask for a "proceed" response unless you explicitly asked to review the plan first.
+The review workflow first writes a plan to `.axorbis/artifacts/.plans/<slug>-review-plan.md`, then continues immediately into evidence gathering and final review generation. It does not stop to ask for a "proceed" response unless you explicitly asked to review the plan first.
 
-The workflow reads or fetches the artifact, records evidence notes in `outputs/.drafts/<slug>-review-evidence.md`, and then writes exactly one final review to `outputs/<slug>-review.md`. For larger artifacts it can delegate evidence gathering or review synthesis to Feynman's bundled research agents; for smaller artifacts it performs the review directly to avoid unnecessary orchestration.
+The workflow reads or fetches the artifact, records evidence notes in `.axorbis/artifacts/.drafts/<slug>-review-evidence.md`, and then writes exactly one final review to `.axorbis/artifacts/<slug>-review.md`. For larger artifacts it can delegate evidence gathering or review synthesis to Feynman's bundled research agents; for smaller artifacts it performs the review directly to avoid unnecessary orchestration.
 
 The reviewer examines the paper's claims, checks whether the methodology supports the conclusions, evaluates the experimental design for potential confounds, and assesses the clarity and completeness of the writing.
 

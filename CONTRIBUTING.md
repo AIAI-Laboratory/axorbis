@@ -20,7 +20,7 @@ Axorbis is a research workspace built on the Feynman/Pi engine. This guide is fo
 - Docs site: `website/`
 - Long-form project documents: `docs/`
 - Build/release scripts: `scripts/`
-- Generated research artifacts: `outputs/`, `papers/`, `notes/`
+- Generated research artifacts: `.axorbis/artifacts/projects/<project-id>/`, including `.papers/` and `.notes/`
 
 If you need to change how bundled subagents behave, edit `.feynman/agents/*.md`. Do not duplicate that behavior in `AGENTS.md`.
 
@@ -77,7 +77,7 @@ npm run build
 ### Agent and artifact conventions
 
 - `AGENTS.md` is the repo-level contract for workspace conventions, handoffs, provenance, and output naming.
-- Long-running research flows should write plan artifacts to `outputs/.plans/` and use `CHANGELOG.md` as a lab notebook when the work is substantial.
+- Long-running research flows should write plan artifacts to `.axorbis/artifacts/projects/<project-id>/.plans/` and use `CHANGELOG.md` as a lab notebook when the work is substantial.
 - Do not update `CHANGELOG.md` for trivial one-shot changes.
 
 ### Release and versioning discipline

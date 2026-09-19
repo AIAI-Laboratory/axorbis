@@ -18,6 +18,7 @@ import type {
 	WorkbenchGeneratedPlanStep,
 	WorkbenchPlanStepStatus,
 } from "./types.js";
+import { projectArtifactRoot } from "./artifact-roots.js";
 
 type EnsureSessionInput = {
 	id: string;
@@ -64,12 +65,12 @@ function normalizeTitle(value: string): string {
 	return title.slice(0, 140) || "Research chat";
 }
 
-function generatedPlanRelPath(sessionId: string): string {
-	return `outputs/.plans/${normalizeSessionId(sessionId)}.workbench-plan.json`;
+function generatedPlanRelPath(projectId: string, sessionId: string): string {
+	return `${projectArtifactRoot(projectId)}/.plans/${normalizeSessionId(sessionId)}.workbench-plan.json`;
 }
 
-function generatedPlanPath(workingDir: string, sessionId: string): string {
-	return resolve(workingDir, generatedPlanRelPath(sessionId));
+function generatedPlanPath(workingDir: string, projectId: string, sessionId: string): string {
+	return resolve(workingDir, generatedPlanRelPath(projectId, sessionId));
 }
 
 function planStatusForSteps(current: WorkbenchGeneratedPlanStatus, steps: WorkbenchGeneratedPlanStep[]): WorkbenchGeneratedPlanStatus {
@@ -106,13 +107,13 @@ function createPlanStep(
 }
 
 function writeGeneratedPlan(workingDir: string, plan: WorkbenchGeneratedPlan): void {
-	const path = generatedPlanPath(workingDir, plan.sessionId);
+	const path = generatedPlanPath(workingDir, plan.projectId, plan.sessionId);
 	mkdirSync(dirname(path), { recursive: true });
 	writeFileSync(path, `${JSON.stringify(plan, null, 2)}\n`, "utf8");
 }
 
-function readGeneratedPlan(workingDir: string, sessionId: string): WorkbenchGeneratedPlan {
-	const path = generatedPlanPath(workingDir, sessionId);
+function readGeneratedPlan(workingDir: string, projectId: string, sessionId: string): WorkbenchGeneratedPlan {
+	const path = generatedPlanPath(workingDir, projectId, sessionId);
 	if (!existsSync(path)) {
 		throw new Error("No generated plan exists for this session.");
 	}
@@ -122,7 +123,7 @@ function readGeneratedPlan(workingDir: string, sessionId: string): WorkbenchGene
 	}
 	return {
 		...parsed,
-		artifactPath: generatedPlanRelPath(sessionId),
+		artifactPath: generatedPlanRelPath(projectId, sessionId),
 	};
 }
 
@@ -151,7 +152,7 @@ export function generateWorkbenchPlan(
 	const runSlug = normalizeSessionId(input.runSlug || session.id);
 	const run = state.runs.find((item) => item.slug === runSlug);
 	const artifacts = state.artifacts
-		.filter((artifact) => artifact.slug === runSlug && artifact.path !== generatedPlanRelPath(session.id))
+		.filter((artifact) => artifact.slug === runSlug && artifact.path !== generatedPlanRelPath(session.projectId, session.id))
 		.sort((a, b) => a.updatedAtMs - b.updatedAtMs || a.path.localeCompare(b.path));
 	const sourceArtifacts = artifactsInCategories(artifacts, ["paper", "note", "data"]);
 	const executionArtifacts = artifactsInCategories(artifacts, ["output", "draft", "visual"]);
@@ -217,7 +218,7 @@ export function generateWorkbenchPlan(
 				now,
 			),
 		],
-		artifactPath: generatedPlanRelPath(session.id),
+		artifactPath: generatedPlanRelPath(session.projectId, session.id),
 		createdAt: now,
 		updatedAt: now,
 		source: "workbench",
@@ -238,7 +239,7 @@ export function updateWorkbenchPlanAction(
 	input: UpdatePlanActionInput,
 ): WorkbenchPlanMutationResult {
 	const session = ensureWorkbenchChatSession(options, input);
-	const current = readGeneratedPlan(options.workingDir, session.id);
+	const current = readGeneratedPlan(options.workingDir, session.projectId, session.id);
 	const now = nowIso();
 	const status: WorkbenchGeneratedPlanStatus = input.action === "approve"
 		? "approved"
@@ -272,7 +273,7 @@ export function updateWorkbenchPlanStep(
 	input: UpdatePlanStepInput,
 ): WorkbenchPlanMutationResult {
 	const session = ensureWorkbenchChatSession(options, input);
-	const current = readGeneratedPlan(options.workingDir, session.id);
+	const current = readGeneratedPlan(options.workingDir, session.projectId, session.id);
 	const stepTitle = input.stepTitle.trim();
 	const index = current.steps.findIndex((step) => step.title === stepTitle);
 	if (index === -1) {

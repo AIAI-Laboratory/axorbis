@@ -18,7 +18,7 @@ Inside the REPL, preview the most recent artifact when `/preview` is visible:
 You can also preview a specific file when the command exists:
 
 ```
-/preview outputs/scaling-laws-brief.md
+/preview .axorbis/artifacts/scaling-laws-brief.md
 ```
 
 ## Requirements

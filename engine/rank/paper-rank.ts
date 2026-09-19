@@ -4200,7 +4200,7 @@ export async function runPaperRank(options: PaperRankOptions): Promise<PaperRank
 	const citationExpansion = parseCitationExpansion(options.citationExpansion);
 	const critiqueTop = parseCritiqueTop(options.critiqueTop);
 	const synthesisTop = parseSynthesisTop(options.synthesisTop);
-	const outputDir = resolve(options.outputDir ?? "outputs");
+	const outputDir = resolve(options.outputDir ?? process.env.AXORBIS_PROJECT_ARTIFACT_ROOT ?? ".axorbis/artifacts");
 	const now = options.now ?? new Date();
 	const generatedAt = now.toISOString();
 	const slug = slugifyTopic(topic);
@@ -4390,7 +4390,7 @@ export async function resolvePaperAccess(options: PaperAccessOptions): Promise<P
 	if (!identifier) throw new Error("Usage: feynman paper <doi|arxiv-id|openalex-id|pmid|pmcid|title>");
 	const now = options.now ?? new Date();
 	const generatedAt = now.toISOString();
-	const outputDir = resolve(options.outputDir ?? "outputs");
+	const outputDir = resolve(options.outputDir ?? process.env.AXORBIS_PROJECT_ARTIFACT_ROOT ?? ".axorbis/artifacts");
 	const fixtureData = options.sourceFixture ? readOpenAlexFixture(options.sourceFixture) : undefined;
 	const sourceData = fixtureData
 		? { ...fixtureData, url: options.sourceFixture, source: "fixture" as const }

@@ -9,4 +9,4 @@ Run the `/compare` workflow. The slash command expands the full workflow instruc
 
 Agents used: `researcher`, `verifier`
 
-Output: comparison matrix in `outputs/`.
+Output: comparison matrix in `.axorbis/artifacts/`.

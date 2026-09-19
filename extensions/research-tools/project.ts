@@ -4,6 +4,7 @@ import { join, relative, resolve as resolvePath } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { getExtensionCommandSpec } from "../../metadata/commands.mjs";
+import { AXORBIS_ARTIFACT_ROOT } from "../../engine/workbench/artifact-roots.js";
 import { buildProjectAgentsTemplate, buildSessionLogsReadme } from "./project-scaffold.js";
 
 async function pathExists(path: string): Promise<boolean> {
@@ -15,13 +16,16 @@ async function pathExists(path: string): Promise<boolean> {
 	}
 }
 
-const ARTIFACT_DIRS = ["papers", "outputs", "experiments", "notes"];
+function activeArtifactRoot(): string {
+	const configured = process.env.AXORBIS_PROJECT_ARTIFACT_ROOT?.trim().replace(/^\/+|\/+$/g, "");
+	return configured?.startsWith(`${AXORBIS_ARTIFACT_ROOT}/projects/`) ? configured : AXORBIS_ARTIFACT_ROOT;
+}
 const ARTIFACT_EXTS = new Set([".md", ".tex", ".pdf", ".py", ".csv", ".json", ".html", ".txt", ".log"]);
 
 async function collectArtifacts(cwd: string): Promise<{ label: string; path: string }[]> {
 	const items: { label: string; path: string; mtime: number }[] = [];
 
-	for (const dir of ARTIFACT_DIRS) {
+	for (const dir of [activeArtifactRoot()]) {
 		const dirPath = resolvePath(cwd, dir);
 		if (!(await pathExists(dirPath))) continue;
 
@@ -71,7 +75,8 @@ export function registerInitCommand(pi: ExtensionAPI): void {
 		description: getExtensionCommandSpec("init")?.description ?? "Initialize AGENTS.md and session-log folders for a research project.",
 		handler: async (_args, ctx) => {
 			const agentsPath = resolvePath(ctx.cwd, "AGENTS.md");
-			const notesDir = resolvePath(ctx.cwd, "notes");
+			const artifactRoot = activeArtifactRoot();
+			const notesDir = resolvePath(ctx.cwd, artifactRoot, ".notes");
 			const sessionLogsDir = resolvePath(notesDir, "session-logs");
 			const sessionLogsReadmePath = resolvePath(sessionLogsDir, "README.md");
 			const created: string[] = [];
@@ -89,9 +94,9 @@ export function registerInitCommand(pi: ExtensionAPI): void {
 
 			if (!(await pathExists(sessionLogsReadmePath))) {
 				await writeFile(sessionLogsReadmePath, buildSessionLogsReadme(), "utf8");
-				created.push("notes/session-logs/README.md");
+				created.push(`${artifactRoot}/.notes/session-logs/README.md`);
 			} else {
-				skipped.push("notes/session-logs/README.md");
+				skipped.push(`${artifactRoot}/.notes/session-logs/README.md`);
 			}
 
 			const createdSummary = created.length > 0 ? `created: ${created.join(", ")}` : "created: nothing";
@@ -103,7 +108,7 @@ export function registerInitCommand(pi: ExtensionAPI): void {
 
 export function registerOutputsCommand(pi: ExtensionAPI): void {
 	pi.registerCommand("outputs", {
-		description: "Browse all research artifacts (papers, outputs, experiments, notes).",
+		description: "Browse all research artifacts, including files saved in .axorbis/artifacts.",
 		handler: async (_args, ctx) => {
 			const items = await collectArtifacts(ctx.cwd);
 			if (items.length === 0) {

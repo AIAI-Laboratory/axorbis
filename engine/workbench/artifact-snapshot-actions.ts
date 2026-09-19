@@ -8,6 +8,7 @@ import {
 	type WorkbenchArtifactSnapshotRecord,
 } from "./artifact-snapshots.js";
 import { isInsideDirectory, migratedWorkbenchDataPath, resolveWorkbenchStoredPath } from "./data-root.js";
+import { isWorkbenchArtifactPath } from "./artifact-roots.js";
 import type { WorkbenchArtifactVersion } from "./types.js";
 
 export type WorkbenchArtifactSnapshotDiffLineKind = "add" | "context" | "remove";
@@ -42,7 +43,6 @@ export type WorkbenchArtifactSnapshotRestoreResult = {
 };
 
 const SNAPSHOT_FILES_DIR = ".feynman/workbench/artifact-snapshots/files";
-const TRACKED_ROOTS = ["outputs", "papers", "notes"];
 const MAX_DIFF_BYTES = 1_000_000;
 const MAX_DIFF_LINES = 600;
 const LOOKAHEAD_LINES = 24;
@@ -69,8 +69,8 @@ function normalizeArtifactPath(workingDir: string, artifactPath: string): string
 	const workspace = resolve(workingDir);
 	const absolutePath = ensureInside(workspace, artifactPath, "Artifact path");
 	const rel = toPosixPath(relative(workspace, absolutePath));
-	if (!TRACKED_ROOTS.some((root) => rel === root || rel.startsWith(`${root}/`))) {
-		throw new Error("Artifact path must be under outputs, papers, or notes.");
+	if (!isWorkbenchArtifactPath(rel)) {
+		throw new Error("Artifact path must be in Axorbis research storage or a legacy research folder.");
 	}
 	return rel;
 }

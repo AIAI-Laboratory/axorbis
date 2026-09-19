@@ -12,7 +12,9 @@ function makeWorkspace(): string {
 	mkdirSync(join(root, "outputs"), { recursive: true });
 	mkdirSync(join(root, "papers"), { recursive: true });
 	mkdirSync(join(root, "notes"), { recursive: true });
+	mkdirSync(join(root, ".axorbis", "artifacts"), { recursive: true });
 	writeFileSync(join(root, "outputs", "host-grants.md"), "# Host grants\n");
+	writeFileSync(join(root, ".axorbis", "artifacts", "new-storage.md"), "# New storage\n");
 	writeFileSync(join(root, "CHANGELOG.md"), "# Lab notebook\n");
 	return root;
 }
@@ -21,16 +23,17 @@ test("buildWorkbenchState exposes Claude-style host grant rows", () => {
 	const root = makeWorkspace();
 	try {
 		const state = buildWorkbenchState({ workingDir: root, version: "0.0.0-test" });
-		assert.equal(state.hostGrants.length, 4);
+		assert.equal(state.artifacts.some((artifact) => artifact.path === ".axorbis/artifacts/new-storage.md"), true);
+		assert.equal(state.hostGrants.length, 2);
 
-		const outputs = state.hostGrants.find((grant) => grant.mountName === "outputs");
-		assert.match(outputs?.id ?? "", /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
-		assert.equal(outputs?.userId, "local-workbench");
-		assert.equal(outputs?.hostPath, resolve(root, "outputs"));
-		assert.equal(outputs?.mode, "rw");
-		assert.equal(outputs?.source, "Workbench artifacts");
-		assert.equal(outputs?.exists, true);
-		assert.ok((outputs?.createdAtMs ?? 0) > 0);
+		const artifacts = state.hostGrants.find((grant) => grant.mountName === "axorbis-artifacts");
+		assert.match(artifacts?.id ?? "", /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+		assert.equal(artifacts?.userId, "local-workbench");
+		assert.equal(artifacts?.hostPath, resolve(root, ".axorbis", "artifacts"));
+		assert.equal(artifacts?.mode, "rw");
+		assert.equal(artifacts?.source, "Axorbis research artifacts");
+		assert.equal(artifacts?.exists, true);
+		assert.ok((artifacts?.createdAtMs ?? 0) > 0);
 
 		const labNotebook = state.hostGrants.find((grant) => grant.mountName === "lab-notebook");
 		assert.equal(labNotebook?.hostPath, resolve(root, "CHANGELOG.md"));
@@ -41,9 +44,7 @@ test("buildWorkbenchState exposes Claude-style host grant rows", () => {
 			state.hostGrants.map((grant) => [grant.mountName, grant.mode] as const).sort(),
 			[
 				["lab-notebook", "ro"],
-				["notes", "rw"],
-				["outputs", "rw"],
-				["papers", "rw"],
+				["axorbis-artifacts", "rw"],
 			],
 		);
 	} finally {
@@ -69,8 +70,8 @@ test("workbench server returns host grants through state", async () => {
 			hostGrants: Array<{ hostPath: string; mountName: string; mode: "ro" | "rw" }>;
 		};
 		assert.equal(payload.hostGrants.some((grant) =>
-			grant.hostPath === resolve(root, "outputs") &&
-			grant.mountName === "outputs" &&
+			grant.hostPath === resolve(root, ".axorbis", "artifacts") &&
+			grant.mountName === "axorbis-artifacts" &&
 			grant.mode === "rw"
 		), true);
 		assert.equal(payload.hostGrants.some((grant) =>

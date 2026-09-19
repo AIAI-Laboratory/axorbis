@@ -7,4 +7,4 @@ description: Write a durable session log capturing completed work, findings, ope
 
 Run the `/log` workflow. The slash command expands the full workflow instructions in the active session; do not try to read a relative prompt-template path from the installed skill directory.
 
-Output: session log in `notes/session-logs/`.
+Output: session log in `.axorbis/artifacts/.notes/session-logs/`.

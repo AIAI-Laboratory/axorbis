@@ -6,9 +6,9 @@ import type {
 	WorkbenchExecutionRecord,
 	WorkbenchExecutionStatus,
 } from "./types.js";
+import { AXORBIS_ARTIFACT_ROOT, AXORBIS_PROJECT_ARTIFACTS_DIR } from "./artifact-roots.js";
 
 const MODEL_ENDPOINT_OUTPUT_EXTENSIONS = [".pdb", ".json", ".txt"] as const;
-const MODEL_ENDPOINT_DIR = ["outputs", "model-endpoints"] as const;
 const MAX_MODEL_ENDPOINT_RECORDS = 120;
 
 type ModelEndpointUsageRecord = {
@@ -176,14 +176,19 @@ function parseModelEndpointUsageRecord(workingDir: string, provenanceAbsPath: st
 }
 
 function readModelEndpointUsageRecords(workingDir: string): ModelEndpointUsageRecord[] {
-	const dir = resolve(workingDir, ...MODEL_ENDPOINT_DIR);
-	if (!existsSync(dir)) return [];
-	return readdirSync(dir)
+	const root = resolve(workingDir, AXORBIS_ARTIFACT_ROOT);
+	const projectsDir = resolve(root, AXORBIS_PROJECT_ARTIFACTS_DIR);
+	const dirs = [resolve(root, "model-endpoints"), ...(
+		existsSync(projectsDir)
+			? readdirSync(projectsDir, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => resolve(projectsDir, entry.name, "model-endpoints"))
+			: []
+	)].filter((dir) => existsSync(dir));
+	return dirs.flatMap((dir) => readdirSync(dir)
 		.filter((name) => name.endsWith(".provenance.md"))
 		.flatMap((name) => {
 			const record = parseModelEndpointUsageRecord(workingDir, resolve(dir, name));
 			return record ? [record] : [];
-		})
+		}))
 		.sort((a, b) => b.updatedAtMs - a.updatedAtMs || a.id.localeCompare(b.id))
 		.slice(0, MAX_MODEL_ENDPOINT_RECORDS);
 }

@@ -14,6 +14,7 @@ import {
 } from "./chat.js";
 import { runFeynmanWorkbenchPrompt } from "./chat-runtime.js";
 import { isWorkbenchPreviewExtension } from "./file-types.js";
+import { isWorkbenchArtifactPath } from "./artifact-roots.js";
 
 export type WorkbenchEditableArtifact = {
 	artifactPath: string;
@@ -48,8 +49,6 @@ export type WorkbenchArtifactApplyEditResult = WorkbenchArtifactEditResult & {
 	endOffset: number;
 };
 
-const EDITABLE_ROOTS = ["outputs", "papers", "notes"];
-
 export const MAX_ARTIFACT_EDIT_BYTES = 2 * 1024 * 1024;
 
 function toPosixPath(path: string): string {
@@ -69,8 +68,8 @@ function normalizeEditableArtifactPath(workingDir: string, requestedPath: string
 	if (relPath.startsWith("../") || relPath === ".." || relPath.split("/").includes("..")) {
 		throw new Error("Cannot edit files outside the workspace.");
 	}
-	if (!EDITABLE_ROOTS.some((root) => relPath === root || relPath.startsWith(`${root}/`))) {
-		throw new Error("Artifact edits are limited to outputs, papers, and notes.");
+	if (!isWorkbenchArtifactPath(relPath)) {
+		throw new Error("Artifact edits are limited to Axorbis research storage and legacy research folders.");
 	}
 	if (!isWorkbenchPreviewExtension(extname(relPath).toLowerCase())) {
 		throw new Error("This artifact type is not editable as text.");

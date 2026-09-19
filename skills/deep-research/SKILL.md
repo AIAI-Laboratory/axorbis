@@ -9,4 +9,4 @@ Run the `/deepresearch` workflow. The slash command expands the full workflow in
 
 Agents used: `researcher`, `verifier`, `reviewer`
 
-Output: cited brief in `outputs/` with `.provenance.md` sidecar.
+Output: cited brief in `.axorbis/artifacts/` with `.provenance.md` sidecar.

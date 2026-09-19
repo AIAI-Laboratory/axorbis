@@ -13,6 +13,6 @@ Workflow:
 2. Gather evidence from literature, clinical trials, Open Targets, ChEMBL, CIViC, ClinGen, cBioPortal, DepMap/COSMIC-compatible sources, and other Feynman Bio Tools as relevant.
 3. Separate human evidence, model-system evidence, mechanism, biomarkers, clinical precedent, safety, and open questions.
 4. Rank claims by source strength and reproducibility. Flag missing cohorts, confounders, and assay limitations.
-5. Save the dossier and provenance sidecar in `outputs/`.
+5. Save the dossier and provenance sidecar in `.axorbis/artifacts/`.
 
 Do not turn sparse evidence into a clinical recommendation.

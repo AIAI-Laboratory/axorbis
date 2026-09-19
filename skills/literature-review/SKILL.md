@@ -9,4 +9,4 @@ Run the `/lit` workflow. The slash command expands the full workflow instruction
 
 Agents used: `researcher`, `verifier`, `reviewer`
 
-Output: literature review in `outputs/` with `.provenance.md` sidecar.
+Output: literature review in `.axorbis/artifacts/` with `.provenance.md` sidecar.

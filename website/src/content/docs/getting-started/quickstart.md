@@ -56,7 +56,7 @@ For applied ML work, use `/recipe` when you need a practical starting point rath
 feynman recipe "fine-tune a small model for math reasoning"
 ```
 
-Feynman ranks candidate recipes by result quality and feasibility, checks datasets and implementation paths when possible, and writes the final brief to `outputs/<slug>-recipe.md`.
+Feynman ranks candidate recipes by result quality and feasibility, checks datasets and implementation paths when possible, and writes the final brief to `.axorbis/artifacts/<slug>-recipe.md`.
 
 ## Work with files
 

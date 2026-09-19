@@ -50,4 +50,4 @@ The replication plan includes:
 
 ## Iterative execution
 
-After generating the plan, Feynman asks where execution should happen: local, isolated environment, Docker, Modal, RunPod, or plan-only. When execution is explicitly chosen, it helps implement and run the planned checks, saves notes/scripts/raw outputs/results, and compares observed results against the paper's reported values. A result is labeled replicated only when the planned checks actually pass.
+After generating the plan, Feynman asks where execution should happen: local, isolated environment, Docker, Modal, RunPod, or plan-only. When execution is explicitly chosen, it helps implement and run the planned checks, saves notes, scripts, raw data, and results under the active project's `.axorbis/artifacts/projects/<project-id>/` directory, and compares observed results against the paper's reported values. A result is labeled replicated only when the planned checks actually pass.

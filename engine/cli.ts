@@ -553,7 +553,7 @@ export function resolvePiPromptOptions(
 export function buildLocalModelWorkflowNotice(modelSpec: string, workflowName: string): string {
 	return [
 		`Warning: ${modelSpec} is a local provider.`,
-		`Small local models often ignore /${workflowName}'s multi-step workflow and return a chat-only reply with no files under outputs/.`,
+		`Small local models often ignore /${workflowName}'s multi-step workflow and return a chat-only reply with no files under .axorbis/artifacts/.`,
 		"Use a stronger approved research model with `feynman model set <provider/model>` if this run produces no artifacts.",
 	].join(" ");
 }
@@ -1170,7 +1170,7 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 								}),
 							}
 						: {}),
-					outputDir: resolve(workingDir, values["output-dir"] ?? "outputs"),
+					outputDir: resolve(workingDir, values["output-dir"] ?? process.env.AXORBIS_PROJECT_ARTIFACT_ROOT ?? ".axorbis/artifacts"),
 					sourceFixture: resolveWorkspaceInputPath(workingDir, values["source-fixture"] ?? process.env.FEYNMAN_RANK_FIXTURE),
 					preferenceFilePath: resolveWorkspaceInputPath(workingDir, preferenceFile),
 					reproductionNotesPath: resolveWorkspaceInputPath(workingDir, reproductionNotes),
@@ -1273,7 +1273,7 @@ async function runMain(input: { here: string; appRoot: string; feynmanVersion: s
 		try {
 			result = await resolvePaperAccess({
 				identifier,
-				outputDir: resolve(workingDir, values["output-dir"] ?? "outputs"),
+					outputDir: resolve(workingDir, values["output-dir"] ?? process.env.AXORBIS_PROJECT_ARTIFACT_ROOT ?? ".axorbis/artifacts"),
 				sourceFixture: resolveWorkspaceInputPath(workingDir, values["source-fixture"]),
 				fetchFullText: values["fetch-full-text"] === true,
 			});
