@@ -1,100 +1,38 @@
-<p align="center">
-  <img src="img/banner.png" alt="Axorbis — An evidence-first AI research workspace built on the Feynman research engine" width="100%" />
-</p>
+<div align="center">
 
-<h1 align="center">Axorbis</h1>
+# Axorbis
 
-<p align="center">
-  <strong>An evidence-first AI research workspace built on the Feynman research engine.</strong><br/>
-  Questions · Sources · Claims · Experiments · Outputs — all in one local, auditable workspace.
-</p>
+**An evidence-first AI research workspace for turning questions into traceable, reproducible research.**
 
-<p align="center">
-  <a href="#quick-start"><strong>Quick Start</strong></a> · 
-  <a href="#research-workflows"><strong>Workflows</strong></a> · 
-  <a href="#features"><strong>Features</strong></a> · 
-  <a href="#repository-layout"><strong>Repo Layout</strong></a> · 
-  <a href="LICENSE"><strong>MIT License</strong></a>
-</p>
+Questions · Sources · Claims · Experiments · Outputs — kept together in one local, auditable workspace.
+
+<img src="img/banner.png" alt="Axorbis — an evidence-first AI research workspace built on the Feynman research engine" width="100%" />
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
+[Quick Start](#quick-start) · [Research Workflows](#research-workflows) · [How It Works](#how-it-works) · [Security](#security)
+
+</div>
 
 ---
+
+## What is Axorbis?
+
+Axorbis is a desktop research workspace built on the Feynman research engine.
+
+It brings research questions, sources, claims, evidence, experiments, and generated outputs into one place so that findings remain connected to the evidence behind them.
+
+Instead of treating AI research as a sequence of isolated chat sessions, Axorbis organizes the work into a local, inspectable research process.
 
 ## Why Axorbis?
 
-Research tools scatter your work across tabs, PDFs, notebooks, and chat windows. Axorbis brings everything into one workspace where every claim is traceable back to its source.
+Research often fragments across browser tabs, papers, notebooks, scripts, and chat windows. That makes it difficult to answer a basic question:
 
-- **Evidence-first** — Claims are linked to sources. Verification is built in, not bolted on.
-- **Desktop-native** — Your data stays local. Provider secrets are encrypted at rest.
-- **Workflow-rich** — 12 research modes from literature review to replication planning, all accessible from one composer.
+**Where did this conclusion come from?**
 
----
+Axorbis is designed around evidence traceability. Claims stay connected to sources, research workflows share the same workspace, and provider configuration remains under your control.
 
-## Features
-
-<table>
-  <tr>
-    <td width="50%">
-
-**🔬 Research Workspace**
-- Projects with focused research questions
-- Ask & Deep Research with streamed activity
-- Plan-then-approve workflow for Deep Research
-- Sources, claims, and evidence inspection
-
-</td>
-    <td width="50%">
-
-**📊 Research Workflows**
-- Literature review, summarize, compare
-- Audit, recipe, replicate, auto research
-- Draft generation, review, watch
-- All modes accessible from the composer
-
-</td>
-  </tr>
-  <tr>
-    <td width="50%">
-
-**🔐 AI Provider Management**
-- BYOK for Anthropic, OpenAI, Gemini, OpenRouter, LM Studio, Ollama, LiteLLM, and custom providers
-- Encrypted credentials, never returned to UI
-- Token/cost tracking, monthly budgets, hard stops
-
-</td>
-    <td width="50%">
-
-**🖥️ Desktop Native**
-- Tauri-powered native application
-- Workspace selection, auto-startup, tray
-- Localhost-bound with tokenized sessions
-- Managed backend lifecycle
-
-</td>
-  </tr>
-</table>
-
----
-
-## Research Workflows
-
-The composer provides **12 research modes**, each mapping to a Feynman engine workflow:
-
-| Mode | Command | Description |
-|---|---|---|
-| **Ask** | *(free-form)* | Ask anything about the current research question |
-| **Deep Research** | `/deepresearch` | Source-heavy investigation with inline citations |
-| **Literature Review** | `/lit` | Review papers by topic, lab, PI, or author |
-| **Summarize** | `/summarize` | Summarize a paper, report, or artifact |
-| **Compare** | `/compare` | Source-grounded comparison matrix |
-| **Audit** | `/audit` | Compare claims against public code for reproducibility |
-| **Recipe** | `/recipe` | Find ranked, implementable ML training recipes |
-| **Replicate** | `/replicate` | Plan a replication workflow for a paper or claim |
-| **Auto Research** | `/autoresearch` | Bounded experiment loop with hypothesis testing |
-| **Watch** | `/watch` | Create a research watch baseline with follow-ups |
-| **Draft** | `/draft` | Turn findings into a polished paper-style draft |
-| **Review** | `/review` | Internal critique with objections and revision plan |
-
-> **Tip:** When you select any workflow mode (except Ask), just press Enter — Axorbis automatically uses your research question as the input. Type in the composer to override.
+The result is a research environment built for discovery, verification, synthesis, and reproducibility rather than isolated text generation.
 
 ---
 
@@ -102,41 +40,153 @@ The composer provides **12 research modes**, each mapping to a Feynman engine wo
 
 ### Requirements
 
-- Node.js 22.22–25.x, npm
-- Rust and [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/)
+* Node.js 22.22–25.x
+* npm
+* Rust
+* [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/)
 
 ### Run from source
 
 ```bash
 git clone https://github.com/AIAI-Laboratory/axorbis.git
 cd axorbis
+
 nvm use || nvm install
+
 npm ci
 npm ci --prefix app
+
 npm run desktop:dev
 ```
 
-### Configure a model
+### Configure an AI provider
+
+From the command line:
 
 ```bash
 npm run dev -- setup
 ```
 
-Or use **Settings → AI Providers** in the app to add your API keys.
+Or open:
+
+**Settings → AI Providers**
+
+Axorbis supports provider configuration for Anthropic, OpenAI, Gemini, OpenRouter, LM Studio, Ollama, LiteLLM, and custom providers.
+
+---
+
+## What You Get
+
+### Evidence you can inspect
+
+Research is organized around sources, claims, and evidence rather than disconnected model responses.
+
+You can inspect how findings relate to their supporting material and keep research artifacts inside the same workspace.
+
+### Research workflows from one composer
+
+Axorbis exposes 12 research modes for tasks ranging from literature review and comparison to replication planning, auditing, drafting, and bounded experiment loops.
+
+The same research question can move through multiple workflows without rebuilding context from scratch.
+
+### A local desktop research environment
+
+Axorbis runs as a Tauri desktop application with local workspace storage, managed backend lifecycle, encrypted provider credentials, tokenized localhost sessions, and configurable AI providers.
+
+---
+
+## Research Workflows
+
+The composer maps each research mode to a workflow in the Feynman engine.
+
+| Mode                  | Command         | Purpose                                                    |
+| --------------------- | --------------- | ---------------------------------------------------------- |
+| **Ask**               | Free-form       | Ask questions about the current research problem           |
+| **Deep Research**     | `/deepresearch` | Run source-heavy investigation with inline citations       |
+| **Literature Review** | `/lit`          | Review papers by topic, lab, PI, or author                 |
+| **Summarize**         | `/summarize`    | Summarize a paper, report, or research artifact            |
+| **Compare**           | `/compare`      | Build a source-grounded comparison matrix                  |
+| **Audit**             | `/audit`        | Compare claims against public code for reproducibility     |
+| **Recipe**            | `/recipe`       | Find ranked, implementable ML training recipes             |
+| **Replicate**         | `/replicate`    | Plan replication of a paper, result, or claim              |
+| **Auto Research**     | `/autoresearch` | Run a bounded experiment loop with hypothesis testing      |
+| **Watch**             | `/watch`        | Establish a research watch baseline and follow-ups         |
+| **Draft**             | `/draft`        | Turn findings into a polished paper-style draft            |
+| **Review**            | `/review`       | Produce internal critique, objections, and a revision plan |
+
+When a workflow other than **Ask** is selected, pressing Enter uses the current research question as the workflow input.
+
+Typing in the composer overrides that default.
+
+---
+
+## How It Works
+
+Axorbis keeps the research process centered on a project and its research question.
+
+A typical path is:
+
+**Question → Sources → Claims → Evidence → Analysis → Output**
+
+Different workflows operate on that shared research context. Deep Research can gather evidence, Compare can structure it, Audit can challenge claims, Replicate can turn findings into an execution plan, and Draft can transform the resulting work into a polished artifact.
+
+This shared workspace is the core of Axorbis: research modes are different tools working over the same body of evidence.
+
+---
+
+## AI Provider Management
+
+Axorbis uses a bring-your-own-key model and supports:
+
+`Anthropic` · `OpenAI` · `Gemini` · `OpenRouter` · `LM Studio` · `Ollama` · `LiteLLM` · custom providers
+
+Provider management includes encrypted credentials, token and cost tracking, monthly budgets, and configurable hard stops.
+
+Provider secrets are stored encrypted and are not returned to the UI.
+
+---
+
+## Desktop Architecture
+
+Axorbis is packaged as a native application with Tauri.
+
+The desktop layer handles workspace selection, application startup, tray behavior, native commands, packaging, and the lifecycle of the local backend.
+
+The backend is bound to `localhost` and accessed through tokenized sessions.
+
+---
+
+## Security
+
+Axorbis is designed around local research ownership:
+
+* Research state, artifacts, and sessions remain in the selected workspace.
+* Provider credentials are encrypted at rest.
+* Provider secrets are not returned to the UI.
+* The desktop backend binds to `localhost`.
+* Sessions use tokenized URLs.
+* The project states that it does not use telemetry or cloud synchronization.
 
 ---
 
 ## Build & Release
 
+Run the verification checks:
+
 ```bash
-# Type check and verify
 npm run typecheck
 npm run desktop:check
+```
 
-# Development build
+Create a development build:
+
+```bash
 npm run desktop:build
+```
 
-# Self-contained release with native installer
+Create a self-contained release with a native installer:
+
+```bash
 npm run desktop:release-build
 ```
 
@@ -158,23 +208,28 @@ website/      Documentation site sources
 
 ---
 
-## Security
-
-- Research state, artifacts, and sessions remain local to your workspace
-- Provider secrets are encrypted at rest and never returned to the UI
-- The desktop backend is bound to `localhost` with a tokenized session URL
-- No telemetry, no cloud sync — your research stays yours
-
----
-
 ## Project Direction
 
-Axorbis preserves Feynman's open research engine while focusing product development on a reliable native research workspace. Every feature must improve **discovery, reading, evidence ranking, verification, reproduction, synthesis, or research observability**.
+Axorbis preserves the Feynman open research engine while developing a native workspace around it.
+
+The project is focused on capabilities that improve:
+
+**discovery · reading · evidence ranking · verification · reproduction · synthesis · research observability**
+
+The goal is not simply to produce more AI-generated text, but to make research outputs easier to inspect, trace, challenge, and reproduce.
 
 ---
 
-<p align="center">
-  <img src="img/icon.png" alt="Axorbis" width="48" /><br/>
-  <sub>Released under the <a href="LICENSE">MIT License</a>.</sub><br/>
-  <sub>Open source for a more truthful tomorrow.</sub>
-</p>
+## License
+
+Axorbis is released under the [MIT License](LICENSE).
+
+---
+
+<div align="center">
+
+<img src="img/icon.png" alt="Axorbis" width="48" />
+
+**Research beyond convention. Pursuing truth**
+
+</div>
