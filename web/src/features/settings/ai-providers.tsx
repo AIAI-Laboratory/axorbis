@@ -29,9 +29,31 @@ export type AiProviderResourceLimits = {
 export type AiProviderUsage = {
 	inputTokens: number;
 	outputTokens: number;
+	promptTokenCount: number;
+	candidatesTokenCount: number;
+	thoughtsTokenCount: number;
+	cachedContentTokenCount: number;
+	toolUsePromptTokenCount: number;
+	totalTokenCount: number;
+	cacheReadTokens: number;
+	cacheWriteTokens: number;
 	estimatedCostUsd: number;
 	providerReportedCostUsd?: number;
 	monthCostUsd: number;
+	requestCount: number;
+	rateLimitCount: number;
+	lastRequest?: {
+		model?: string;
+		keyId?: string;
+		appId?: string;
+		userId?: string;
+		requestStartedAt?: string;
+		createdAt: string;
+		latencyMs?: number;
+		httpStatus?: number;
+		errorCode?: string;
+		totalTokenCount: number;
+	};
 	warning: boolean;
 	hardStopped: boolean;
 };
@@ -47,6 +69,7 @@ export type AiProviderRecord = {
 	endpoint?: string;
 	defaultModel?: string;
 	inferenceKeyConfigured?: boolean;
+	subagentKeys?: Array<{ id: string; configured: boolean; updatedAt?: string }>;
 	usageKeyConfigured?: boolean;
 	supportsInferenceKey?: boolean;
 	supportsUsageKey?: boolean;
@@ -65,6 +88,10 @@ export type AiProviderSaveInput = {
 	defaultModel?: string;
 	/** Present only when a user supplied a replacement in this form submission. */
 	inferenceApiKey?: string;
+	/** New subagent keys to append to the encrypted pool. */
+	subagentInferenceApiKeys?: string[];
+	/** Persisted subagent key ids removed by the user. */
+	removeSubagentInferenceKeyIds?: string[];
 	/** Present only when a user supplied a replacement in this form submission. */
 	usageApiKey?: string;
 	clearInferenceApiKey?: boolean;
@@ -104,6 +131,8 @@ type ProviderDraft = {
 	endpoint: string;
 	defaultModel: string;
 	inferenceApiKey: string;
+	subagentApiKeys: Array<{ id?: string; value: string; configured?: boolean }>;
+	removedSubagentKeyIds: string[];
 	usageApiKey: string;
 	clearInferenceApiKey: boolean;
 	clearUsageApiKey: boolean;
@@ -139,6 +168,8 @@ function initialDraft(provider: AiProviderRecord): ProviderDraft {
 		defaultModel: provider.defaultModel ?? "",
 		// Never seed these fields from state. The server must never return raw keys.
 		inferenceApiKey: "",
+		subagentApiKeys: (provider.subagentKeys ?? []).map((key) => ({ id: key.id, value: "", configured: key.configured })),
+		removedSubagentKeyIds: [],
 		usageApiKey: "",
 		clearInferenceApiKey: false,
 		clearUsageApiKey: false,
@@ -195,6 +226,8 @@ function ProviderCard({ provider, onSave, onTest, onRemove, saving, testing, dis
 		...(draft.endpoint.trim() ? { endpoint: draft.endpoint.trim() } : {}),
 		...(draft.defaultModel.trim() ? { defaultModel: draft.defaultModel.trim() } : {}),
 		...(draft.inferenceApiKey ? { inferenceApiKey: draft.inferenceApiKey } : {}),
+		...(draft.subagentApiKeys.some((key) => key.value.trim()) ? { subagentInferenceApiKeys: draft.subagentApiKeys.flatMap((key) => key.value.trim() ? [key.value.trim()] : []) } : {}),
+		...(draft.removedSubagentKeyIds.length ? { removeSubagentInferenceKeyIds: draft.removedSubagentKeyIds } : {}),
 		...(draft.usageApiKey ? { usageApiKey: draft.usageApiKey } : {}),
 		...(draft.clearInferenceApiKey ? { clearInferenceApiKey: true } : {}),
 		...(draft.clearUsageApiKey ? { clearUsageApiKey: true } : {}),
@@ -213,9 +246,9 @@ function ProviderCard({ provider, onSave, onTest, onRemove, saving, testing, dis
 	});
 	const submit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		void Promise.resolve(onSave(request())).finally(() => {
+	void Promise.resolve(onSave(request())).finally(() => {
 			// Replacement keys live in memory only long enough for their request.
-			setDraft((current) => ({ ...current, inferenceApiKey: "", usageApiKey: "" }));
+			setDraft((current) => ({ ...current, inferenceApiKey: "", usageApiKey: "", subagentApiKeys: current.subagentApiKeys.map((key) => ({ ...key, value: "" })), removedSubagentKeyIds: [] }));
 		});
 	};
 	const testConnection = () => {
@@ -227,8 +260,18 @@ function ProviderCard({ provider, onSave, onTest, onRemove, saving, testing, dis
 			defaultModel: next.defaultModel,
 			inferenceApiKey: next.inferenceApiKey,
 			usageApiKey: next.usageApiKey,
-		})).finally(() => setDraft((current) => ({ ...current, inferenceApiKey: "", usageApiKey: "" })));
+		})).finally(() => setDraft((current) => ({ ...current, inferenceApiKey: "", usageApiKey: "", subagentApiKeys: current.subagentApiKeys.map((key) => ({ ...key, value: "" })), removedSubagentKeyIds: [] })));
 	};
+	const addSubagentKey = () => setDraft((current) => ({ ...current, subagentApiKeys: [...current.subagentApiKeys, { value: "" }] }));
+	const updateSubagentKey = (index: number, value: string) => setDraft((current) => ({ ...current, subagentApiKeys: current.subagentApiKeys.map((key, keyIndex) => keyIndex === index ? { ...key, value } : key) }));
+	const removeSubagentKey = (index: number) => setDraft((current) => {
+		const key = current.subagentApiKeys[index];
+		return {
+			...current,
+			subagentApiKeys: current.subagentApiKeys.filter((_, keyIndex) => keyIndex !== index),
+			removedSubagentKeyIds: key?.id ? [...current.removedSubagentKeyIds, key.id] : current.removedSubagentKeyIds,
+		};
+	});
 
 	return <article className="rw-provider-card">
 		<header className="rw-provider-card-head">
@@ -240,8 +283,10 @@ function ProviderCard({ provider, onSave, onTest, onRemove, saving, testing, dis
 		{expanded && <>
 		{provider.connectionDetail && <p className="rw-provider-diagnostic" role={provider.connectionStatus === "error" ? "alert" : undefined}>{provider.connectionDetail}</p>}
 		{provider.usage && <div className={`rw-provider-usage ${provider.usage.hardStopped ? "hard-stopped" : provider.usage.warning ? "warning" : ""}`}>
-			<span><b>{provider.usage.inputTokens.toLocaleString()}</b> input tokens</span><span><b>{provider.usage.outputTokens.toLocaleString()}</b> output tokens</span>
+			<span><b>{provider.usage.totalTokenCount.toLocaleString()}</b> total tokens</span><span><b>{provider.usage.promptTokenCount.toLocaleString()}</b> input</span><span><b>{provider.usage.candidatesTokenCount.toLocaleString()}</b> answer</span><span><b>{provider.usage.thoughtsTokenCount.toLocaleString()}</b> thinking</span><span><b>{provider.usage.cachedContentTokenCount.toLocaleString()}</b> cached</span><span><b>{provider.usage.toolUsePromptTokenCount.toLocaleString()}</b> tool</span>
 			{!local && <><span><b>{usd(provider.usage.monthCostUsd)}</b> this month</span><span>{provider.usage.providerReportedCostUsd !== undefined ? "Provider-reported cost available" : `Estimated total ${usd(provider.usage.estimatedCostUsd)}`}</span></>}
+			<span>{provider.usage.requestCount.toLocaleString()} requests{provider.usage.rateLimitCount ? ` · ${provider.usage.rateLimitCount} rate limited` : ""}</span>
+			{provider.usage.lastRequest && <span className="rw-provider-usage-last">Last: {provider.usage.lastRequest.model ?? "unknown model"} · key {provider.usage.lastRequest.keyId ?? "main"} · {provider.usage.lastRequest.appId ?? "axorbis-workbench"}/{provider.usage.lastRequest.userId ?? "local-user"}{provider.usage.lastRequest.requestStartedAt ? ` · ${new Date(provider.usage.lastRequest.requestStartedAt).toLocaleString()}` : ""}{provider.usage.lastRequest.latencyMs !== undefined ? ` · ${provider.usage.lastRequest.latencyMs.toLocaleString()} ms` : ""}{provider.usage.lastRequest.httpStatus ? ` · HTTP ${provider.usage.lastRequest.httpStatus}` : ""}</span>}
 			{provider.usage.hardStopped && <strong>Budget hard stop is active.</strong>}
 		</div>}
 		<form onSubmit={submit}>
@@ -249,8 +294,11 @@ function ProviderCard({ provider, onSave, onTest, onRemove, saving, testing, dis
 				{provider.kind === "custom" && <label><span>Provider name</span><input value={draft.name} onChange={(event) => update("name", event.target.value)} maxLength={80} disabled={disabled || saving} /></label>}
 				<label className={provider.kind === "custom" ? "" : "rw-provider-field-wide"}><span>Endpoint</span><input type="url" inputMode="url" placeholder="https://…" value={draft.endpoint} onChange={(event) => update("endpoint", event.target.value)} disabled={disabled || saving} /></label>
 				<label className={provider.kind === "custom" ? "" : "rw-provider-field-wide"}><span>Default model</span><input placeholder="Select or enter a model id" value={draft.defaultModel} onChange={(event) => update("defaultModel", event.target.value)} maxLength={160} disabled={disabled || saving} /></label>
-				{supportsInferenceKey && <label className="rw-provider-field-wide"><span>Inference API key <em>{provider.inferenceKeyConfigured ? "Saved" : "Not configured"}</em></span><input type="password" autoComplete="new-password" placeholder={provider.inferenceKeyConfigured ? "••••••••••••••••" : "Enter an inference API key"} value={draft.inferenceApiKey} onChange={(event) => update("inferenceApiKey", event.target.value)} disabled={disabled || saving || draft.clearInferenceApiKey} /></label>}
-				{supportsInferenceKey && provider.inferenceKeyConfigured && <label className="rw-provider-check rw-provider-field-wide"><input type="checkbox" checked={draft.clearInferenceApiKey} onChange={(event) => update("clearInferenceApiKey", event.target.checked)} disabled={disabled || saving} /> Remove saved inference key</label>}
+				{supportsInferenceKey && <>
+					<label className="rw-provider-field-wide"><span>Main Agent key <em>{provider.inferenceKeyConfigured ? "Saved" : "Not configured"}</em></span><input type="password" autoComplete="new-password" placeholder={provider.inferenceKeyConfigured ? "••••••••••••••••" : "Enter the main agent API key"} value={draft.inferenceApiKey} onChange={(event) => update("inferenceApiKey", event.target.value)} disabled={disabled || saving || draft.clearInferenceApiKey} /></label>
+					<div className="rw-provider-key-pool rw-provider-field-wide"><div className="rw-provider-key-pool-head"><span>Subagent keys <em>{draft.subagentApiKeys.filter((key) => key.configured || key.value).length ? `${draft.subagentApiKeys.filter((key) => key.configured || key.value).length} configured` : "Optional"}</em></span><button type="button" className="rw-provider-key-add" onClick={addSubagentKey} disabled={disabled || saving} aria-label="Add subagent key">+</button></div><p>Subagents use these keys in rotation so parallel research does not exhaust one key's quota.</p>{draft.subagentApiKeys.length > 0 && <div className="rw-provider-key-list">{draft.subagentApiKeys.map((key, index) => <div className="rw-provider-key-row" key={key.id ?? `new-${index}`}><input type="password" autoComplete="new-password" placeholder={key.configured ? `Saved subagent key ${index + 1}` : "Enter a subagent API key"} value={key.value} onChange={(event) => updateSubagentKey(index, event.target.value)} disabled={disabled || saving} /><button type="button" className="rw-provider-key-remove" onClick={() => removeSubagentKey(index)} disabled={disabled || saving} aria-label={`Remove subagent key ${index + 1}`}>×</button></div>)}</div>}</div>
+				</>}
+				{supportsInferenceKey && provider.inferenceKeyConfigured && <label className="rw-provider-check rw-provider-field-wide"><input type="checkbox" checked={draft.clearInferenceApiKey} onChange={(event) => update("clearInferenceApiKey", event.target.checked)} disabled={disabled || saving} /> Remove saved Main Agent key</label>}
 				{supportsUsageKey && <label className="rw-provider-field-wide"><span>Admin / usage API key <em>{provider.usageKeyConfigured ? "Saved" : "Optional"}</em></span><input type="password" autoComplete="new-password" placeholder={provider.usageKeyConfigured ? "••••••••••••••••" : "Optional key for provider usage reporting"} value={draft.usageApiKey} onChange={(event) => update("usageApiKey", event.target.value)} disabled={disabled || saving || draft.clearUsageApiKey} /></label>}
 				{supportsUsageKey && provider.usageKeyConfigured && <label className="rw-provider-check rw-provider-field-wide"><input type="checkbox" checked={draft.clearUsageApiKey} onChange={(event) => update("clearUsageApiKey", event.target.checked)} disabled={disabled || saving} /> Remove saved admin / usage key</label>}
 			</div>

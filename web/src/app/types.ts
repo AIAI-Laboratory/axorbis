@@ -7,6 +7,8 @@ export type {
 	WorkbenchState,
 } from "../../../engine/workbench/types.js";
 
+export type { WorkbenchNoteRecord } from "../../../engine/workbench/memory.js";
+
 export type {
 	WorkbenchChatMessage,
 	WorkbenchChatSession,

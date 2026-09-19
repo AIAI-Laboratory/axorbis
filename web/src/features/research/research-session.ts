@@ -47,11 +47,14 @@ export function awaitingDeepResearchApproval(session: WorkbenchChatSession | nul
 		&& isApprovalPrompt(messages.at(-3)?.content);
 }
 
-export function researchMessageForSubmission(text: string, mode: ResearchMode, continuePlan: boolean): string {
+export function researchMessageForSubmission(text: string, mode: ResearchMode, continuePlan: boolean, questionTitle?: string): string {
 	if (continuePlan) return text.replace(/^\/deepresearch\s+(?=(?:yes|y|ok|proceed|đồng ý)\s*$)/iu, "");
 	if (text.startsWith("/")) return text;
 	const command = MODE_COMMANDS[mode];
-	return command ? `/${command} ${text}` : text;
+	if (!command) return text;
+	const question = questionTitle?.trim() || text;
+	const instruction = text.trim();
+	return `/${command} ${question}${instruction && instruction !== question ? `\n\nAdditional instruction: ${instruction}` : ""}`;
 }
 
 /**
@@ -59,8 +62,27 @@ export function researchMessageForSubmission(text: string, mode: ResearchMode, c
  * research API stays on its ephemeral local Feynman port. Production keeps the
  * same-origin path, so no auth URL is exposed outside the local desktop process.
  */
+let cachedBackend: string | null = null;
+
+/**
+ * Keep the local backend capability when client-side routing changes pages in
+ * desktop development. The backend's ephemeral URL is intentionally passed
+ * only through the initial redirect, so a bare history entry would otherwise
+ * make subsequent `/api` requests hit Vite instead of Feynman.
+ */
+export function workbenchNavigationPath(path: string): string {
+	const target = new URL(path, window.location.origin);
+	const current = new URLSearchParams(window.location.search);
+	const backend = current.get("backend") || cachedBackend;
+	if (backend) target.searchParams.set("backend", backend);
+	return `${target.pathname}${target.search}${target.hash}`;
+}
+
 export function workbenchApiUrl(path: string): string {
-	const backend = new URLSearchParams(window.location.search).get("backend");
+	const search = new URLSearchParams(window.location.search);
+	const backend = search.get("backend") || cachedBackend;
+	if (search.has("backend")) cachedBackend = search.get("backend");
+
 	if (!backend) return path;
 	try {
 		const base = new URL(backend);
@@ -81,9 +103,22 @@ export async function apiJson<T>(url: string, body?: Record<string, unknown>): P
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(body),
 	} : undefined);
-	const payload = await response.json() as T & { error?: string };
+
+	let payload: any = {};
+	const text = await response.text();
+	if (text) {
+		try {
+			payload = JSON.parse(text);
+		} catch (error) {
+			if (!response.ok) {
+				throw new Error(`Request failed (${response.status}): ${text.slice(0, 100)}`);
+			}
+			throw error;
+		}
+	}
+
 	if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
-	return payload;
+	return payload as T & { error?: string };
 }
 
 type SessionCallbacks = {
@@ -92,10 +127,10 @@ type SessionCallbacks = {
 };
 
 export async function streamResearchMessage(
-	input: { sessionId: string; projectId: string; title: string; text: string; mode: ResearchMode; continuePlan?: boolean },
+	input: { sessionId: string; projectId: string; title: string; text: string; mode: ResearchMode; questionTitle?: string; continuePlan?: boolean },
 	callbacks: SessionCallbacks,
 ): Promise<void> {
-	const message = researchMessageForSubmission(input.text, input.mode, input.continuePlan === true);
+	const message = researchMessageForSubmission(input.text, input.mode, input.continuePlan === true, input.questionTitle);
 	const response = await fetch(workbenchApiUrl("/api/chat/message/stream"), {
 		method: "POST",
 		headers: { accept: "text/event-stream", "content-type": "application/json" },

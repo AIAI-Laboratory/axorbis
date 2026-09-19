@@ -36,7 +36,7 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-lineca
   grid-template-columns: 1fr minmax(240px, 420px) 1fr;
   align-items: center;
   gap: 24px;
-  height: 62px;
+  height: 48px;
   padding: 0 26px;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
@@ -66,7 +66,7 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-lineca
 }
 .topbar-placeholder kbd { margin-left: auto; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font-size: 11px; }
 
-.body-grid { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: calc(100vh - 62px); }
+.body-grid { display: grid; grid-template-columns: 196px minmax(0, 1fr); min-height: calc(100vh - 48px); }
 .sidebar { display: flex; flex-direction: column; min-width: 0; padding: 20px 11px 16px; border-right: 1px solid var(--line); background: var(--surface); }
 .sidebar-heading, .sidebar-section { padding: 0 10px 8px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .1em; }
 .sidebar-section { margin-top: 30px; }
@@ -208,13 +208,13 @@ kbd, code, .version, .status, .setup-security, .sidebar-footer {
   font-weight: 400;
 }
 
-.topbar { height: 56px; gap: 20px; padding-inline: 20px; }
+.topbar { height: 48px; gap: 20px; padding-inline: 20px; }
 .brand-icon { border-radius: 4px; font-weight: 600; }
 .brand strong { font-weight: 600; letter-spacing: -.025em; }
 .topbar-placeholder { height: 32px; border-radius: 5px; background: var(--surface); }
 .topbar-placeholder kbd { border-radius: 3px; font-size: 10px; }
 .icon-button { width: 30px; height: 30px; border-radius: 4px; }
-.body-grid { grid-template-columns: 208px minmax(0, 1fr); min-height: calc(100vh - 56px); }
+.body-grid { grid-template-columns: 196px minmax(0, 1fr); min-height: calc(100vh - 48px); }
 .sidebar { padding: 16px 8px 12px; }
 .sidebar-heading, .sidebar-section { font-weight: 500; letter-spacing: .06em; }
 .sidebar-section { margin-top: 20px; }

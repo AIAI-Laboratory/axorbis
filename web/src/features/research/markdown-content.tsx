@@ -1,8 +1,42 @@
+import katex from "katex";
+import "katex/dist/katex.min.css";
 import { marked, type Token, type Tokens } from "marked";
 import React, { createElement, useMemo, type ReactNode } from "react";
 
-const FILE_PATH_PATTERN = /^(?:outputs|papers|notes)\/[A-Za-z0-9_./-]+\.[A-Za-z0-9]+$/;
-const INLINE_FILE_PATH_PATTERN = /(?:outputs|papers|notes)\/[A-Za-z0-9_./-]+\.[A-Za-z0-9]+/g;
+const FILE_PATH_PATTERN = /^(?:\.axorbis\/artifacts|outputs|papers|notes)\/[A-Za-z0-9_./-]+\.[A-Za-z0-9]+$/;
+const INLINE_FILE_PATH_PATTERN = /(?:\.axorbis\/artifacts|outputs|papers|notes)\/[A-Za-z0-9_./-]+\.[A-Za-z0-9]+/g;
+const MATH_MARKER = /@@AXORBIS_MATH:(display|inline):([^@]+)@@/g;
+type InlineMatch =
+	| { kind: "math"; start: number; end: number; display: boolean; latex: string }
+	| { kind: "file"; start: number; end: number; path: string };
+
+function mathMarker(latex: string, display: boolean): string {
+	return `@@AXORBIS_MATH:${display ? "display" : "inline"}:${encodeURIComponent(latex)}@@`;
+}
+
+/**
+ * Marked tokenizes TeX backslashes as Markdown escapes. Replace math spans
+ * first, while leaving fenced and inline code untouched, then render their
+ * inert markers after Markdown has produced its normal document structure.
+ */
+function preserveMath(content: string): string {
+	return content.split(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/g).map((part) => {
+		if (part.startsWith("`") || part.startsWith("~~~")) return part;
+		return part
+			.replace(/\$\$([\s\S]+?)\$\$/g, (_match, latex: string) => mathMarker(latex.trim(), true))
+			.replace(/\\\[([\s\S]+?)\\\]/g, (_match, latex: string) => mathMarker(latex.trim(), true))
+			.replace(/\\\((.+?)\\\)/g, (_match, latex: string) => mathMarker(latex, false))
+			.replace(/(?<!\\)\$([^$\n]+?)(?<!\\)\$/g, (_match, latex: string) => mathMarker(latex, false));
+	}).join("");
+}
+
+function renderMath(latex: string, display: boolean, key: string): ReactNode {
+	try {
+		return <span key={key} className={display ? "rw-latex rw-latex-display" : "rw-latex"} dangerouslySetInnerHTML={{ __html: katex.renderToString(latex, { displayMode: display, throwOnError: false, strict: "warn", trust: false }) }} />;
+	} catch {
+		return <code key={key}>{display ? `$$${latex}$$` : `$${latex}$`}</code>;
+	}
+}
 
 function isFilePath(text: string): boolean {
 	return FILE_PATH_PATTERN.test(text) && text.split("/").every((segment) => segment !== "." && segment !== "..");
@@ -13,17 +47,30 @@ function filePathControl(path: string, key: string, onFilePath: (path: string) =
 }
 
 function renderTextWithFilePaths(value: string, key: string, onFilePath?: (path: string) => void): ReactNode {
-	if (!onFilePath) return decodeText(value);
-	const matches = [...value.matchAll(INLINE_FILE_PATH_PATTERN)].filter((match) => isFilePath(match[0]));
+	const matches: InlineMatch[] = [...value.matchAll(MATH_MARKER)].map((match) => ({
+		kind: "math" as const,
+		start: match.index ?? 0,
+		end: (match.index ?? 0) + match[0].length,
+		display: match[1] === "display",
+		latex: decodeURIComponent(match[2] ?? ""),
+	}));
+	if (onFilePath) matches.push(...[...value.matchAll(INLINE_FILE_PATH_PATTERN)].filter((match) => isFilePath(match[0])).map((match) => ({
+		kind: "file" as const,
+		start: match.index ?? 0,
+		end: (match.index ?? 0) + match[0].length,
+		path: match[0],
+	})));
+	matches.sort((a, b) => a.start - b.start);
 	if (!matches.length) return decodeText(value);
 	const children: ReactNode[] = [];
 	let offset = 0;
 	for (const [index, match] of matches.entries()) {
-		const path = match[0];
-		const start = match.index ?? offset;
-		if (start > offset) children.push(decodeText(value.slice(offset, start)));
-		children.push(filePathControl(path, `${key}:file:${index}`, onFilePath));
-		offset = start + path.length;
+		if (match.start < offset) continue;
+		if (match.start > offset) children.push(decodeText(value.slice(offset, match.start)));
+		children.push(match.kind === "math"
+			? renderMath(match.latex, match.display, `${key}:math:${index}`)
+			: filePathControl(match.path, `${key}:file:${index}`, onFilePath!));
+		offset = match.end;
 	}
 	if (offset < value.length) children.push(decodeText(value.slice(offset)));
 	return <>{children}</>;
@@ -100,7 +147,7 @@ function renderTokens(tokens: Token[], onFilePath?: (path: string) => void): Rea
 }
 
 export function MarkdownContent({ content, className = "", onFilePath }: { content: string; className?: string; onFilePath?: (path: string) => void }) {
-	const tokens = useMemo(() => marked.lexer(content, { gfm: true }), [content]);
+	const tokens = useMemo(() => marked.lexer(preserveMath(content), { gfm: true }), [content]);
 	return <div className={`rw-markdown ${className}`.trim()}>{renderTokens(tokens, onFilePath)}</div>;
 }
 
