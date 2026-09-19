@@ -58,11 +58,15 @@ test("AI provider catalog and vault persist redacted generic BYOK metadata", asy
 	removeAiProviderCredential(root, "openai", "inference");
 	assert.equal(listAiProviders(root)[0]?.credentialRoles.inference?.configured, undefined);
 
-	upsertAiProvider(root, { id: "gemini", kind: "gemini", defaultModel: "gemini-2.5-pro", inferenceApiKey: inferenceSecret });
+	upsertAiProvider(root, { id: "gemini", kind: "gemini", defaultModel: "gemini-2.5-pro", inferenceApiKey: inferenceSecret, subagentInferenceApiKeys: ["subagent-secret"] });
 	assert.equal(defaultAiProviderModel(root), "openai/gpt-5.5");
 	assert.equal(aiProviderIdForModel(root, "google/gemini-2.5-pro"), "gemini");
 	assert.equal(normalizeAiProviderModel(root, "google/Flash2.5-lite"), "google/gemini-2.5-flash-lite");
-	assert.equal(getAiProviderRuntimeEnv(root, "google/gemini-2.5-pro").GEMINI_API_KEY, inferenceSecret);
+	const geminiEnv = getAiProviderRuntimeEnv(root, "google/gemini-2.5-pro");
+	assert.equal(geminiEnv.GEMINI_API_KEY, inferenceSecret);
+	assert.equal(geminiEnv.AXORBIS_SUBAGENT_KEY_GEMINI_0, "subagent-secret");
+	assert.match(geminiEnv.AXORBIS_SUBAGENT_MODEL_ALIASES ?? "", /axorbis_subagent_gemini_0\/gemini-2\.5-pro/);
+	assert.equal(geminiEnv.AXORBIS_SUBAGENT_PARENT_MODEL, "google/gemini-2.5-pro");
 	upsertAiProvider(root, { id: "custom", kind: "custom", endpoint: "https://models.example.test/v1", defaultModel: "research-model", inferenceApiKey: inferenceSecret });
 	const modelsPath = join(root, "models.json");
 	syncAiProviderPiConfig(root, modelsPath, "custom/research-model");
@@ -89,6 +93,42 @@ test("AI provider usage aggregates budgets and stops only configured billing pro
 	assert.equal(ollama.resourceLimits?.memoryMb, 16_384);
 	assert.equal(ollama.usage.hardStopped, false);
 	assert.doesNotThrow(() => assertAiProviderBudget(root, "session-a", "ollama/llama3"));
+}));
+
+test("Gemini usageMetadata is persisted with request telemetry and rate-limit status", async () => withIsolatedWorkbench((root) => {
+	upsertAiProvider(root, { id: "gemini", kind: "gemini", defaultModel: "gemini-2.5-pro" });
+	recordAiProviderUsage(root, {
+		providerId: "gemini",
+		sessionId: "session-gemini",
+		model: "google/gemini-2.5-pro",
+		keyId: "subagent-2",
+		appId: "axorbis-workbench",
+		userId: "local-user",
+		requestStartedAt: "2026-09-19T10:00:00.000Z",
+		latencyMs: 842,
+		httpStatus: 429,
+		errorCode: "429",
+		usage: {
+			promptTokenCount: 100,
+			candidatesTokenCount: 20,
+			thoughtsTokenCount: 30,
+			cachedContentTokenCount: 40,
+			toolUsePromptTokenCount: 5,
+			totalTokenCount: 150,
+			cost: { total: 0.12 },
+		},
+	});
+	const provider = listAiProviders(root, "session-gemini").find((item) => item.id === "gemini")!;
+	assert.equal(provider.usage.promptTokenCount, 100);
+	assert.equal(provider.usage.candidatesTokenCount, 20);
+	assert.equal(provider.usage.thoughtsTokenCount, 30);
+	assert.equal(provider.usage.cachedContentTokenCount, 40);
+	assert.equal(provider.usage.toolUsePromptTokenCount, 5);
+	assert.equal(provider.usage.totalTokenCount, 150);
+	assert.equal(provider.usage.rateLimitCount, 1);
+	assert.equal(provider.usage.lastRequest?.keyId, "subagent-2");
+	assert.equal(provider.usage.lastRequest?.latencyMs, 842);
+	assert.equal(provider.usage.estimatedCostUsd, 0.12);
 }));
 
 test("AI provider connection test uses the vault server-side and redacts responses", async () => {

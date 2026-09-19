@@ -33,9 +33,10 @@ import { isCurrentPiAiCatalog, patchCurrentOpenAiCompletions } from "./pi-ai-for
  * - 7280f89b42e4b233afc4f18e41366e845d179cef (Responses no-tools contract, Pi #8649/#8650)
  * - 331e187b8ee86cc87360600eef6f9620a5d1967b (Bedrock OpenAI tool-result images, Pi #8643)
  * - https://github.com/earendil-works/pi/issues/8507 (transient OpenRouter budget retry)
+ * - Axorbis telemetry support (preserve Gemini usageMetadata fields for the workbench)
  *
  * Removal condition: delete this patch after Feynman adopts a released Pi
- * version that contains all fifteen fixes.
+ * version that contains all sixteen fixes.
  */
 
 export const PI_AI_FORWARD_FIX_REQUIRED_VERSION = "0.85.1";
@@ -69,6 +70,7 @@ export const PI_AI_FORWARD_FIX_RUNTIME_TARGETS = Object.freeze(
 
 export const PI_AI_FORWARD_FIX_MARKERS = Object.freeze({
 	googleGenerativeAi: "Feynman Pi 0.84.2 forward patch: Google thinking level maps",
+	googleUsageMetadata: "Feynman Axorbis patch: preserve Gemini usageMetadata",
 	googleShared: "Feynman Pi 0.84.2 forward patch: resolve Google thinking level maps",
 	googleVertex: "Feynman Pi 0.84.2 forward patch: Vertex thinking level maps",
 	bedrock: PI_BEDROCK_RESPONSE_HEADERS_MARKER,
@@ -407,6 +409,7 @@ export function assertPiAiForwardFixSource(relativePath, source) {
 		case "dist/api/google-generative-ai.js":
 			assertSourceFragments(source, relativePath, [
 				PI_AI_FORWARD_FIX_MARKERS.googleGenerativeAi,
+				PI_AI_FORWARD_FIX_MARKERS.googleUsageMetadata,
 				"resolveGoogleThinkingLevel(model, clampedReasoning)",
 				"level: getThinkingLevel(resolvedLevel, googleModel)",
 				"budgetTokens: getGoogleBudget(googleModel, resolvedLevel, options.thinkingBudgets)",
@@ -574,11 +577,11 @@ function patchGoogleGenerativeAi(source) {
 	if (!source.includes(PI_AI_FORWARD_FIX_MARKERS.googleGenerativeAi) &&
 		source.includes("const resolvedLevel = resolveGoogleThinkingLevel(model, clampedReasoning);")) {
 		const annotated = `// ${PI_AI_FORWARD_FIX_MARKERS.googleGenerativeAi}\n${source}`;
-		assertPiAiForwardFixSource(relativePath, annotated);
+		assertSourceFragments(annotated, relativePath, [PI_AI_FORWARD_FIX_MARKERS.googleGenerativeAi]);
 		return annotated;
 	}
 	if (source.includes(PI_AI_FORWARD_FIX_MARKERS.googleGenerativeAi)) {
-		assertPiAiForwardFixSource(relativePath, source);
+		assertSourceFragments(source, relativePath, [PI_AI_FORWARD_FIX_MARKERS.googleGenerativeAi]);
 		return source;
 	}
 	let patched = replaceRequired(
@@ -600,7 +603,23 @@ function patchGoogleGenerativeAi(source) {
 	patched = replaceRequired(patched, "customBudgets?.[effort]", "customBudgets?.[level]", "Google Generative AI custom budget check");
 	patched = replaceRequired(patched, "customBudgets[effort]", "customBudgets[level]", "Google Generative AI custom budget value");
 	patched = replaceRequiredCount(patched, "budgets[effort]", "budgets[level]", 3, "Google Generative AI built-in budgets");
-	assertPiAiForwardFixSource(relativePath, patched);
+	assertSourceFragments(patched, relativePath, [PI_AI_FORWARD_FIX_MARKERS.googleGenerativeAi]);
+	return patched;
+}
+
+function patchGoogleUsageMetadata(source) {
+	const relativePath = "dist/api/google-generative-ai.js";
+	if (source.includes(PI_AI_FORWARD_FIX_MARKERS.googleUsageMetadata)) {
+		return source;
+	}
+	const anchor = "                        totalTokens: chunk.usageMetadata.totalTokenCount || 0,\n";
+	const replacement = `${anchor}                        // ${PI_AI_FORWARD_FIX_MARKERS.googleUsageMetadata}\n                        promptTokenCount: chunk.usageMetadata.promptTokenCount || 0,\n                        candidatesTokenCount: chunk.usageMetadata.candidatesTokenCount || 0,\n                        thoughtsTokenCount: chunk.usageMetadata.thoughtsTokenCount || 0,\n                        cachedContentTokenCount: chunk.usageMetadata.cachedContentTokenCount || 0,\n                        toolUsePromptTokenCount: chunk.usageMetadata.toolUsePromptTokenCount || 0,\n`;
+	const patched = replaceRequired(source, anchor, replacement, "Gemini usage metadata preservation");
+	assertSourceFragments(patched, relativePath, [
+		PI_AI_FORWARD_FIX_MARKERS.googleUsageMetadata,
+		"promptTokenCount: chunk.usageMetadata.promptTokenCount || 0",
+		"toolUsePromptTokenCount: chunk.usageMetadata.toolUsePromptTokenCount || 0",
+	]);
 	return patched;
 }
 
@@ -1134,6 +1153,7 @@ export function patchPiAiForwardFixSource(relativePath, source) {
 	switch (relativePath) {
 		case "dist/api/google-generative-ai.js":
 			patched = patchGoogleGenerativeAi(patched);
+			patched = patchGoogleUsageMetadata(patched);
 			break;
 		case "dist/api/google-shared.js":
 			patched = patchGoogleShared(patched);

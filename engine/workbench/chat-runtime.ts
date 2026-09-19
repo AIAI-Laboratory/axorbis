@@ -33,6 +33,7 @@ import { formatWorkbenchRuntimeContextForPrompt } from "./runtime-context.js";
 import { buildWorkbenchState, readWorkbenchFile } from "./scan.js";
 import { aiProviderIdForModel, assertAiProviderBudget, defaultAiProviderModel, getAiProviderRuntimeEnv, normalizeAiProviderModel, recordAiProviderUsage, syncAiProviderPiConfig } from "./ai-providers.js";
 import { isDeepResearchApproval, pendingDeepResearchPlan, resolveEmptyWorkbenchReply } from "./empty-chat-reply.js";
+import { projectArtifactRoot } from "./artifact-roots.js";
 
 export type WorkbenchPromptStreamUpdate = {
 	content?: string;
@@ -72,7 +73,13 @@ type ActiveRpcRun = {
 	status: WorkbenchChatStatus;
 	timeout: NodeJS.Timeout;
 	toolEvents: Map<string, WorkbenchToolEvent>;
-	usageContext: { workingDir: string; sessionId: string; providerId?: string; model?: string };
+	usageContext: {
+		workingDir: string;
+		sessionId: string;
+		providerId?: string;
+		model?: string;
+		requestStartedAtMs: number;
+	};
 };
 
 function formatAttachmentForPrompt(attachment: WorkbenchAttachment): string[] {
@@ -201,7 +208,7 @@ function artifactAnnotationContextForPrompt(request: WorkbenchPromptRequest): st
 		"Artifact annotations and requested refinements:",
 		...selected.flatMap(formatAnnotation),
 		"",
-		"Use these annotations as actionable local artifact feedback. Preserve provenance, cite changed files, and update or create artifacts under outputs/, papers/, or notes/.",
+		`Use these annotations as actionable local artifact feedback. Preserve provenance, cite changed files, and write new Axorbis artifacts under ${projectArtifactRoot(request.session.projectId)}/. Legacy outputs/, papers/, and notes/ remain readable only.`,
 	];
 }
 
@@ -294,7 +301,14 @@ export function buildWorkbenchRpcPrompt(request: WorkbenchPromptRequest): string
 	if (pendingPlanPath && isDeepResearchApproval(request.message)) {
 		return `The user explicitly approves the Deep Research plan at ${pendingPlanPath}. Continue the original research topic from that plan now. Treat this as plan approval, not as a new topic. Follow the approved workflow and write the required cited output and provenance.`;
 	}
-	if (isRawPiInput(request.message)) return request.message;
+	if (isRawPiInput(request.message)) {
+		return [
+			request.message,
+			"",
+			`Workbench project artifact directory: ${projectArtifactRoot(request.session.projectId)}/`,
+			"Store every new plan, note, paper, draft, report, provenance record, and supplementary file in this directory. This project directory overrides generic path examples in workflow instructions. Do not create files in outputs/, papers/, notes/, or another project's directory.",
+		].join("\n");
+	}
 
 	const attachments = request.session.attachments.flatMap(formatAttachmentForPrompt);
 	const config = request.session.config;
@@ -308,6 +322,8 @@ export function buildWorkbenchRpcPrompt(request: WorkbenchPromptRequest): string
 		"Workbench context for this message:",
 		`- Workspace: ${request.workingDir}`,
 		`- Project: ${request.session.projectId}`,
+		`- Project artifact directory: ${projectArtifactRoot(request.session.projectId)}/`,
+		"- Store every new plan, note, paper, draft, report, provenance record, and supplementary file inside the project artifact directory. This project directory overrides generic path examples in workflow instructions. Do not create files in outputs/, papers/, notes/, or another project's directory.",
 		`- Session: ${request.session.title}`,
 		`- Delegation: ${config.delegation ? "enabled" : "disabled"}`,
 		`- Auto-review: ${config.autoReview ? "enabled" : "disabled"}`,
@@ -387,7 +403,13 @@ async function spawnWorkbenchPi(request: WorkbenchPromptRequest, mode: ChildMode
 	], {
 		cwd: request.workingDir,
 		stdio: ["pipe", "pipe", "pipe"],
-		env: { ...buildPiEnv(runtimeOptions, paths, executables), ...getAiProviderRuntimeEnv(request.workingDir, modelSpec) },
+		env: {
+			...buildPiEnv(runtimeOptions, paths, executables),
+			...getAiProviderRuntimeEnv(request.workingDir, modelSpec),
+			AXORBIS_PROJECT_ID: request.session.projectId,
+			AXORBIS_PROJECT_ARTIFACT_ROOT: projectArtifactRoot(request.session.projectId),
+			AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION: resolve(request.appRoot!, "extensions", "project-artifact-path-guard.ts"),
+		},
 	});
 }
 
@@ -582,6 +604,7 @@ class WorkbenchPiRpcClient {
 				sessionId: request.session.id,
 				providerId: aiProviderIdForModel(request.workingDir, request.session.config.model || defaultAiProviderModel(request.workingDir)),
 				model: normalizeAiProviderModel(request.workingDir, request.session.config.model || defaultAiProviderModel(request.workingDir)),
+				requestStartedAtMs: Date.now(),
 			},
 		};
 		clearTimeout(activeRun.timeout);
@@ -726,6 +749,21 @@ export async function closeWorkbenchPiRpcClients(): Promise<void> {
 	await Promise.all(clients.map((client) => client.stop()));
 }
 
+/**
+ * Provider credentials are injected when the Pi RPC process starts. Refresh
+ * only idle clients after a provider/key change so the next turn receives the
+ * new env/model aliases without interrupting an active research run.
+ */
+export async function refreshWorkbenchPiRpcClients(workingDir: string): Promise<void> {
+	const clients: WorkbenchPiRpcClient[] = [];
+	for (const [key, client] of rpcClients.entries()) {
+		if (key.split("\0")[1] !== workingDir || client.hasActiveRun()) continue;
+		rpcClients.delete(key);
+		clients.push(client);
+	}
+	await Promise.all(clients.map((client) => client.stop()));
+}
+
 export async function runFeynmanWorkbenchPrompt(request: WorkbenchPromptRequest): Promise<WorkbenchPromptResult> {
 	return runFeynmanWorkbenchPromptStream(request, () => undefined);
 }
@@ -854,7 +892,7 @@ export async function handlePiJsonLine(
 	line: string,
 	toolEvents: Map<string, WorkbenchToolEvent>,
 	onUpdate: (update: PiWorkbenchPromptStreamUpdate) => void | Promise<void>,
-	usageContext?: { workingDir: string; sessionId: string; providerId?: string; model?: string },
+	usageContext?: { workingDir: string; sessionId: string; providerId?: string; model?: string; requestStartedAtMs: number },
 ): Promise<void> {
 	let event: Record<string, unknown>;
 	try {
@@ -876,6 +914,9 @@ export async function handlePiJsonLine(
 			return;
 		}
 	}
+	if (event.type === "message_start" && usageContext) {
+		usageContext.requestStartedAtMs = Date.now();
+	}
 	if (event.type === "message_update" || event.type === "message_end") {
 		const message = event.message;
 		if (message && typeof message === "object" && (message as { role?: unknown }).role === "assistant") {
@@ -883,8 +924,35 @@ export async function handlePiJsonLine(
 			const stopReason = messageRecord.stopReason;
 			const content = messageText(message) || (stopReason === "error" ? messageErrorText(message) : "");
 			if (event.type === "message_end" && usageContext && usageContext.providerId) {
-				const usage = unknownRecord(messageRecord.usage);
-				if (usage) recordAiProviderUsage(usageContext.workingDir, { ...usageContext, usage });
+				const usage = unknownRecord(messageRecord.usage) ?? {};
+				const usageMetadata = unknownRecord(usage.usageMetadata) ?? unknownRecord(messageRecord.usageMetadata);
+				const mergedUsage = usageMetadata ? { ...usage, ...usageMetadata } : usage;
+				const provider = typeof messageRecord.provider === "string" ? messageRecord.provider : "";
+				const messageModel = typeof messageRecord.model === "string" ? messageRecord.model : undefined;
+				const model = messageModel && provider ? `${provider}/${messageModel}` : messageModel ?? usageContext.model;
+				const keyId = provider.startsWith("axorbis_subagent_")
+					? `subagent-${provider.match(/_(\d+)$/)?.[1] ?? "unknown"}`
+					: "main";
+				const errorText = messageErrorText(message);
+				const statusValue = messageRecord.httpStatus ?? messageRecord.statusCode ?? messageRecord.status;
+				const statusMatch = typeof statusValue === "number"
+					? statusValue
+					: typeof statusValue === "string" && /^\d{3}$/.test(statusValue) ? Number(statusValue) : undefined;
+				const httpStatus = statusMatch ?? (errorText.match(/\b(?:HTTP\s*)?(\d{3})\b/i)?.[1] ? Number(errorText.match(/\b(?:HTTP\s*)?(\d{3})\b/i)![1]) : undefined);
+				const errorCode = httpStatus === 429 || /\b429\b|rate.?limit|too many requests/i.test(errorText) ? "429" : undefined;
+				recordAiProviderUsage(usageContext.workingDir, {
+					...usageContext,
+					model,
+					usage: mergedUsage,
+					keyId,
+					appId: "axorbis-workbench",
+					userId: "local-user",
+					requestStartedAt: new Date(usageContext.requestStartedAtMs).toISOString(),
+					latencyMs: Date.now() - usageContext.requestStartedAtMs,
+					...(httpStatus !== undefined ? { httpStatus } : {}),
+					...(errorCode ? { errorCode } : {}),
+				});
+				usageContext.requestStartedAtMs = Date.now();
 			}
 			await onUpdate({
 				content,

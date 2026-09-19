@@ -25,6 +25,13 @@ export type AiProviderResourceLimits = {
 	note?: string;
 };
 
+/** Public metadata for one subagent credential. The secret itself never leaves the vault. */
+export type AiProviderSubagentKey = {
+	id: string;
+	configured: true;
+	updatedAt?: string;
+};
+
 export type AiProviderPublic = {
 	id: string;
 	kind: AiProviderKind;
@@ -34,6 +41,7 @@ export type AiProviderPublic = {
 	models: string[];
 	billingMode: AiProviderBillingMode;
 	credentialRoles: Partial<Record<AiCredentialRole, { configured: boolean; updatedAt?: string }>>;
+	subagentKeys: AiProviderSubagentKey[];
 	budget: AiProviderBudget;
 	resourceLimits?: AiProviderResourceLimits;
 	usage: AiProviderUsageSummary;
@@ -52,22 +60,61 @@ export type AiProviderUsageRecord = {
 	model?: string;
 	inputTokens: number;
 	outputTokens: number;
+	/** Gemini usageMetadata.promptTokenCount (includes cached input). */
+	promptTokenCount?: number;
+	/** Gemini usageMetadata.candidatesTokenCount (answer tokens, excluding thinking). */
+	candidatesTokenCount?: number;
+	/** Gemini usageMetadata.thoughtsTokenCount. */
+	thoughtsTokenCount: number;
+	/** Gemini usageMetadata.cachedContentTokenCount. */
+	cachedContentTokenCount: number;
+	/** Gemini usageMetadata.toolUsePromptTokenCount. */
+	toolUsePromptTokenCount: number;
+	/** Gemini usageMetadata.totalTokenCount. */
+	totalTokenCount: number;
 	cacheReadTokens: number;
 	cacheWriteTokens: number;
 	estimatedCostUsd?: number;
 	providerReportedCostUsd?: number;
+	keyId?: string;
+	userId?: string;
+	appId?: string;
+	requestStartedAt?: string;
+	latencyMs?: number;
+	httpStatus?: number;
+	errorCode?: string;
 	createdAt: string;
 };
 
 export type AiProviderUsageSummary = {
 	inputTokens: number;
 	outputTokens: number;
+	promptTokenCount: number;
+	candidatesTokenCount: number;
+	thoughtsTokenCount: number;
+	cachedContentTokenCount: number;
+	toolUsePromptTokenCount: number;
+	totalTokenCount: number;
 	cacheReadTokens: number;
 	cacheWriteTokens: number;
 	estimatedCostUsd: number;
 	providerReportedCostUsd?: number;
 	monthCostUsd: number;
 	sessionCostUsd: number;
+	requestCount: number;
+	rateLimitCount: number;
+	lastRequest?: {
+		model?: string;
+		keyId?: string;
+		appId?: string;
+		userId?: string;
+		requestStartedAt?: string;
+		createdAt: string;
+		latencyMs?: number;
+		httpStatus?: number;
+		errorCode?: string;
+		totalTokenCount: number;
+	};
 	warning: boolean;
 	hardStopped: boolean;
 };
@@ -79,7 +126,7 @@ export type AiProviderConnectionResult = {
 	detail: string;
 };
 
-type SecretEntry = { providerId: string; role: AiCredentialRole; iv: string; ciphertext: string; tag: string; updatedAt: string };
+type SecretEntry = { providerId: string; role: AiCredentialRole; keyId?: string; iv: string; ciphertext: string; tag: string; updatedAt: string };
 type VaultStore = { schema: "feynman.aiProviderVault.v1"; entries: SecretEntry[] };
 type ProviderStore = { schema: "feynman.aiProviders.v1"; providers: AiProviderStored[] };
 type UsageStore = { schema: "feynman.aiProviderUsage.v1"; records: AiProviderUsageRecord[] };
@@ -262,10 +309,18 @@ function parseStored(record: Record<string, unknown>): AiProviderStored {
 		const source = asRecord(roleRecords[role]);
 		if (source.configured === true) roles[role] = { configured: true, ...(text(source.updatedAt, 64) ? { updatedAt: text(source.updatedAt, 64) } : {}) };
 	}
+	const subagentKeys = Array.isArray(record.subagentKeys)
+		? record.subagentKeys.flatMap((item): AiProviderSubagentKey[] => {
+			const source = asRecord(item);
+			const keyId = text(source.id, 100);
+			if (!keyId || source.configured !== true) return [];
+			return [{ id: keyId, configured: true, ...(text(source.updatedAt, 64) ? { updatedAt: text(source.updatedAt, 64) } : {}) }];
+		}).slice(0, 100)
+		: [];
 	const output: AiProviderStored = {
 		id: id(record.id), kind: providerKind, name: text(record.name, 120) ?? def.name,
 		endpoint: endpoint(record.endpoint, def.endpoint), ...(text(record.defaultModel, 160) ? { defaultModel: text(record.defaultModel, 160) } : {}),
-		models: models(record.models), billingMode: def.billingMode, credentialRoles: roles, budget: budget(record.budget), createdAt, updatedAt: text(record.updatedAt, 64) ?? createdAt,
+		models: models(record.models), billingMode: def.billingMode, credentialRoles: roles, subagentKeys, budget: budget(record.budget), createdAt, updatedAt: text(record.updatedAt, 64) ?? createdAt,
 	};
 	const limits = resourceLimits(record.resourceLimits);
 	if (limits) output.resourceLimits = limits;
@@ -276,6 +331,7 @@ function parseStored(record: Record<string, unknown>): AiProviderStored {
 function usageNumber(value: unknown): number { return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0; }
 function monthKey(date: string): string { return date.slice(0, 7); }
 function cost(record: AiProviderUsageRecord): number { return record.providerReportedCostUsd ?? record.estimatedCostUsd ?? 0; }
+function recordNumber(value: number | undefined): number { return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0; }
 
 export function summarizeAiProviderUsage(provider: AiProviderStored, records: AiProviderUsageRecord[], sessionId?: string): AiProviderUsageSummary {
 	const currentMonth = monthKey(nowIso());
@@ -289,7 +345,44 @@ export function summarizeAiProviderUsage(provider: AiProviderStored, records: Ai
 	const limits = [provider.budget.monthlyUsd ? monthCostUsd / provider.budget.monthlyUsd : 0, provider.budget.sessionUsd && sessionId ? sessionCostUsd / provider.budget.sessionUsd : 0];
 	const maxRatio = Math.max(...limits);
 	const hardStopped = provider.billingMode === "billing" && provider.budget.hardStop && ((provider.budget.monthlyUsd !== undefined && monthCostUsd >= provider.budget.monthlyUsd) || (provider.budget.sessionUsd !== undefined && Boolean(sessionId) && sessionCostUsd >= provider.budget.sessionUsd));
-	return { inputTokens: sum(providerRecords, (record) => record.inputTokens), outputTokens: sum(providerRecords, (record) => record.outputTokens), cacheReadTokens: sum(providerRecords, (record) => record.cacheReadTokens), cacheWriteTokens: sum(providerRecords, (record) => record.cacheWriteTokens), estimatedCostUsd: totalCost, ...(reported !== undefined ? { providerReportedCostUsd: reported } : {}), monthCostUsd, sessionCostUsd, warning: provider.billingMode === "billing" && maxRatio >= provider.budget.warningPercent / 100, hardStopped };
+	const last = providerRecords
+		.slice()
+		.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+		.at(-1);
+	return {
+		inputTokens: sum(providerRecords, (record) => recordNumber(record.inputTokens)),
+		outputTokens: sum(providerRecords, (record) => recordNumber(record.outputTokens)),
+		promptTokenCount: sum(providerRecords, (record) => recordNumber(record.promptTokenCount)),
+		candidatesTokenCount: sum(providerRecords, (record) => recordNumber(record.candidatesTokenCount)),
+		thoughtsTokenCount: sum(providerRecords, (record) => recordNumber(record.thoughtsTokenCount)),
+		cachedContentTokenCount: sum(providerRecords, (record) => recordNumber(record.cachedContentTokenCount)),
+		toolUsePromptTokenCount: sum(providerRecords, (record) => recordNumber(record.toolUsePromptTokenCount)),
+		totalTokenCount: sum(providerRecords, (record) => recordNumber(record.totalTokenCount)),
+		cacheReadTokens: sum(providerRecords, (record) => recordNumber(record.cacheReadTokens)),
+		cacheWriteTokens: sum(providerRecords, (record) => recordNumber(record.cacheWriteTokens)),
+		estimatedCostUsd: totalCost,
+		...(reported !== undefined ? { providerReportedCostUsd: reported } : {}),
+		monthCostUsd,
+		sessionCostUsd,
+		requestCount: providerRecords.length,
+		rateLimitCount: providerRecords.filter((record) => record.httpStatus === 429 || record.errorCode === "429").length,
+		...(last ? {
+			lastRequest: {
+				...(last.model ? { model: last.model } : {}),
+				...(last.keyId ? { keyId: last.keyId } : {}),
+				...(last.appId ? { appId: last.appId } : {}),
+				...(last.userId ? { userId: last.userId } : {}),
+				...(last.requestStartedAt ? { requestStartedAt: last.requestStartedAt } : {}),
+				createdAt: last.createdAt,
+				...(last.latencyMs !== undefined ? { latencyMs: last.latencyMs } : {}),
+				...(last.httpStatus !== undefined ? { httpStatus: last.httpStatus } : {}),
+				...(last.errorCode ? { errorCode: last.errorCode } : {}),
+				totalTokenCount: recordNumber(last.totalTokenCount),
+			},
+		} : {}),
+		warning: provider.billingMode === "billing" && maxRatio >= provider.budget.warningPercent / 100,
+		hardStopped,
+	};
 }
 
 function publicProvider(provider: AiProviderStored, records: AiProviderUsageRecord[], sessionId?: string): AiProviderPublic { return { ...provider, usage: summarizeAiProviderUsage(provider, records, sessionId) }; }
@@ -308,16 +401,37 @@ export function upsertAiProvider(workingDir: string, input: Record<string, unkno
 	// Credential metadata is owned by the vault. Ordinary settings edits must not
 	// accidentally clear an existing key or let a caller forge its configured state.
 	provider.credentialRoles = { ...previous?.credentialRoles };
+	provider.subagentKeys = [...(previous?.subagentKeys ?? provider.subagentKeys)];
 	provider.updatedAt = nowIso();
 	const providedSecrets: Array<[AiCredentialRole, string | undefined]> = [["inference", text(input.inferenceApiKey, MAX_KEY_BYTES)], ["usage_admin", text(input.usageAdminApiKey, MAX_KEY_BYTES)]];
 	const vault = readVault(workingDir);
 	for (const [role, value] of providedSecrets) {
 		if (value === undefined) continue;
-		vault.entries = vault.entries.filter((entry) => !(entry.providerId === provider.id && entry.role === role));
+		vault.entries = vault.entries.filter((entry) => !(entry.providerId === provider.id && entry.role === role && (!entry.keyId || entry.keyId === "main")));
 		if (value) {
 			vault.entries.push({ providerId: provider.id, role, ...encryptSecret(workingDir, value), updatedAt: provider.updatedAt });
 			provider.credentialRoles[role] = { configured: true, updatedAt: provider.updatedAt };
 		} else delete provider.credentialRoles[role];
+	}
+	const removeSubagentKeyIds = Array.isArray(input.removeSubagentInferenceKeyIds)
+		? input.removeSubagentInferenceKeyIds.filter((value): value is string => typeof value === "string" && /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(value)).slice(0, 100)
+		: [];
+	if (removeSubagentKeyIds.length) {
+		const removed = new Set(removeSubagentKeyIds);
+		vault.entries = vault.entries.filter((entry) => !(entry.providerId === provider.id && entry.role === "inference" && entry.keyId && removed.has(entry.keyId)));
+		provider.subagentKeys = provider.subagentKeys.filter((key) => !removed.has(key.id));
+		provider.updatedAt = nowIso();
+	}
+	const addedSubagentKeys = Array.isArray(input.subagentInferenceApiKeys)
+		? input.subagentInferenceApiKeys.flatMap((value): string[] => {
+			const key = text(value, MAX_KEY_BYTES);
+			return key ? [key] : [];
+		}).slice(0, 100)
+		: [];
+	for (const value of addedSubagentKeys) {
+		const keyId = randomUUID();
+		vault.entries.push({ providerId: provider.id, role: "inference", keyId, ...encryptSecret(workingDir, value), updatedAt: provider.updatedAt });
+		provider.subagentKeys.push({ id: keyId, configured: true, updatedAt: provider.updatedAt });
 	}
 	writeVault(workingDir, vault.entries);
 	writeProviderStore(workingDir, [...store.providers.filter((item) => item.id !== provider.id), provider]);
@@ -327,7 +441,7 @@ export function upsertAiProvider(workingDir: string, input: Record<string, unkno
 export function removeAiProviderCredential(workingDir: string, providerId: string, role: AiCredentialRole): AiProviderPublic {
 	const store = readProviderStore(workingDir); const provider = store.providers.find((item) => item.id === providerId);
 	if (!provider) throw new Error("AI provider was not found.");
-	const vault = readVault(workingDir); writeVault(workingDir, vault.entries.filter((entry) => !(entry.providerId === provider.id && entry.role === role)));
+	const vault = readVault(workingDir); writeVault(workingDir, vault.entries.filter((entry) => !(entry.providerId === provider.id && entry.role === role && (!entry.keyId || entry.keyId === "main"))));
 	delete provider.credentialRoles[role]; provider.updatedAt = nowIso(); writeProviderStore(workingDir, store.providers);
 	return publicProvider(provider, readUsage(workingDir).records);
 }
@@ -338,8 +452,15 @@ export function removeAiProvider(workingDir: string, providerId: string): void {
 }
 
 function secretFor(workingDir: string, providerId: string, role: AiCredentialRole): string | undefined {
-	const entry = readVault(workingDir).entries.find((item) => item.providerId === providerId && item.role === role);
+	const entry = readVault(workingDir).entries.find((item) => item.providerId === providerId && item.role === role && (!item.keyId || item.keyId === "main"));
 	return entry ? decryptSecret(workingDir, entry) : undefined;
+}
+
+function subagentSecretsFor(workingDir: string, provider: AiProviderStored): Array<{ id: string; value: string }> {
+	const entries = readVault(workingDir).entries.filter((item) => item.providerId === provider.id && item.role === "inference" && item.keyId && item.keyId !== "main");
+	const byId = new Map(entries.map((entry) => [entry.keyId!, entry]));
+	const ordered = provider.subagentKeys.map((key) => ({ id: key.id, entry: byId.get(key.id) })).filter((item): item is { id: string; entry: SecretEntry } => Boolean(item.entry));
+	return ordered.map(({ id, entry }) => ({ id, value: decryptSecret(workingDir, entry) }));
 }
 
 /** Resolve a Pi model prefix back to the provider id used by the Settings store. */
@@ -355,10 +476,53 @@ export function getAiProviderRuntimeEnv(workingDir: string, explicitModel?: stri
 		?? readProviderStore(workingDir).providers.find((item) => item.defaultModel && (!explicitModel || explicitModel === `${definition(item.kind).piProviderId ?? item.id}/${item.defaultModel}`));
 	if (!provider) return {};
 	const inferenceKey = secretFor(workingDir, provider.id, "inference");
-	const env: NodeJS.ProcessEnv = { FEYNMAN_AI_PROVIDER_ID: provider.id, FEYNMAN_AI_PROVIDER_ENDPOINT: provider.endpoint };
+	const env: NodeJS.ProcessEnv = {
+		FEYNMAN_AI_PROVIDER_ID: provider.id,
+		FEYNMAN_AI_PROVIDER_ENDPOINT: provider.endpoint,
+		...(explicitModel ? { AXORBIS_SUBAGENT_PARENT_MODEL: explicitModel } : {}),
+	};
 	const envVar = definition(provider.kind).inferenceEnvVar;
 	if (inferenceKey && envVar) env[envVar] = inferenceKey;
+	const subagentConfig = buildSubagentRuntimeConfig(workingDir, provider, explicitModel);
+	Object.assign(env, subagentConfig.env);
 	return env;
+}
+
+type SubagentRuntimeConfig = { env: Record<string, string>; aliases: Record<string, string[]> };
+
+function safeAliasPart(value: string): string {
+	const normalized = value.replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+	return (normalized || "provider").slice(0, 48);
+}
+
+function buildSubagentRuntimeConfig(workingDir: string, provider: AiProviderStored, explicitModel?: string): SubagentRuntimeConfig {
+	const keys = subagentSecretsFor(workingDir, provider);
+	const def = definition(provider.kind);
+	const piProviderId = def.piProviderId ?? provider.id;
+	const modelFromSpec = explicitModel?.startsWith(`${piProviderId}/`)
+		? explicitModel.slice(piProviderId.length + 1).split(":", 1)[0]
+		: explicitModel?.startsWith(`${provider.id}/`) ? explicitModel.slice(provider.id.length + 1).split(":", 1)[0] : undefined;
+	const modelIds = Array.from(new Set([
+		...provider.models.map((model) => normalizeProviderModelId(provider.kind, model)),
+		...(provider.defaultModel ? [normalizeProviderModelId(provider.kind, provider.defaultModel)] : []),
+		...(modelFromSpec ? [modelFromSpec] : []),
+	]));
+	if (!keys.length || !modelIds.length || !def.inferenceEnvVar) return { env: {}, aliases: {} };
+	const env: Record<string, string> = {};
+	const aliases: Record<string, string[]> = {};
+	for (let index = 0; index < keys.length; index += 1) {
+		const envVar = `AXORBIS_SUBAGENT_KEY_${safeAliasPart(provider.id).toUpperCase().replace(/[^A-Z0-9_]/g, "_")}_${index}`;
+		env[envVar] = keys[index]!.value;
+		const aliasProvider = `axorbis_subagent_${safeAliasPart(provider.id)}_${index}`;
+		for (const modelId of modelIds) {
+			const alias = `${aliasProvider}/${modelId}`;
+			for (const source of [`${piProviderId}/${modelId}`, `${provider.id}/${modelId}`]) {
+				aliases[source] = [...(aliases[source] ?? []), alias];
+			}
+		}
+	}
+	env.AXORBIS_SUBAGENT_MODEL_ALIASES = JSON.stringify(aliases);
+	return { env, aliases };
 }
 
 /** Writes endpoint/model metadata only; Pi resolves the secret from its child env. */
@@ -369,7 +533,9 @@ export function syncAiProviderPiConfig(workingDir: string, modelsJsonPath: strin
 	if (!provider) return;
 	const def = definition(provider.kind);
 	const piProviderId = def.piProviderId ?? provider.id;
-	const modelFromSpec = resolvedModel?.startsWith(`${piProviderId}/`) ? resolvedModel.slice(piProviderId.length + 1) : undefined;
+	const modelFromSpec = resolvedModel?.startsWith(`${piProviderId}/`)
+		? resolvedModel.slice(piProviderId.length + 1).split(":", 1)[0]
+		: resolvedModel?.startsWith(`${provider.id}/`) ? resolvedModel.slice(provider.id.length + 1).split(":", 1)[0] : undefined;
 	const modelIds = Array.from(new Set([
 		...provider.models.map((model) => normalizeProviderModelId(provider.kind, model)),
 		...(provider.defaultModel ? [normalizeProviderModelId(provider.kind, provider.defaultModel)] : []),
@@ -381,6 +547,19 @@ export function syncAiProviderPiConfig(workingDir: string, modelsJsonPath: strin
 		...(modelIds.length ? { models: modelIds.map((id) => ({ id })) } : {}),
 	});
 	if (!result.ok) throw new Error(`Could not configure AI provider for Pi: ${result.error}`);
+	const subagentKeys = subagentSecretsFor(workingDir, provider);
+	for (let index = 0; index < subagentKeys.length; index += 1) {
+		const aliasProvider = `axorbis_subagent_${safeAliasPart(provider.id)}_${index}`;
+		const envVar = `AXORBIS_SUBAGENT_KEY_${safeAliasPart(provider.id).toUpperCase().replace(/[^A-Z0-9_]/g, "_")}_${index}`;
+		const aliasResult = upsertProviderConfig(modelsJsonPath, aliasProvider, {
+			baseUrl: provider.endpoint,
+			apiKey: `$${envVar}`,
+			api: def.piApi,
+			authHeader: provider.kind !== "gemini" && provider.kind !== "ollama" && provider.kind !== "lm-studio",
+			...(modelIds.length ? { models: modelIds.map((id) => ({ id })) } : {}),
+		});
+		if (!aliasResult.ok) throw new Error(`Could not configure subagent AI provider for Pi: ${aliasResult.error}`);
+	}
 }
 
 export function defaultAiProviderModel(workingDir: string): string | undefined {
@@ -407,13 +586,63 @@ export function assertAiProviderBudget(workingDir: string, sessionId: string, ex
 	if (usage.hardStopped) throw new Error("AI provider budget has reached its configured hard stop. Increase the budget or turn off hard stop to continue.");
 }
 
-export function recordAiProviderUsage(workingDir: string, input: { providerId?: string; sessionId: string; model?: string; usage: Record<string, unknown> }): AiProviderUsageRecord | undefined {
+export function recordAiProviderUsage(workingDir: string, input: {
+	providerId?: string;
+	sessionId: string;
+	model?: string;
+	usage: Record<string, unknown>;
+	keyId?: string;
+	userId?: string;
+	appId?: string;
+	requestStartedAt?: string;
+	latencyMs?: number;
+	httpStatus?: number;
+	errorCode?: string;
+}): AiProviderUsageRecord | undefined {
 	const providerId = text(input.providerId, 100);
 	if (!providerId || !input.sessionId) return undefined;
-	const usage = input.usage; const costObject = asRecord(usage.cost);
+	const usage = input.usage;
+	const costObject = asRecord(usage.cost);
+	const promptTokenCount = usageNumber(usage.promptTokenCount ?? usage.prompt_token_count);
+	const cachedContentTokenCount = usageNumber(usage.cachedContentTokenCount ?? usage.cached_content_token_count ?? usage.cacheReadTokens ?? usage.cache_read_tokens);
+	const thoughtsTokenCount = usageNumber(usage.thoughtsTokenCount ?? usage.thoughts_token_count ?? usage.reasoningTokens ?? usage.reasoning_tokens ?? usage.reasoning);
+	const candidatesTokenCount = usageNumber(usage.candidatesTokenCount ?? usage.candidates_token_count)
+		|| Math.max(0, usageNumber(usage.outputTokens ?? usage.output_tokens) - thoughtsTokenCount);
+	const inputTokens = usageNumber(usage.inputTokens ?? usage.input_tokens)
+		|| Math.max(0, promptTokenCount - cachedContentTokenCount);
+	const outputTokens = usageNumber(usage.outputTokens ?? usage.output_tokens)
+		|| candidatesTokenCount + thoughtsTokenCount;
+	const totalTokenCount = usageNumber(usage.totalTokenCount ?? usage.total_tokens)
+		|| inputTokens + outputTokens + cachedContentTokenCount;
+	const toolUsePromptTokenCount = usageNumber(usage.toolUsePromptTokenCount ?? usage.tool_use_prompt_token_count ?? usage.toolUseTokens);
 	const estimatedCostUsd = finite(usage.estimatedCostUsd) ?? finite(costObject.total) ?? finite(costObject.estimated);
 	const providerReportedCostUsd = finite(usage.providerReportedCostUsd) ?? finite(costObject.providerReported);
-	const record: AiProviderUsageRecord = { id: randomUUID(), providerId, sessionId: input.sessionId, ...(text(input.model, 160) ? { model: text(input.model, 160) } : {}), inputTokens: usageNumber(usage.inputTokens ?? usage.input_tokens), outputTokens: usageNumber(usage.outputTokens ?? usage.output_tokens), cacheReadTokens: usageNumber(usage.cacheReadTokens ?? usage.cache_read_tokens), cacheWriteTokens: usageNumber(usage.cacheWriteTokens ?? usage.cache_write_tokens), ...(estimatedCostUsd !== undefined ? { estimatedCostUsd } : {}), ...(providerReportedCostUsd !== undefined ? { providerReportedCostUsd } : {}), createdAt: nowIso() };
+	const record: AiProviderUsageRecord = {
+		id: randomUUID(),
+		providerId,
+		sessionId: input.sessionId,
+		...(text(input.model, 160) ? { model: text(input.model, 160) } : {}),
+		inputTokens,
+		outputTokens,
+		...(promptTokenCount > 0 ? { promptTokenCount } : {}),
+		...(candidatesTokenCount > 0 ? { candidatesTokenCount } : {}),
+		thoughtsTokenCount,
+		cachedContentTokenCount,
+		toolUsePromptTokenCount,
+		totalTokenCount,
+		cacheReadTokens: cachedContentTokenCount || usageNumber(usage.cacheReadTokens ?? usage.cache_read_tokens),
+		cacheWriteTokens: usageNumber(usage.cacheWriteTokens ?? usage.cache_write_tokens),
+		...(estimatedCostUsd !== undefined ? { estimatedCostUsd } : {}),
+		...(providerReportedCostUsd !== undefined ? { providerReportedCostUsd } : {}),
+		...(text(input.keyId, 120) ? { keyId: text(input.keyId, 120) } : {}),
+		...(text(input.userId, 120) ? { userId: text(input.userId, 120) } : {}),
+		...(text(input.appId, 120) ? { appId: text(input.appId, 120) } : {}),
+		...(text(input.requestStartedAt, 64) ? { requestStartedAt: text(input.requestStartedAt, 64) } : {}),
+		...(input.latencyMs !== undefined && Number.isFinite(input.latencyMs) ? { latencyMs: Math.max(0, Math.round(input.latencyMs)) } : {}),
+		...(input.httpStatus !== undefined && Number.isFinite(input.httpStatus) ? { httpStatus: Math.round(input.httpStatus) } : {}),
+		...(text(input.errorCode, 120) ? { errorCode: text(input.errorCode, 120) } : {}),
+		createdAt: nowIso(),
+	};
 	const store = readUsage(workingDir); writeUsage(workingDir, [...store.records, record]); return record;
 }
 

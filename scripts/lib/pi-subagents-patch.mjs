@@ -25,6 +25,7 @@ export const PI_SUBAGENTS_PATCH_TARGETS = [
 	"src/agents/skills.ts",
 	"src/runs/foreground/chain-clarify.ts",
 	"src/runs/shared/pi-spawn.ts",
+	"src/runs/shared/child-launch.ts",
 	"src/runs/shared/model-fallback.ts",
 	"src/runs/foreground/execution.ts",
 	"src/runs/foreground/chain-execution.ts",
@@ -166,6 +167,30 @@ function applyReplacementGroups(source, groups) {
 	let patched = source;
 	for (const group of groups) {
 		patched = applyReplacementGroup(patched, group);
+	}
+	return patched;
+}
+
+function patchChildArtifactRouting(source) {
+	if (source.includes("AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION")) return source;
+	const extensionAnchor = "\tconst extensionPaths = toolPlan.extensionArgs.filter((extensionPath) => !isSubagentRuntimeExtensionPath(extensionPath));";
+	if (!source.includes(extensionAnchor)) return source;
+	let patched = source.replace(extensionAnchor, [
+		"\tconst projectArtifactGuard = process.env.AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION?.trim();",
+		"\tconst extensionPaths = [...new Set([",
+		"\t\t...toolPlan.extensionArgs.filter((extensionPath) => !isSubagentRuntimeExtensionPath(extensionPath)),",
+		"\t\t...(projectArtifactGuard ? [projectArtifactGuard] : []),",
+		"\t])];",
+	].join("\n"));
+	const envAnchor = "\tenv[PI_SUBAGENT_EXTENSION_BINDINGS_ENV] = encodeExtensionBindings(input.extensionBindings);";
+	if (patched.includes(envAnchor)) {
+		patched = patched.replace(envAnchor, [
+			envAnchor,
+			"\t// Preserve workbench project routing in detached child runners.",
+			"\tif (process.env.AXORBIS_PROJECT_ARTIFACT_ROOT) env.AXORBIS_PROJECT_ARTIFACT_ROOT = process.env.AXORBIS_PROJECT_ARTIFACT_ROOT;",
+			"\tif (process.env.AXORBIS_PROJECT_ID) env.AXORBIS_PROJECT_ID = process.env.AXORBIS_PROJECT_ID;",
+			"\tif (process.env.AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION) env.AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION = process.env.AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION;",
+		].join("\n"));
 	}
 	return patched;
 }
@@ -367,6 +392,47 @@ export function patchPiSubagentsSource(relativePath, source) {
 			]);
 			patched = patchCurrentPiSpawnResolver(patched);
 			break;
+		case "child-launch.ts": {
+			const marker = "function resolveAxorbisSubagentModel(model: string | undefined, childIndex: number): string | undefined {";
+			if (!patched.includes(marker)) {
+				const helper = [
+					marker,
+					"\tconst requestedModel = model ?? process.env.AXORBIS_SUBAGENT_PARENT_MODEL;",
+					"\tif (!requestedModel) return model;",
+					"\tconst raw = process.env.AXORBIS_SUBAGENT_MODEL_ALIASES;",
+					"\tif (!raw) return model;",
+					"\ttry {",
+					"\t\tconst aliases = JSON.parse(raw) as Record<string, unknown>;",
+					"\t\tconst base = requestedModel.replace(/:(off|minimal|low|medium|high|xhigh|max)$/, \"\");",
+					"\t\tconst candidates = aliases[requestedModel] ?? aliases[base];",
+					"\t\tif (!Array.isArray(candidates) || candidates.length === 0) return model;",
+					"\t\tconst selected = candidates[Math.abs(Number.isFinite(childIndex) ? childIndex : 0) % candidates.length];",
+					"\t\tif (typeof selected !== \"string\") return model;",
+					"\t\tconst suffix = model ? model.slice(base.length) : \"\";",
+					"\t\treturn `${selected}${suffix}`;",
+					"\t} catch {",
+					"\t\treturn model;",
+					"\t}",
+				"}",
+				"",
+				"/** Selects a provider alias backed by one of the configured subagent keys. */",
+				].join("\n");
+				const anchor = "export function buildInProcessChildLaunch(input: BuildInProcessChildLaunchInput): InProcessChildLaunch {";
+				if (patched.includes(anchor)) patched = patched.replace(anchor, `${helper}\n${anchor}`);
+			} else if (!patched.includes("AXORBIS_SUBAGENT_PARENT_MODEL")) {
+				patched = patched
+					.replace("\tif (!model) return model;", "\tconst requestedModel = model ?? process.env.AXORBIS_SUBAGENT_PARENT_MODEL;\n\tif (!requestedModel) return model;")
+					.replace("\t\tconst base = model.replace(/:(off|minimal|low|medium|high|xhigh|max)$/, \"\");", "\t\tconst base = requestedModel.replace(/:(off|minimal|low|medium|high|xhigh|max)$/, \"\");")
+					.replace("\t\tconst candidates = aliases[model] ?? aliases[base];", "\t\tconst candidates = aliases[requestedModel] ?? aliases[base];")
+					.replace("\t\tconst selected = candidates[Math.abs(childIndex) % candidates.length];", "\t\tconst selected = candidates[Math.abs(Number.isFinite(childIndex) ? childIndex : 0) % candidates.length];")
+					.replace("\t\tconst suffix = model.slice(base.length);", "\t\tconst suffix = model ? model.slice(base.length) : \"\";");
+			}
+			patched = patched.replace(/\n\t\tmodel: input\.model,/g, "\n\t\tmodel: resolveAxorbisSubagentModel(input.model, input.childIndex),");
+			patched = patched.replace(/\n\t\tmodel: input\.model,/g, "\n\t\tmodel: resolveAxorbisSubagentModel(input.model, input.childIndex),");
+			patched = patched.replace("...(input.model ? { model: input.model } : {}),", "...(input.model ? { model: resolveAxorbisSubagentModel(input.model, input.childIndex) } : {}),");
+			patched = patchChildArtifactRouting(patched);
+			break;
+		}
 		case "model-fallback.ts":
 			patched = applyReplacementGroup(patched, [[
 				[

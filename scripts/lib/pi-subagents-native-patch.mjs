@@ -163,7 +163,7 @@ export function patchPiSubagentsNativeSource(relativePath, source) {
 // Filled from deterministic transform output; supports idempotence after restart.
 const PATCHED_DIGESTS = {
 	"src/extension/tool-description.ts": "0aae0f9283bffcc5f676ad3f8d5e14d464c13491cc448c54ff9d9663080f52c3",
-	"src/runs/shared/model-fallback.ts": "3ea164f6a469af48005a84e71e20e82a7de3106fea6e09321f3762f95033dbfc",
+	"src/runs/shared/model-fallback.ts": "e2710316f2f04ad7d12223e1f15067cd88a66fe6e8f506551d1d75bc804b270e",
 	"src/runs/foreground/execution.ts": "644bea41f0029f18394119a43d473dd96519990f3f3f63b4bb0fe515f69340e7",
 	"src/runs/background/subagent-runner.ts": "067e54602851ef3f4f3aa60eece8a2af8722d500f70285b3f738d2f74e093bc7",
 	"src/runs/background/run-child-session.ts": "0aac5527266c135b640d236f76b1404c1533ee838ab2e5537bd2ca01efb3b4af"

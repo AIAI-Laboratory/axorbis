@@ -20,7 +20,7 @@ import {
 	updateWorkbenchChatSessionConfig,
 	type WorkbenchChatStreamEvent, type WorkbenchPromptExecutor, type WorkbenchViewportContext,
 } from "./chat.js";
-import { closeWorkbenchPiRpcClients, listFeynmanWorkbenchCommands } from "./chat-runtime.js";
+import { closeWorkbenchPiRpcClients, listFeynmanWorkbenchCommands, refreshWorkbenchPiRpcClients } from "./chat-runtime.js";
 import { normalizeWorkbenchArtifactAnnotationRects, removeWorkbenchArtifactAnnotation, upsertWorkbenchArtifactAnnotation } from "./annotations.js";
 import { updateWorkbenchArtifactAction, type WorkbenchArtifactAction } from "./artifact-actions.js";
 import { applyWorkbenchArtifactRefinement, MAX_ARTIFACT_EDIT_BYTES, readWorkbenchEditableArtifact, suggestWorkbenchArtifactRefinement, updateWorkbenchArtifactContent, type WorkbenchArtifactRefinementMode } from "./artifact-edit.js";
@@ -743,11 +743,13 @@ async function handleWorkbenchRequest(
 				const action = stringField(body, "action");
 				if (action === "upsert") {
 					const provider = upsertAiProvider(options.workingDir, settingsRecordField(body));
+					await refreshWorkbenchPiRpcClients(options.workingDir);
 					sendJson(response, 200, { provider, state: buildServedWorkbenchState(options) }, headers);
 					return;
 				}
 				if (action === "remove") {
 					removeAiProvider(options.workingDir, stringField(body, "id"));
+					await refreshWorkbenchPiRpcClients(options.workingDir);
 					sendJson(response, 200, { state: buildServedWorkbenchState(options) }, headers);
 					return;
 				}
@@ -755,6 +757,7 @@ async function handleWorkbenchRequest(
 					const role = stringField(body, "role");
 					if (role !== "inference" && role !== "usage_admin") throw new Error("Unknown AI provider credential role.");
 					const provider = removeAiProviderCredential(options.workingDir, stringField(body, "id"), role as AiCredentialRole);
+					await refreshWorkbenchPiRpcClients(options.workingDir);
 					sendJson(response, 200, { provider, state: buildServedWorkbenchState(options) }, headers);
 					return;
 				}
