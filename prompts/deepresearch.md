@@ -1,5 +1,5 @@
 ---
-description: Run a thorough, source-heavy investigation on a topic and produce a durable research brief with inline citations.
+description: Run a source-grounded investigation with reusable evidence, selective verification, and adversarial review.
 args: <topic>
 section: Research Workflows
 topLevelCli: true
@@ -8,8 +8,8 @@ topLevelCli: true
 
 Tool names are literal. Use only tools visible in the current tool set.
 
-- Search with `web_search`; do not call `search_web`, `google_search`, `google:search`, `search_google`, or `WebSearch`.
-- Fetch URLs with `fetch_content`; do not call bare `fetch`, `WebFetch`, `read_url_content`, or pass an array as `url`. Use `urls` for multiple URLs when the tool supports it.
+- Call `web_search` for search; do not call `search_web`, `google_search`, `google:search`, `search_google`, or `WebSearch`.
+- Fetch URLs with `fetch_content`; do not call bare `fetch`, `WebFetch`, `read_url_content`, or pass an array as `url`. Use `urls` for multiple URLs when the tool supports it. Inspect stored search/fetch content with `get_search_content` when visible.
 - Use visible Feynman alpha tools such as `alpha_search` when present. For shell access, call `feynman alpha ...`; do not call the user's bare global `alpha` binary.
 - To ask the user a question, write plain chat text and wait for the next user message. Do not call `ask_user_question`, `ask_user`, `ask_followup_question`, or `user_choice`.
 - Do not use `Task` as an agent dispatcher. Use only the visible `subagent` tool when it exists.
@@ -20,187 +20,189 @@ Run deep research for: $@
 This is an execution request, not a request to explain or implement the workflow instructions.
 Execute the workflow. Do not answer by describing the protocol, do not explain these instructions, and do not restate the protocol. Your first actions should be tool calls that create directories and write the plan artifact.
 
-## Required Artifacts
+## Run paths and required artifacts
 
-Derive a short slug from the topic: lowercase, hyphenated, no filler words, at most 5 words.
+Derive a lowercase hyphenated slug of at most five words. Let `RUN_ROOT` be the active workbench project artifact directory supplied with the request, otherwise `.axorbis/artifacts`.
 
-Before the user approves the plan, create only `.axorbis/artifacts/.plans/<slug>.md`. Do not create empty draft, final, or provenance placeholders. After approval, every run must leave these files on disk:
-- `.axorbis/artifacts/.plans/<slug>.md`
-- `.axorbis/artifacts/.drafts/<slug>-draft.md`
-- `.axorbis/artifacts/.drafts/<slug>-cited.md`
-- `.axorbis/artifacts/<slug>.md` or `.axorbis/artifacts/.papers/<slug>.md`
-- `.axorbis/artifacts/<slug>.provenance.md` or `.axorbis/artifacts/.papers/<slug>.provenance.md`
+Before approval, create only:
 
-After the user approves the plan, if any capability fails, continue in degraded mode and still write a blocked or partial final output and provenance sidecar. Never end with chat-only output after plan approval. Never end with only an explanation in chat after plan approval. Use `Verification: BLOCKED` when verification could not be completed.
+- `RUN_ROOT/.plans/<slug>.md`
 
-## Step 1: Plan
+After approval, every run must leave:
 
-Create `.axorbis/artifacts/.plans/<slug>.md` immediately. The plan must include:
-- Key questions
-- Evidence needed
-- Scale decision
-- Task ledger
-- Verification log
-- Decision log
+- `RUN_ROOT/.plans/<slug>.md`
+- `RUN_ROOT/.drafts/<slug>-evidence.jsonl`
+- `RUN_ROOT/.drafts/<slug>-claims.json`
+- `RUN_ROOT/.drafts/<slug>-draft.md`
+- `RUN_ROOT/.drafts/<slug>-cited.md`
+- `RUN_ROOT/.drafts/<slug>-verification.md`
+- `RUN_ROOT/.drafts/<slug>-metrics.json` when `feynman_deepresearch_metrics` is visible
+- `RUN_ROOT/<slug>.md` or `RUN_ROOT/.papers/<slug>.md`
+- the adjacent `<slug>.provenance.md`
 
-Make the scale decision before assigning owners in the plan. If the topic is a narrow "what is X" explainer, the plan must use lead-owned direct search tasks only; do not allocate researcher subagents in the task ledger.
+After plan approval, continue in degraded mode if a capability fails. Still write partial/blocked artifacts and use `Verification: BLOCKED`; never end with chat-only output. Never end with only an explanation in chat after plan approval.
 
-Also save the plan with `memory_remember` using key `deepresearch.<slug>.plan` if that tool is available. If it is not available, continue without it.
+## 1. Plan and approval
 
-After writing the plan, stop and ask for explicit confirmation before gathering evidence or creating any other artifacts. Summarize the plan briefly and ask:
+Write `RUN_ROOT/.plans/<slug>.md` with:
+
+- key questions and stable claim IDs (`C1`, `C2`, ...);
+- evidence needed and which claims need independent corroboration;
+- scale decision and estimated tool-call budget;
+- task ledger;
+- verification log;
+- decision log.
+
+Make the scale decision before assigning owners. Save the plan through `memory_remember` as `deepresearch.<slug>.plan` only when that tool is visible.
+
+Then stop and ask for explicit confirmation before gathering evidence:
 
 `Proceed with this deep research plan? Reply "yes" to continue, or tell me what to change.`
 
-Do not run searches, fetch sources, spawn subagents, draft, cite, review, or deliver final artifacts until the user confirms. If the user requests changes, update `.axorbis/artifacts/.plans/<slug>.md` first, then ask for confirmation again.
+Do not search, fetch, spawn subagents, draft, cite, review, or create placeholders before approval. If the user requests changes, update `RUN_ROOT/.plans/<slug>.md` first and ask again.
 
-## Step 2: Scale
+## 2. Scale conservatively
 
-Use direct search for:
-- Single fact or narrow question, including "what is X" explainers
-- Work you can answer with 3-10 tool calls
+Prefer lead-owned direct research when the task can reasonably be completed in approximately 15 tool calls or fewer.
 
-For "what is X" explainer topics, you MUST NOT spawn researcher subagents unless the user explicitly asks for comprehensive coverage, current landscape, benchmarks, or production deployment.
-Do not inflate a simple explainer into a multi-agent survey.
+- Narrow question, single fact, or simple explainer: no researchers.
+- Direct comparison: at most 2 researchers.
+- Broad survey: 2–3 researchers.
+- Complex multi-domain research: 3–4 researchers.
+- More than 4 researchers: only when the user explicitly requests exhaustive coverage.
 
-Use subagents only when decomposition clearly helps:
-- Direct comparison of 2-3 items: 2 `researcher` subagents
-- Broad survey or multi-faceted topic: 3-4 `researcher` subagents
-- Complex multi-domain research: 4-6 `researcher` subagents
+Do not spawn researchers by default. Source count is not a quality metric.
 
-## Step 3: Gather Evidence
+## 3. Discover, select, then fetch
 
-Use only tool names visible in the current tool set. For web search, call `web_search`; never call `google:search`, `google_search`, or `search_google`.
+Use this lifecycle:
 
-Avoid crash-prone PDF parsing in this workflow. Do not call `alpha_get_paper` and do not fetch `.pdf` URLs unless the user explicitly asks for PDF extraction. Prefer paper metadata, abstracts, HTML pages, official docs, and web snippets. If only a PDF exists, cite the PDF URL from search metadata and mark full-text PDF parsing as blocked instead of fetching it.
+`search → snippet/metadata triage → targeted fetch → evidence extraction → persist → continue from evidence`
 
-If direct search was chosen:
-- Skip researcher spawning entirely.
-- Search and fetch sources yourself.
-- Use multiple search terms/angles before drafting. Minimum: 3 distinct queries for direct-mode research, covering definition/history, mechanism/formula, and current usage/comparison when relevant.
-- Record the exact search terms used in `.axorbis/artifacts/.drafts/<slug>-research-direct.md`.
-- Write notes to `.axorbis/artifacts/.drafts/<slug>-research-direct.md`.
-- Continue to synthesis.
+Never use `fetch everything → retain page bodies → compact later`.
 
-If subagents were chosen:
-- Write a per-researcher brief first, such as `.axorbis/artifacts/.plans/<slug>-T1.md`.
-- Keep `subagent` tool-call JSON small and valid.
-- Do not place multi-paragraph instructions inside the `subagent` JSON.
-- Use only supported `subagent` keys. Do not add extra keys such as `artifacts` unless the tool schema explicitly exposes them.
-- Use one async `workflowScript` with `await runs.all(...)` for parallel evidence gathering. Each item needs a unique stable `key`, plus its agent, short task, and output path. Set `globalConcurrencyLimit: 4` on the outer call.
-- Read the ordered result array and record each child's `ok`, error, and returned output/artifact paths. Ordinary child failures are collected by `runs.all`; validation or infrastructure failure can still fail the workflow. Do not assume every output exists.
-- Do not name exact tool commands in subagent tasks unless those tool names are visible in the current tool set.
-- Prefer broad guidance such as "use paper search and web search"; if a PDF parser or paper fetch fails, the researcher must continue from metadata, abstracts, and web sources and mark PDF parsing as blocked.
+### Retrieval budget
 
-Example shape:
+For each researcher and for a lead-owned branch:
+
+- maximum 2 search rounds;
+- maximum 4 queries per round;
+- triage no more than 10 candidate results;
+- no full-content fetches during initial landscape discovery;
+- at most 4 selected full-source fetches by default;
+- approximately 6–8 accepted sources maximum;
+- stop after two consecutive search attempts add no materially new claim, contradiction, or independent evidence.
+
+Prefer metadata, titles, snippets, abstracts, and search summaries for discovery. Fetch full content only after selecting a source for a named unresolved claim. Avoid PDF parsing unless explicitly requested; prefer HTML, official docs, paper metadata, abstracts, and source-specific text. If only a PDF exists, record that limitation honestly.
+
+### Fetch once and persist compact evidence
+
+Normalize URLs and maintain a source registry in the plan. The same source should normally be fetched once per run. Before any fetch, check the merged ledger and all active task ledgers for the normalized URL.
+
+Immediately after a fetch, write the smallest sufficient evidence record. Use one JSON object per line:
+
+```json
+{"claim_id":"C1","source_id":"T1-S1","url":"https://example.org/source","title":"Source title","claim":"Claim supported or contradicted","support_excerpt":"Shortest sufficient excerpt","location":"section, page, or paragraph","source_type":"primary","confidence":"high","fetched_at":"2026-01-01T00:00:00Z","verification_status":"fetched"}
+```
+
+Preserve quantitative values, contradicting evidence, limitations, assumptions, and unresolved uncertainty. A metadata-only discovery is not evidence and must use `verification_status: "metadata-only"` without claiming source content.
+
+### Direct mode
+
+The lead performs discovery and targeted fetches itself, writes `RUN_ROOT/.drafts/<slug>-evidence-direct.jsonl`, then merges/deduplicates it into `<slug>-evidence.jsonl`. Do not spawn verifier or reviewer subagents for a simple direct-mode run; perform the evidence check and adversarial review yourself.
+
+### Delegated mode
+
+The lead first performs a cheap snippet/metadata landscape pass, deduplicates candidate URLs, and assigns non-overlapping claim IDs and sources to 2–4 researchers. Write a short brief per researcher at `RUN_ROOT/.plans/<slug>-T1.md`, etc. Each brief must include claim IDs, unresolved questions, already-fetched URLs, output path, and the hard budget.
+
+Use fresh child context so workers receive only their agent prompt, task brief, and explicitly named files. Use file-only output so evidence is not copied back into the lead transcript.
 
 ```json
 {
-  "workflowScript": "return await runs.all([{key:'web',agent:'researcher',task:'Read .axorbis/artifacts/.plans/<slug>-T1.md and write .axorbis/artifacts/.drafts/<slug>-research-web.md.',output:'.axorbis/artifacts/.drafts/<slug>-research-web.md'},{key:'papers',agent:'researcher',task:'Read .axorbis/artifacts/.plans/<slug>-T2.md and write .axorbis/artifacts/.drafts/<slug>-research-papers.md.',output:'.axorbis/artifacts/.drafts/<slug>-research-papers.md'}]);",
+  "workflowScript": "return await runs.all([{key:'T1',agent:'researcher',context:'fresh',task:'Read RUN_ROOT/.plans/<slug>-T1.md. Write only JSONL evidence to the configured output.',output:'RUN_ROOT/.drafts/<slug>-evidence-T1.jsonl',outputMode:'file-only',toolBudget:{soft:12,hard:18,block:['web_search','fetch_content','get_search_content']}},{key:'T2',agent:'researcher',context:'fresh',task:'Read RUN_ROOT/.plans/<slug>-T2.md. Write only JSONL evidence to the configured output.',output:'RUN_ROOT/.drafts/<slug>-evidence-T2.jsonl',outputMode:'file-only',toolBudget:{soft:12,hard:18,block:['web_search','fetch_content','get_search_content']}}]);",
   "async": true,
   "globalConcurrencyLimit": 4
 }
 ```
 
-Continue independent work after launch, then consume completion results before synthesis. Use the returned output references to locate managed child files; verify them on disk and copy them to the planned research paths when necessary. After evidence gathering, update the plan ledger and verification log. If research failed, record exactly what failed and proceed with a blocked or partial draft.
+Keep tool-call JSON small. Do not embed the briefs in it or add unsupported keys. Wait for completion results, record failures, verify files on disk, validate every JSONL line, then merge all task ledgers by normalized URL and source ID into `RUN_ROOT/.drafts/<slug>-evidence.jsonl`. Do not paste their contents into chat.
 
-## Step 4: Draft
+Once evidence is durable, continue from the ledger rather than rereading page bodies. If an explicit compaction action is available, compact old retrieval transcript before synthesis; otherwise do not spend calls trying to force compaction.
 
-Write the report yourself. Do not delegate synthesis.
+## 4. Build the claim-evidence map
 
-Save to `.axorbis/artifacts/.drafts/<slug>-draft.md`.
-
-Include:
-- Executive summary
-- Findings organized by question/theme
-- Evidence-backed caveats and disagreements
-- Open questions
-- No invented sources, results, figures, benchmarks, images, charts, or tables
-
-Before citation, sweep the draft:
-- Every critical claim, number, figure, table, or benchmark must map to a source URL, research note, raw artifact path, or command/script output.
-- Remove or downgrade unsupported claims.
-- Mark inferences as inferences.
-
-## Step 5: Cite
-
-If direct search/no researcher subagents was chosen:
-- Do citation yourself.
-- Verify reachable HTML/doc URLs with available fetch/search tools.
-- Copy or rewrite `.axorbis/artifacts/.drafts/<slug>-draft.md` to `.axorbis/artifacts/.drafts/<slug>-cited.md` with inline citations and a Sources section.
-- Do not spawn the `verifier` subagent for simple direct-search runs.
-
-If researcher subagents were used, run the `verifier` agent after the draft exists. This step is mandatory and must complete before any reviewer runs. Do not run the `verifier` and `reviewer` in the same parallel `subagent` call.
-
-Use this shape:
+Before drafting, write `RUN_ROOT/.drafts/<slug>-claims.json` as a compact array:
 
 ```json
-{
-  "agent": "verifier",
-  "async": true,
-  "task": "Add inline citations to .axorbis/artifacts/.drafts/<slug>-draft.md using the research files as source material. Verify every URL. Write the complete cited brief to .axorbis/artifacts/.drafts/<slug>-cited.md.",
-  "output": ".axorbis/artifacts/.drafts/<slug>-cited.md"
-}
+[
+  {
+    "claim_id": "C1",
+    "claim": "Proposed report claim",
+    "supporting_source_ids": ["T1-S1"],
+    "contradicting_source_ids": [],
+    "confidence": "high",
+    "limitations": [],
+    "status": "supported"
+  }
+]
 ```
 
-Wait for the verifier's completion result before review, not merely the async launch receipt. Verify on disk that `.axorbis/artifacts/.drafts/<slug>-cited.md` exists. If managed output routing wrote elsewhere, use the returned output reference to find the cited file and move or copy it to `.axorbis/artifacts/.drafts/<slug>-cited.md`.
+Every important factual or quantitative claim must map to inspected evidence. Important claims that require corroboration need independent support. Do not silently collapse conflicting sources. Use `unsupported`, `conflicted`, `inferred`, or `blocked` when accurate.
 
-## Step 6: Review
+Stop research when core questions have sufficient evidence, major claims have strong sources, corroboration exists where required, no important contradiction is unresolved, and two consecutive searches produce no material information gain.
 
-If direct search/no researcher subagents was chosen:
-- Review the cited draft yourself.
-- Write `.axorbis/artifacts/.drafts/<slug>-verification.md` with FATAL / MAJOR / MINOR findings and the checks performed.
-- Fix FATAL issues before delivery.
-- Do not spawn the `reviewer` subagent for simple direct-search runs.
+## 5. Synthesize from the map
 
-If researcher subagents were used, only after `.axorbis/artifacts/.drafts/<slug>-cited.md` exists, run the `reviewer` agent against it.
+Write `RUN_ROOT/.drafts/<slug>-draft.md` yourself. Do not delegate synthesis and do not reread raw sources by default. Use the claim map and evidence ledger.
 
-Use this shape:
+Include an executive summary, findings by question/theme, caveats/disagreements, and open questions. Before citation, remove or weaken anything not traceable to an evidence record or raw artifact. Mark inferences as inferences. Never invent sources, results, figures, tables, or benchmarks.
 
-```json
-{
-  "agent": "reviewer",
-  "async": true,
-  "task": "Verify .axorbis/artifacts/.drafts/<slug>-cited.md. Flag unsupported claims, logical gaps, single-source critical claims, and overstated confidence. This is a verification pass, not a peer review.",
-  "output": "<slug>-verification.md"
-}
-```
+## 6. Cite with evidence-first verification
 
-Consume the review completion result and locate its returned output before proceeding. If the reviewer flags FATAL issues, fix them before delivery and run one more review pass. Note MAJOR issues in Open Questions. Accept MINOR issues.
+For direct mode, add citations yourself and write `RUN_ROOT/.drafts/<slug>-cited.md`.
 
-When applying reviewer fixes, do not issue one giant `edit` tool call with many replacements. Use small localized edits only for 1-3 simple corrections. For section rewrites, table rewrites, or more than 3 substantive fixes, read the cited draft and write a corrected full file to `.axorbis/artifacts/.drafts/<slug>-revised.md` instead.
+For delegated mode, run the verifier only after the draft, merged evidence ledger, and claim map exist. Use `context: "fresh"` and `outputMode: "file-only"`. Give it only those paths and the cited output path.
 
-After applying reviewer, verifier, audit, or PI-style fixes, run an explicit on-disk verification before saying the fixes landed. Use `rg`, `grep`, `diff`, `wc`, `stat`, or a targeted read to prove the old unsupported wording is gone and the replacement wording exists. If an `edit` or `write` tool call fails, do not describe the fix as applied; record the failure in the plan/provenance, retry with a smaller edit or a full corrected file, and verify again. Provenance may only say an issue was fixed when this post-edit verification passed.
+The verifier must use stored evidence first and must not re-fetch every URL. Re-fetch only when the excerpt is insufficient, the claim is central or quantitatively important, sources conflict, the source was not fetched, provenance is uncertain, or independent verification is materially necessary. Any new search must target one failed claim. Unsupported claims must be removed, weakened, targeted for additional evidence, or marked uncertain.
 
-The final candidate is `.axorbis/artifacts/.drafts/<slug>-revised.md` if it exists; otherwise it is `.axorbis/artifacts/.drafts/<slug>-cited.md`.
+The verifier must complete before review. A launch receipt or intended filename is not completion; inspect the result and the output file.
 
-## Step 7: Deliver
+## 7. Selective adversarial review
 
-Copy the final candidate to:
-- `.axorbis/artifacts/.papers/<slug>.md` for paper-style drafts
-- `.axorbis/artifacts/<slug>.md` for everything else
+For direct mode, write `RUN_ROOT/.drafts/<slug>-verification.md` yourself.
 
-Write provenance next to it as `<slug>.provenance.md`:
+For delegated mode, run the reviewer only after the cited draft exists, with fresh context and file-only output. Give it the cited draft and claim map, not raw page bodies. The first pass uses the agent's medium reasoning default and focuses on central conclusions, logical leaps, contradictions, quantitative claims, weak evidence, methodological limitations, unsupported generalization, and missing counterevidence.
 
-```markdown
-# Provenance: [topic]
+If it finds a `MAJOR` or `FATAL` issue that genuinely requires deeper analysis, launch one targeted high-reasoning pass for that issue only. Fix FATAL issues before delivery. Note unresolved MAJOR issues in Open Questions; accept MINOR issues.
 
-- **Date:** [date]
-- **Rounds:** [number of research rounds]
-- **Sources consulted:** [count and/or list]
-- **Sources accepted:** [count and/or list]
-- **Sources rejected:** [dead, unverifiable, or removed]
-- **Verification:** [PASS / PASS WITH NOTES / BLOCKED]
-- **Plan:** .axorbis/artifacts/.plans/<slug>.md
-- **Research files:** [files used]
-```
+For 1–3 simple corrections use small edits. For larger rewrites write `RUN_ROOT/.drafts/<slug>-revised.md`. After any fix, verify on disk that unsupported wording is gone and corrected wording exists. Never claim a failed edit landed.
 
-Before responding, verify on disk that all required artifacts exist. If verification could not be completed, set `Verification: BLOCKED` or `PASS WITH NOTES` and list the missing checks.
+The final candidate is the revised file if it exists, otherwise the cited file.
 
-Before responding, also verify that any fixes claimed in the provenance are reflected in the final candidate. If a fix removed a phrase, number, source, or claim, run a targeted `rg`/`grep` check for the removed content and a second check for the corrected content. Do not claim "all patches applied", "all checks pass", or "fixed" unless these commands or reads succeed.
+## 8. Metrics and delivery
 
-Before responding, read the final candidate and give the user a useful synthesis rather than only an artifact-completion notice. The final response must include:
-- A concise `## Research synthesis` with the answer to the research question, 3–6 material findings, and important caveats or open questions. Keep every statement consistent with the final candidate and its verification status.
-- A `## Files` list containing the final report, provenance sidecar, plan, and supporting research/verification artifacts when present.
-- Every workspace artifact path wrapped in inline code, for example `` `.axorbis/artifacts/<slug>.md` ``. The workbench turns those paths into controls that open the individual file.
+If `feynman_deepresearch_metrics` is visible, call it after all workers finish with the slug, merged evidence path, and `RUN_ROOT/.drafts/<slug>-metrics.json`. The metrics artifact must distinguish:
 
-Do not respond only that the research completed, that artifacts exist, or that they were verified. If an artifact is blocked or partial, state that plainly in the synthesis and Files list.
+- provider-reported uncached input tokens;
+- output tokens;
+- cache-read and cache-write tokens;
+- prompt tokens (`input + cache read + cache write`);
+- cumulative tokens (`input + output + cache read + cache write`);
+- peak per-turn context;
+- searches and search queries;
+- full-content fetch calls and fetched URLs;
+- stored-content reuse;
+- researcher count;
+- verifier re-fetches;
+- accepted sources.
+
+Do not report peak context as cumulative use, cache reads as uncached input, or stored-content reuse as an HTTP cache hit. If the metrics tool is unavailable, record metrics as unavailable rather than guessing.
+
+Copy the final candidate to `RUN_ROOT/.papers/<slug>.md` for a paper-style draft or `RUN_ROOT/<slug>.md` otherwise. Write adjacent provenance containing date, research rounds, consulted/accepted/rejected sources, verification status, plan, evidence/claim/review paths, metrics path, failures, and unresolved checks.
+
+Before responding, verify every required artifact on disk and verify that any claimed fix is present. Read the final candidate and respond with:
+
+- `## Research synthesis`: the answer, 3–6 material findings, and important caveats consistent with verification status.
+- `## Files`: final report, provenance, plan, evidence ledger, claim map, verification, and metrics when present.
+
+Wrap every artifact path in inline code. State plainly when output is partial or blocked.

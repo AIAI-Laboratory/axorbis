@@ -9,7 +9,15 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
-- Renamed the researcher-first interface Axorbis and redesigned it around a restrained red (`#FF3B30`), white, and black interface. Home, Projects, and question workspaces now share simpler navigation; the question view offers in-place Ask and Deep research, streaming activity, sources, claims, and an on-demand evidence inspector. The former `/app-shell/` URL opens this new interface. Feynman's existing sessions, research runtime, tools, files, and provenance remain the backing services.
+## v0.3.50 - 2026-09-20
+
+### Axorbis research workspace
+
+- The question composer now exposes all 12 supported research modes: Ask, Deep Research, Literature Review, Summarize, Compare, Audit, Recipe, Replicate, Auto Research, Watch, Draft, and Review. Workflow modes use the current research question automatically, while composer text is treated as an optional additional instruction.
+- Project pages show all linked files grouped by research question. Files open only when selected, in a focused reader that leaves the project and question context visible. Markdown replies and artifacts now render as formatted content with a roomier layout.
+- Settings can save optional Exa, Perplexity, or Gemini web-search credentials and connect alphaXiv through browser sign-in. AI provider keys remain encrypted locally and are never returned to the browser.
+- Deep Research approval, continuation, completion summaries, local artifact links, release announcements, and desktop startup handling are more reliable. The standalone desktop release embeds the verified local runtime.
+- Axorbis is now the sole web and desktop interface, backed by the existing Feynman sessions, research runtime, tools, files, and provenance.
 
 ## v0.3.49 - 2026-09-06
 

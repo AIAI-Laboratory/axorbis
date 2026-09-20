@@ -544,19 +544,19 @@ test("deepresearch asks for confirmation after planning before execution", () =>
 
 	assert.match(deepResearchPrompt, /stop and ask for explicit confirmation before gathering evidence/i);
 	assert.match(deepResearchPrompt, /Proceed with this deep research plan\?/i);
-	assert.match(deepResearchPrompt, /Do not run searches, fetch sources, spawn subagents, draft, cite, review, or deliver final artifacts until the user confirms/i);
-	assert.match(deepResearchPrompt, /update `outputs\/\.plans\/<slug>\.md` first, then ask for confirmation again/i);
+	assert.match(deepResearchPrompt, /Do not search, fetch, spawn subagents, draft, cite, review, or create placeholders before approval/i);
+	assert.match(deepResearchPrompt, /update `RUN_ROOT\/\.plans\/<slug>\.md` first and ask again/i);
 });
 
 test("deepresearch citation and review stages are sequential and avoid giant edits", () => {
 	const deepResearchPrompt = readFileSync(join(repoRoot, "prompts", "deepresearch.md"), "utf8");
 
-	assert.match(deepResearchPrompt, /must complete before any reviewer runs/i);
-	assert.match(deepResearchPrompt, /Do not run the `verifier` and `reviewer` in the same parallel `subagent` call/i);
-	assert.match(deepResearchPrompt, /outputs\/\.drafts\/<slug>-cited\.md/i);
-	assert.match(deepResearchPrompt, /do not issue one giant `edit` tool call/i);
-	assert.match(deepResearchPrompt, /outputs\/\.drafts\/<slug>-revised\.md/i);
-	assert.match(deepResearchPrompt, /The final candidate is `outputs\/\.drafts\/<slug>-revised\.md` if it exists/i);
+	assert.match(deepResearchPrompt, /verifier must complete before review/i);
+	assert.match(deepResearchPrompt, /run the reviewer only after the cited draft exists/i);
+	assert.match(deepResearchPrompt, /RUN_ROOT\/\.drafts\/<slug>-cited\.md/i);
+	assert.match(deepResearchPrompt, /For 1–3 simple corrections use small edits/i);
+	assert.match(deepResearchPrompt, /RUN_ROOT\/\.drafts\/<slug>-revised\.md/i);
+	assert.match(deepResearchPrompt, /The final candidate is the revised file if it exists/i);
 });
 
 test("deepresearch requires post-edit verification before claiming fixes landed", () => {
@@ -567,11 +567,9 @@ test("deepresearch requires post-edit verification before claiming fixes landed"
 	assert.match(systemPrompt, /write\/edit tool succeeded/i);
 	assert.match(systemPrompt, /old unsupported content is gone and the corrected content exists/i);
 
-	assert.match(deepResearchPrompt, /After applying reviewer, verifier, audit, or PI-style fixes/i);
-	assert.match(deepResearchPrompt, /run an explicit on-disk verification/i);
-	assert.match(deepResearchPrompt, /If an `edit` or `write` tool call fails, do not describe the fix as applied/i);
-	assert.match(deepResearchPrompt, /Provenance may only say an issue was fixed when this post-edit verification passed/i);
-	assert.match(deepResearchPrompt, /verify that any fixes claimed in the provenance are reflected in the final candidate/i);
+	assert.match(deepResearchPrompt, /After any fix, verify on disk that unsupported wording is gone and corrected wording exists/i);
+	assert.match(deepResearchPrompt, /Never claim a failed edit landed/i);
+	assert.match(deepResearchPrompt, /verify that any claimed fix is present/i);
 });
 
 test("lit workflow recovers from plan edit JSON failures", () => {
@@ -586,26 +584,24 @@ test("lit workflow recovers from plan edit JSON failures", () => {
 test("deepresearch keeps subagent tool calls small and skips subagents for narrow explainers", () => {
 	const deepResearchPrompt = readFileSync(join(repoRoot, "prompts", "deepresearch.md"), "utf8");
 
-	assert.match(deepResearchPrompt, /including "what is X" explainers/i);
+	assert.match(deepResearchPrompt, /Narrow question, single fact, or simple explainer: no researchers/i);
 	assert.match(deepResearchPrompt, /Make the scale decision before assigning owners/i);
-	assert.match(deepResearchPrompt, /lead-owned direct search tasks only/i);
-	assert.match(deepResearchPrompt, /MUST NOT spawn researcher subagents/i);
-	assert.match(deepResearchPrompt, /Do not inflate a simple explainer into a multi-agent survey/i);
-	assert.match(deepResearchPrompt, /Skip researcher spawning entirely/i);
-	assert.match(deepResearchPrompt, /Use multiple search terms\/angles before drafting/i);
-	assert.match(deepResearchPrompt, /Minimum: 3 distinct queries/i);
-	assert.match(deepResearchPrompt, /Record the exact search terms used/i);
-	assert.match(deepResearchPrompt, /outputs\/\.drafts\/<slug>-research-direct\.md/i);
-	assert.match(deepResearchPrompt, /outputs\/\.drafts\/<slug>-verification\.md/i);
-	assert.match(deepResearchPrompt, /Do not call `alpha_get_paper`/i);
-	assert.match(deepResearchPrompt, /do not fetch `\.pdf` URLs/i);
-	assert.match(deepResearchPrompt, /Keep `subagent` tool-call JSON small and valid/i);
-	assert.match(deepResearchPrompt, /write a per-researcher brief first/i);
-	assert.match(deepResearchPrompt, /Do not place multi-paragraph instructions inside the `subagent` JSON/i);
-	assert.match(deepResearchPrompt, /Do not add extra keys such as `artifacts`/i);
-	assert.match(deepResearchPrompt, /one async `workflowScript` with `await runs\.all\(\.\.\.\)`/i);
-	assert.match(deepResearchPrompt, /Ordinary child failures are collected by `runs\.all`/);
-	assert.match(deepResearchPrompt, /consume completion results before synthesis/i);
+	assert.match(deepResearchPrompt, /approximately 15 tool calls or fewer/i);
+	assert.match(deepResearchPrompt, /Direct comparison: at most 2 researchers/i);
+	assert.match(deepResearchPrompt, /Broad survey: 2–3 researchers/i);
+	assert.match(deepResearchPrompt, /Complex multi-domain research: 3–4 researchers/i);
+	assert.match(deepResearchPrompt, /More than 4 researchers: only when the user explicitly requests exhaustive coverage/i);
+	assert.match(deepResearchPrompt, /maximum 2 search rounds/i);
+	assert.match(deepResearchPrompt, /maximum 4 queries per round/i);
+	assert.match(deepResearchPrompt, /triage no more than 10 candidate results/i);
+	assert.match(deepResearchPrompt, /at most 4 selected full-source fetches/i);
+	assert.match(deepResearchPrompt, /approximately 6–8 accepted sources maximum/i);
+	assert.match(deepResearchPrompt, /two consecutive search attempts add no materially new claim/i);
+	assert.match(deepResearchPrompt, /writes `RUN_ROOT\/\.drafts\/<slug>-evidence-direct\.jsonl`/i);
+	assert.match(deepResearchPrompt, /RUN_ROOT\/\.drafts\/<slug>-verification\.md/i);
+	assert.match(deepResearchPrompt, /Keep tool-call JSON small/i);
+	assert.match(deepResearchPrompt, /Write a short brief per researcher/i);
+	assert.match(deepResearchPrompt, /Wait for completion results/i);
 	const examples = [...deepResearchPrompt.matchAll(/```json\n([\s\S]*?)\n```/g)]
 		.map((match) => JSON.parse(match[1]!));
 	const parallel = examples.find((example) => typeof example.workflowScript === "string");
@@ -613,13 +609,39 @@ test("deepresearch keeps subagent tool calls small and skips subagents for narro
 	assert.equal(parallel.async, true);
 	assert.equal(parallel.globalConcurrencyLimit, 4);
 	assert.match(parallel.workflowScript, /return await runs\.all\(/);
-	assert.match(parallel.workflowScript, /outputs\/\.plans\/<slug>-T1\.md/);
+	assert.match(parallel.workflowScript, /RUN_ROOT\/\.plans\/<slug>-T1\.md/);
+	assert.match(parallel.workflowScript, /context:'fresh'/);
+	assert.match(parallel.workflowScript, /outputMode:'file-only'/);
+	assert.match(parallel.workflowScript, /toolBudget/);
 	for (const example of examples) {
 		for (const removed of ["tasks", "chain", "failFast", "concurrency"]) {
 			assert.equal(example[removed], undefined, `obsolete subagent argument: ${removed}`);
 		}
 	}
-	assert.match(deepResearchPrompt, /if a PDF parser or paper fetch fails/i);
+	assert.match(deepResearchPrompt, /Avoid PDF parsing unless explicitly requested/i);
+});
+
+test("deepresearch reuses structured evidence and measures each stage", () => {
+	const deepResearchPrompt = readFileSync(join(repoRoot, "prompts", "deepresearch.md"), "utf8");
+	const researcherPrompt = readFileSync(join(repoRoot, ".axorbis", "agents", "researcher.md"), "utf8");
+	const verifierPrompt = readFileSync(join(repoRoot, ".axorbis", "agents", "verifier.md"), "utf8");
+	const reviewerPrompt = readFileSync(join(repoRoot, ".axorbis", "agents", "reviewer.md"), "utf8");
+
+	assert.match(deepResearchPrompt, /<slug>-evidence\.jsonl/);
+	assert.match(deepResearchPrompt, /<slug>-claims\.json/);
+	assert.match(deepResearchPrompt, /same source should normally be fetched once per run/i);
+	assert.match(deepResearchPrompt, /must not re-fetch every URL/i);
+	assert.match(deepResearchPrompt, /provider-reported uncached input tokens/i);
+	assert.match(deepResearchPrompt, /peak per-turn context/i);
+	assert.match(researcherPrompt, /thinking: medium/);
+	assert.match(researcherPrompt, /inheritProjectContext: false/);
+	assert.match(researcherPrompt, /includeContent: false/);
+	assert.doesNotMatch(researcherPrompt, /Minimum viable output: evidence table with ≥5/i);
+	assert.match(verifierPrompt, /thinking: low/);
+	assert.match(verifierPrompt, /Do not blindly re-fetch cited URLs/i);
+	assert.match(reviewerPrompt, /thinking: medium/);
+	assert.match(reviewerPrompt, /Deep Research evidence-audit mode/);
+	assert.match(reviewerPrompt, /MAJOR.*FATAL.*high-reasoning pass/is);
 });
 
 test("review workflow must write final artifacts instead of stopping after planning", () => {

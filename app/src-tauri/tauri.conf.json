@@ -1,6 +1,6 @@
 {
   "productName": "Axorbis",
-  "version": "0.3.49",
+  "version": "0.3.50",
   "identifier": "com.axorbis.feynman",
   "build": {
     "beforeDevCommand": {

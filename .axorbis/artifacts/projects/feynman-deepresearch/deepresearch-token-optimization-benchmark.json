@@ -1,0 +1,104 @@
+{
+  "schema": "feynman.deepresearchPolicyBenchmark.v1",
+  "generatedAt": "2026-09-20T16:46:54.404Z",
+  "status": "contract-only",
+  "interpretation": "The benchmark uses the same representative task shapes to compare deterministic workflow bounds. It does not infer provider token savings or quality from caps.",
+  "oldPolicy": {
+    "searchRounds": null,
+    "queriesPerRound": null,
+    "fullFetchesPerWorker": null,
+    "acceptedSourcesPerWorker": null,
+    "verifierRefetch": "every cited URL",
+    "reviewerInput": "cited draft; raw-source reuse not specified",
+    "reasoning": {
+      "researcher": "high",
+      "verifier": "medium",
+      "reviewer": "high"
+    },
+    "context": "implicit/default"
+  },
+  "newPolicy": {
+    "searchRounds": 2,
+    "queriesPerRound": 4,
+    "fullFetchesPerWorker": 4,
+    "acceptedSourcesPerWorker": 8,
+    "verifierRefetch": "selective only",
+    "reviewerInput": "cited draft + claim map",
+    "reasoning": {
+      "researcher": "medium",
+      "verifier": "low",
+      "reviewer": "medium"
+    },
+    "context": "fresh, inheritance disabled"
+  },
+  "rows": [
+    {
+      "task": "narrow explainer",
+      "oldResearchers": 0,
+      "newResearchers": 0,
+      "researcherReductionPercent": 0,
+      "oldSearchBudget": "unbounded",
+      "newSearchBudget": "2 rounds × 4 queries",
+      "oldFetchBudget": "unbounded",
+      "newFetchBudget": "4/worker",
+      "oldAcceptedSourceBudget": "unbounded",
+      "newAcceptedSourceBudget": "~8/worker"
+    },
+    {
+      "task": "direct comparison",
+      "oldResearchers": 2,
+      "newResearchers": 2,
+      "researcherReductionPercent": 0,
+      "oldSearchBudget": "unbounded",
+      "newSearchBudget": "2 rounds × 4 queries",
+      "oldFetchBudget": "unbounded",
+      "newFetchBudget": "4/worker",
+      "oldAcceptedSourceBudget": "unbounded",
+      "newAcceptedSourceBudget": "~8/worker"
+    },
+    {
+      "task": "broad survey",
+      "oldResearchers": 4,
+      "newResearchers": 3,
+      "researcherReductionPercent": 25,
+      "oldSearchBudget": "unbounded",
+      "newSearchBudget": "2 rounds × 4 queries",
+      "oldFetchBudget": "unbounded",
+      "newFetchBudget": "4/worker",
+      "oldAcceptedSourceBudget": "unbounded",
+      "newAcceptedSourceBudget": "~8/worker"
+    },
+    {
+      "task": "complex multi-domain",
+      "oldResearchers": 6,
+      "newResearchers": 4,
+      "researcherReductionPercent": 33,
+      "oldSearchBudget": "unbounded",
+      "newSearchBudget": "2 rounds × 4 queries",
+      "oldFetchBudget": "unbounded",
+      "newFetchBudget": "4/worker",
+      "oldAcceptedSourceBudget": "unbounded",
+      "newAcceptedSourceBudget": "~8/worker"
+    }
+  ],
+  "qualityGuards": [
+    "structured claim-level JSONL evidence is required before synthesis",
+    "metadata-only discovery cannot support a content claim",
+    "verifier runs before reviewer and re-fetches only central/insufficient/conflicted/uncertain claims",
+    "reviewer receives the cited draft and claim map first, with targeted escalation only for MAJOR/FATAL issues",
+    "two no-gain searches stop retrieval"
+  ],
+  "tokenAblation": {
+    "status": "not-measured",
+    "why": "No clean old/new provider runs were available in the current environment; the retained historical run mixed retries and quota failures. Run the same task prompts before and after with feynman_deepresearch_metrics to populate token deltas.",
+    "metricsRequired": [
+      "inputTokens",
+      "outputTokens",
+      "cacheReadTokens",
+      "cacheWriteTokens",
+      "promptTokens",
+      "cumulativeTokens",
+      "peakContextTokens"
+    ]
+  }
+}

@@ -349,7 +349,7 @@ function validateBundle(bundleRoot, target) {
 	if (!existsSync(betterSqlitePackageJson)) {
 		logStep("skipping better-sqlite3 validation; sqlite-backed packages are not bundled for this Node runtime");
 	} else {
-		run(nodeExecutable, ["-e", "require('./app/.feynman/npm/node_modules/better-sqlite3'); console.log('better-sqlite3 ok')"], {
+		run(nodeExecutable, ["-e", "require('./app/.axorbis/npm/node_modules/better-sqlite3'); console.log('better-sqlite3 ok')"], {
 			cwd: bundleRoot,
 		});
 	}

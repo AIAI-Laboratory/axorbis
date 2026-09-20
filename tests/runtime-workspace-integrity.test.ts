@@ -432,7 +432,7 @@ test("authenticated archive snapshots never reread a replaced path", async () =>
 test("runtime input hashes are independent of the checkout root", () => {
 	const left = mkdtempSync(join(tmpdir(), "feynman-runtime-input-left-"));
 	const right = mkdtempSync(join(tmpdir(), "feynman-runtime-input-right-"));
-	const inputFiles = ["scripts/prepare-runtime-workspace.mjs", ".feynman/settings.json"];
+	const inputFiles = ["scripts/prepare-runtime-workspace.mjs", ".axorbis/settings.json"];
 	for (const root of [left, right]) {
 		mkdirSync(join(root, "scripts"), { recursive: true });
 		mkdirSync(join(root, ".axorbis"), { recursive: true });

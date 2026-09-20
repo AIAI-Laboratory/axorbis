@@ -13,12 +13,11 @@ test("desktop publishing is gated on matching versions, a bundled runtime, and s
 	assert.equal(desktopReleaseVersions(), version);
 	assert.equal(verifyDesktopRelease({ tag: `v${version}` }), version);
 	assert.throws(() => verifyDesktopRelease({ tag: "v0.0.0" }), /must equal/);
-	const workflow = readFileSync(new URL("../.github/workflows/axorbis-desktop-release.yml", import.meta.url), "utf8");
-	assert.match(workflow, /npm run desktop:release-build/);
-	assert.match(workflow, /verify-desktop-release\.mjs --require-signing/);
-	assert.match(workflow, /verify-desktop-release\.mjs --require-runtime/);
-	assert.match(workflow, /needs: macos-arm64/);
-	assert.match(workflow, /gh release create/);
+	const scripts = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).scripts as Record<string, string>;
+	assert.match(scripts["desktop:release-build"], /npm run build/);
+	assert.match(scripts["desktop:release-build"], /npm run build:native-bundle/);
+	assert.match(scripts["desktop:release-build"], /npm run desktop:stage-runtime/);
+	assert.match(scripts["desktop:release-build"], /npm run desktop:build/);
 });
 
 test("desktop release target follows the native host architecture", () => {

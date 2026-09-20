@@ -354,7 +354,7 @@ function prepareWorkspace(packageSpecs, refreshRuntimeLock) {
 
 	if (!existsSync(runtimePackageLockPath)) {
 		throw new Error(
-			"Missing .feynman/runtime-package-lock.json. Run npm run runtime:lock to create it.",
+			"Missing .axorbis/runtime-package-lock.json. Run npm run runtime:lock to create it.",
 		);
 	}
 	cpSync(runtimePackageLockPath, resolve(workspaceDir, "package-lock.json"));

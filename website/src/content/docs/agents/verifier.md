@@ -9,7 +9,7 @@ The verifier agent is responsible for fact-checking and validation. It cross-ref
 
 ## What it does
 
-The verifier performs targeted checks on specific claims rather than reading documents end-to-end like the reviewer. It takes a claim and its cited source, retrieves the source, and determines whether the source actually supports the claim as stated. This catches misattributions (citing a paper that says something different), overstatements (claiming a stronger result than the source reports), and fabrications (claims with no basis in the cited source).
+The verifier performs targeted checks on specific claims. In Deep Research it starts with the stored evidence ledger and claim map. A source is re-fetched only when its excerpt is insufficient, the claim is central or quantitative, sources conflict, provenance is uncertain, or the source was never inspected.
 
 When checking code against papers, the verifier examines specific implementation details: hyperparameters, architecture configurations, training procedures, and evaluation metrics. It compares the paper's description to the code's actual behavior, noting discrepancies with exact file paths and line numbers.
 
@@ -17,11 +17,11 @@ When checking code against papers, the verifier examines specific implementation
 
 The verifier follows a systematic process for each claim it checks:
 
-1. **Retrieve the source** -- Fetch the cited paper, article, or code file
-2. **Locate the relevant section** -- Find where the source addresses the claim
-3. **Compare** -- Check whether the source supports the claim as stated
-4. **Classify** -- Mark the claim as verified, unsupported, overstated, or contradicted
-5. **Document** -- Record the evidence with source locations and short quotes only when needed
+1. **Read stored evidence** -- Start with the excerpt, location, provenance, and verification status
+2. **Compare** -- Check whether that evidence supports the exact wording
+3. **Escalate selectively** -- Re-fetch or search only for a specific failed, central, quantitative, or conflicting claim
+4. **Classify** -- Mark the claim as verified, unsupported, overstated, contradicted, or uncertain
+5. **Repair** -- Remove, weaken, target for additional evidence, or explicitly qualify unsupported wording
 
 This process is traceable. Completed verification notes identify the specific passage or code that was checked, making it easy to audit the verifier's work.
 

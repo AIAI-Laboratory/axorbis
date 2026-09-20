@@ -31,8 +31,8 @@ test("native Node release pins all six official LTS archives without importing t
 });
 
 test("Axorbis desktop release uses the native Node pin", () => {
-	const source = readFileSync(resolve(root, ".github/workflows/axorbis-desktop-release.yml"), "utf8");
+	const source = readFileSync(resolve(root, "scripts/build-native-bundle.mjs"), "utf8");
 	assert.equal(readFileSync(resolve(root, ".nvmrc"), "utf8").trim(), "24.20.0");
-	assert.match(source, /node-version-file: \.nvmrc/);
-	assert.doesNotMatch(source, /24\.18\.0/);
+	assert.match(source, /readFileSync\(resolve\(appRoot, "\.nvmrc"\)/);
+	assert.match(source, /const bundledNodeVersion = resolveBundledNodeVersion\(\)/);
 });

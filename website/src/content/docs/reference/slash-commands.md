@@ -11,7 +11,7 @@ Slash commands are available inside the Feynman REPL. They map to research workf
 
 | Command | Description |
 | --- | --- |
-| `/deepresearch <topic>` | Run a thorough, source-heavy investigation and produce a research brief with inline citations |
+| `/deepresearch <topic>` | Run a bounded, source-grounded investigation and produce a cited brief from reusable claim-level evidence |
 | `/lit <topic-or-lab>` | Run a structured literature review with consensus, disagreements, open questions, and lab/PI corpus mode |
 | `/review <artifact>` | Run an internal research review with severity-graded feedback and inline annotations |
 | `/audit <item>` | Compare a paper's claims against its public codebase for mismatches and reproducibility risks |

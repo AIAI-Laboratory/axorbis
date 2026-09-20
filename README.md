@@ -102,7 +102,7 @@ The composer maps each research mode to a workflow in the Feynman engine.
 | Mode                  | Command         | Purpose                                                    |
 | --------------------- | --------------- | ---------------------------------------------------------- |
 | **Ask**               | Free-form       | Ask questions about the current research problem           |
-| **Deep Research**     | `/deepresearch` | Run source-heavy investigation with inline citations       |
+| **Deep Research**     | `/deepresearch` | Build a cited brief from reusable claim-level evidence      |
 | **Literature Review** | `/lit`          | Review papers by topic, lab, PI, or author                 |
 | **Summarize**         | `/summarize`    | Summarize a paper, report, or research artifact            |
 | **Compare**           | `/compare`      | Build a source-grounded comparison matrix                  |
@@ -116,7 +116,7 @@ The composer maps each research mode to a workflow in the Feynman engine.
 
 When a workflow other than **Ask** is selected, pressing Enter uses the current research question as the workflow input.
 
-Typing in the composer overrides that default.
+Typing in the composer adds an instruction for that workflow; it does not replace the current research question.
 
 ---
 
@@ -128,7 +128,7 @@ A typical path is:
 
 **Question → Sources → Claims → Evidence → Analysis → Output**
 
-Different workflows operate on that shared research context. Deep Research can gather evidence, Compare can structure it, Audit can challenge claims, Replicate can turn findings into an execution plan, and Draft can transform the resulting work into a polished artifact.
+Different workflows operate on that shared research context. Deep Research now keeps a compact evidence ledger and claim map so source content is fetched once where possible, reused for synthesis and verification, and measured by stage. Compare can structure evidence, Audit can challenge claims, Replicate can turn findings into an execution plan, and Draft can transform the resulting work into a polished artifact.
 
 This shared workspace is the core of Axorbis: research modes are different tools working over the same body of evidence.
 

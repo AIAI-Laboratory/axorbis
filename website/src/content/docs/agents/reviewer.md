@@ -11,6 +11,8 @@ The reviewer agent evaluates documents, papers, and research artifacts with inte
 
 For review tasks, the reviewer reads the available artifact and evaluates it against standard academic criteria. It checks whether claims are supported by the presented evidence, whether the methodology is sound and described in sufficient detail, whether the experimental design controls for confounds, and whether the writing is clear and complete.
 
+In Deep Research evidence-audit mode, the reviewer reads the cited draft and compact claim map first. It concentrates on central conclusions, quantitative claims, contradictions, weak evidence, logical leaps, methodological limitations, unsupported generalization, and missing counterevidence. The routine pass uses medium reasoning; only a specific MAJOR or FATAL issue warrants a targeted high-reasoning follow-up.
+
 Each piece of feedback is assigned a severity level. **Critical** issues are fundamental problems that undermine the document's validity, such as a statistical test applied incorrectly or a conclusion not supported by the data. **Major** issues are significant problems that should be addressed, like missing baselines or inadequate ablation studies. **Minor** issues are suggestions for improvement, and **nits** are stylistic or formatting comments.
 
 ## Evaluation criteria

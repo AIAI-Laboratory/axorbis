@@ -4,6 +4,18 @@ Workspace lab notebook for long-running or resumable research work.
 
 Use this file to track chronology, not release notes. Keep entries short, factual, and operational.
 
+### 2026-09-20 — deepresearch-token-optimization
+
+- Objective: Reduce repeated `/deepresearch` context ingestion while preserving source traceability and adversarial verification.
+- Changed: Added bounded scale/retrieval/stopping rules, fresh economical child contexts, compact evidence JSONL and claim maps, evidence-first selective verifier/reviewer passes, and a sanitized per-stage metrics tool. Updated the workflow prompt, bundled agents, public docs, tests, and the deterministic contract benchmark.
+- Verified: Typecheck, metrics/settings/native-subagent tests, and the four-task contract benchmark pass. State: `unverified` for the 40–60% provider-token target until a clean old/new A/B run is available; unrelated pre-existing content-policy failures remain in `lit`, `review`, and preview path assertions. Next: run the same task prompts against both workflow revisions and compare metrics plus quality outcomes.
+
+### 2026-09-20 — desktop-dmg-0.3.50
+
+- Objective: Package the updated Axorbis research workspace as a new macOS Apple Silicon DMG.
+- Changed: Bumped npm, Cargo, and Tauri release identity to `0.3.50`; documented the 12-mode composer and current-question workflow behavior; repaired native release staging after the `.feynman` → `.axorbis` package-directory migration; restored the reviewed LiteParse libc metadata required by the cross-platform lock contract; and aligned the manual desktop-release regression with this repository's actual release surface.
+- Verified: Typecheck, production web build, desktop release/runtime preflight, LiteParse contract tests (`6/6`), native package verification, and production audit (`0` vulnerabilities) pass. Tauri built the arm64 app; the first styled-DMG attempt was blocked by Finder retaining its temporary volume, so the same Tauri DMG script completed with Finder styling disabled. `hdiutil verify` reports a valid image; the app and bundled runtime both report `0.3.50` for `darwin-arm64`. Final DMG SHA-256: `e1b47060fd77beaa00301dd5aa142544e9e3146d8bcd11b9861e5fcda576b57b`. The local artifact is ad-hoc signed, not Apple Developer ID signed or notarized.
+
 ### 2026-09-19 — project-files-markdown
 
 - Objective: Make research replies and plans readable and expose the files counted on project pages.
