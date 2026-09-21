@@ -6,10 +6,21 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 ## Unreleased
 
+No unreleased changes.
+
+## v0.3.51 - 2026-09-21
+
+### Research question lifecycle
+
+- Projects now support archiving a research question without deleting its sessions, files, or evidence, plus an explicit permanent-delete action for removing the question and its linked local research state.
+
 ### Deep Research efficiency and auditability
 
 - Deep Research now defaults to lead-owned search for work that fits roughly 15 tool calls, caps delegated surveys at two to four researchers unless exhaustive coverage is explicitly requested, and gives every research branch bounded search, triage, fetch, and information-gain stopping rules.
 - Researchers persist compact JSONL evidence records and a merged claim-evidence map. Verifiers reuse those records and re-fetch only central, quantitative, conflicting, insufficient, or provenance-uncertain claims; reviewers run a selective evidence audit at medium reasoning before any targeted high-reasoning escalation.
+- Added a runtime policy router with hard search, fetch, and researcher gates, plus context compaction for older retrieval results. The public `/deepresearch` command and artifact paths remain unchanged while routine runs avoid replaying raw source bodies through later stages.
+- Capped Deep Research synthesis at one bounded writer child for comparison and survey runs; direct runs stay lead-owned. The writer reads only compact claim/evidence files, cannot search or fetch, and uses the configured subagent key pool so repeated lead `write` events no longer masquerade as writer calls or consume the pool's main key.
+- Subagents now refuse to fall back to the Main Agent credential. Detached child environments remove the main provider key, and a child launch fails closed when no configured subagent-key alias is available; Settings now states that subagent keys are required and isolated.
 - Added a local, sanitized per-stage metrics artifact for lead, researcher, verifier, and reviewer token classes, peak context, searches, full fetches, stored-content reuse, researcher count, verifier re-fetches, and accepted sources. Cache reads, uncached input, cumulative usage, and peak context remain distinct.
 
 ## v0.3.50 - 2026-09-20
@@ -20,7 +31,7 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 - Project pages now expose the full linked research-file list instead of only a file count. Files are grouped by their research question and remain collapsed into that overview until selected; selection opens a focused side reader without replacing the question page. Search, type filters, previews, download, display-name editing, starring, and recoverable move-to-trash remain available. Deep Research completion replies now synthesize the final report's findings and caveats, including a useful fallback when a model ends after writing files. Artifact paths in replies open their local file preview whether emitted as inline code or plain text. Research replies and Markdown artifact previews render headings, lists, code, links, and tables in a roomier layout; raw provider errors are summarized when possible.
 - **Settings → Search and alphaXiv** can save an optional Exa, Perplexity, or Gemini web-search API key and launch alphaXiv browser sign-in; the same controls are available during desktop first launch. alphaXiv is correctly presented as OAuth-based rather than accepting a non-functional static key.
 - Deep Research now shows the saved plan and approval prompt when a model finishes its planning tools without a final text reply. Replies such as `yes` continue the approved plan even when Deep Research mode is selected; other empty replies are reported as errors, and new runs no longer create empty report placeholders before plan approval.
-- Added **Settings → AI Providers** for Anthropic, OpenAI, Gemini, OpenRouter, LM Studio, Ollama, LiteLLM, and custom HTTP-compatible providers. The workbench separates inference and optional admin/usage credentials, stores entered values in an encrypted local vault, never returns raw keys to the browser, and can test configured connections. Hosted providers now retain token/cost usage with optional monthly and session budget warnings or hard stops; local providers use resource limits instead of billing quotas.
+- Added **Settings → AI Providers** for Anthropic, OpenAI, Gemini, OpenRouter, LM Studio, Ollama, LiteLLM, and custom HTTP-compatible providers. The workbench separates inference and optional admin/usage credentials, stores entered values in an encrypted local vault, never returns raw keys to the browser, and can test configured connections. Hosted providers retain token/cost usage and usage reporting; local providers use resource limits instead of billing quotas.
 - Organized the source into `engine/`, `web/`, and `app/`, with long-form product documents indexed under `docs/`. Removed duplicate image assets and the old Ketcher sketcher integration that no longer had a usable interface. Source checkouts should use the updated desktop and web paths; installed research data is unchanged.
 - Axorbis now checks the latest stable GitHub Release at startup and every six hours, announcing a newer version inside the workspace with a dismissible download link. Offline checks remain non-blocking. Added a fail-closed standalone desktop release build that stages the verified Feynman runtime and rejects broken or external runtime links. This repository currently builds its desktop installer manually and does not silently install updates.
 - Removed the previous workbench interface, its specialized viewer components, styles, and UI-only helpers. Axorbis is now the only built web entry and the only interface opened by the desktop host. Existing `/app-shell/` links continue to resolve to Axorbis; the research backend and its data remain intact.

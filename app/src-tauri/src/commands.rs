@@ -240,7 +240,10 @@ fn spawn_backend(app: &AppHandle, workspace: PathBuf) -> Result<(Child, String),
     // `tauri dev` starts Vite before this local backend. Production never receives
     // this variable, so its bundled workbench remains self-contained.
     #[cfg(debug_assertions)]
-    command.env("AXORBIS_WORKBENCH_DEV_URL", "http://127.0.0.1:1420/app-shell/");
+    command.env(
+        "AXORBIS_WORKBENCH_DEV_URL",
+        "http://127.0.0.1:1420/app-shell/",
+    );
 
     let mut child = command
         .spawn()

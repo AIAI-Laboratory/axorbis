@@ -498,6 +498,32 @@ test("patchPiSubagentsSource is idempotent", () => {
 	assert.equal(twice, once);
 });
 
+test("patchPiSubagentsSource forwards the subagent key pool to detached children", () => {
+	const input = [
+		"function childProcessEnv(input, toolPlan) {",
+		"\tconst env = {};",
+		"\tenv[PI_SUBAGENT_EXTENSION_BINDINGS_ENV] = encodeExtensionBindings(input.extensionBindings);",
+		"\treturn env;",
+		"}",
+		"",
+		"\tconst extensionPaths = toolPlan.extensionArgs.filter((extensionPath) => !isSubagentRuntimeExtensionPath(extensionPath));",
+	].join("\n");
+	const patched = patchPiSubagentsSource("src/runs/shared/child-launch.ts", input);
+	assert.match(patched, /AXORBIS_SUBAGENT_PARENT_MODEL/);
+	assert.match(patched, /AXORBIS_SUBAGENT_MODEL_ALIASES/);
+	assert.match(patched, /key\.startsWith\("AXORBIS_SUBAGENT_KEY_"\)/);
+	assert.match(patched, /AXORBIS_SUBAGENT_INFERENCE_ENV_VAR/);
+	assert.equal(patchPiSubagentsSource("src/runs/shared/child-launch.ts", patched), patched);
+
+	const alreadyAliased = input.replace(
+		"\tenv[PI_SUBAGENT_EXTENSION_BINDINGS_ENV] = encodeExtensionBindings(input.extensionBindings);",
+		"\tenv[PI_SUBAGENT_EXTENSION_BINDINGS_ENV] = encodeExtensionBindings(input.extensionBindings);\n\tif (process.env.AXORBIS_SUBAGENT_MODEL_ALIASES) env.AXORBIS_SUBAGENT_MODEL_ALIASES = process.env.AXORBIS_SUBAGENT_MODEL_ALIASES;",
+	);
+	const guardedAliased = patchPiSubagentsSource("src/runs/shared/child-launch.ts", alreadyAliased);
+	assert.match(guardedAliased, /AXORBIS_SUBAGENT_INFERENCE_ENV_VAR/);
+	assert.equal(patchPiSubagentsSource("src/runs/shared/child-launch.ts", patched), patched);
+});
+
 test("patchPiSubagentsSource rewrites old agents.ts discovery paths transactionally", () => {
 	const input = [
 		'import * as fs from "node:fs";',

@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { handlePiJsonLine } from "../engine/workbench/chat-runtime.js";
-import { resolveEmptyWorkbenchReply } from "../engine/workbench/empty-chat-reply.js";
+import { handlePiJsonLine, isTerminalProviderErrorEvent } from "../engine/workbench/chat-runtime.js";
+import { enrichDeepResearchCompletion, resolveEmptyWorkbenchReply } from "../engine/workbench/empty-chat-reply.js";
 
 test("workbench Pi RPC stream accepts Pi 0.84 delta-only message updates", async () => {
 	const toolEvents = new Map();
@@ -46,6 +46,18 @@ test("workbench Pi RPC stream preserves provider errors from assistant messages"
 		status: "error",
 		toolEvents: [],
 	}]);
+});
+
+test("provider message_end errors are terminal so a failed 503 turn cannot stay active", () => {
+	assert.equal(isTerminalProviderErrorEvent({
+		type: "message_end",
+		message: { role: "assistant", stopReason: "error", errorMessage: "503 UNAVAILABLE" },
+	}), true);
+	assert.equal(isTerminalProviderErrorEvent({
+		type: "message_end",
+		message: { role: "assistant", stopReason: "stop" },
+	}), false);
+	assert.equal(isTerminalProviderErrorEvent({ type: "agent_end" }), false);
 });
 
 test("empty deep research turn returns its plan and asks for approval", () => {
@@ -93,4 +105,20 @@ test("empty completed deep research turn returns a synthesis and openable artifa
 	assert.match(reply.content, /Temporal relations improve/);
 	assert.match(reply.content, /`outputs\/temporal-kg\.md`/);
 	assert.match(reply.content, /`outputs\/temporal-kg\.provenance\.md`/);
+});
+
+test("successful deep research completion surfaces the report summary in chat", () => {
+	const content = "Deep research for Temporal KG has been completed successfully. All required artifacts have been written.";
+	const enriched = enrichDeepResearchCompletion("yes", content, [{
+		id: "write-report",
+		label: "write",
+		toolName: "write",
+		status: "complete",
+		input: JSON.stringify({
+			path: ".axorbis/artifacts/projects/temporal-kg/temporal-kg.md",
+			content: "# Temporal KG\n\n## Executive Summary\n\nTemporal relations separate events that share entities but occur at different times.\n\n## Findings\n\n- Detail",
+		}),
+	}]);
+	assert.match(enriched, /## Research synthesis/);
+	assert.match(enriched, /Temporal relations separate events/);
 });

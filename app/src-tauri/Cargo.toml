@@ -1,6 +1,6 @@
 [package]
 name = "axorbis-desktop"
-version = "0.3.50"
+version = "0.3.51"
 description = "Native desktop launcher for the Axorbis research workspace"
 authors = ["Advait Paliwal"]
 edition = "2021"

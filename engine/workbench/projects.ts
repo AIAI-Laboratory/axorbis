@@ -9,6 +9,7 @@ export type WorkbenchStoredProject = {
 	name: string;
 	description: string;
 	agentContext: string;
+	archivedRunSlugs: string[];
 	createdAt: string;
 	updatedAt: string;
 };
@@ -45,6 +46,15 @@ function normalizeLongText(value: unknown, maxLength: number): string {
 	return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
+function normalizeRunSlugs(value: unknown): string[] {
+	if (!Array.isArray(value)) return [];
+	return Array.from(new Set(value.flatMap((item) => {
+		if (typeof item !== "string") return [];
+		const slug = item.trim();
+		return /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(slug) ? [slug] : [];
+	})));
+}
+
 function emptyFile(): StoredProjectsFile {
 	return {
 		schema: PROJECTS_SCHEMA,
@@ -65,6 +75,7 @@ function normalizeProject(value: unknown): WorkbenchStoredProject | undefined {
 		name,
 		description: normalizeText(record.description, 240),
 		agentContext: normalizeLongText(record.agentContext, 8_000),
+		archivedRunSlugs: normalizeRunSlugs(record.archivedRunSlugs),
 		createdAt,
 		updatedAt: typeof record.updatedAt === "string" ? record.updatedAt : createdAt,
 	};
@@ -129,6 +140,7 @@ export function createWorkbenchProject(
 		name,
 		description: normalizeText(input.description, 240),
 		agentContext: normalizeLongText(input.agentContext, 8_000),
+		archivedRunSlugs: [],
 		createdAt: timestamp,
 		updatedAt: timestamp,
 	};
@@ -139,4 +151,38 @@ export function createWorkbenchProject(
 	};
 	writeProjectsFile(workingDir, nextFile);
 	return project;
+}
+
+export function setWorkbenchQuestionArchived(
+	workingDir: string,
+	input: { projectId: string; runSlug: string; archived: boolean },
+): WorkbenchStoredProject {
+	const projectId = normalizeText(input.projectId, 128);
+	const runSlug = normalizeText(input.runSlug, 128);
+	if (!projectId || !runSlug || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(runSlug)) throw new Error("A valid research question is required.");
+	const file = readProjectsFile(workingDir);
+	const project = file.projects.find((item) => item.id === projectId);
+	if (!project) throw new Error("Project was not found.");
+	const archived = new Set(project.archivedRunSlugs);
+	if (input.archived) archived.add(runSlug); else archived.delete(runSlug);
+	const updated = { ...project, archivedRunSlugs: [...archived], updatedAt: nowIso() };
+	writeProjectsFile(workingDir, {
+		schema: PROJECTS_SCHEMA,
+		projects: file.projects.map((item) => item.id === projectId ? updated : item),
+		updatedAt: nowIso(),
+	});
+	return updated;
+}
+
+export function removeWorkbenchQuestionFromProject(workingDir: string, projectId: string, runSlug: string): void {
+	const file = readProjectsFile(workingDir);
+	const project = file.projects.find((item) => item.id === projectId);
+	if (!project) return;
+	const archivedRunSlugs = project.archivedRunSlugs.filter((slug) => slug !== runSlug);
+	if (archivedRunSlugs.length === project.archivedRunSlugs.length) return;
+	writeProjectsFile(workingDir, {
+		schema: PROJECTS_SCHEMA,
+		projects: file.projects.map((item) => item.id === projectId ? { ...item, archivedRunSlugs, updatedAt: nowIso() } : item),
+		updatedAt: nowIso(),
+	});
 }

@@ -167,6 +167,7 @@ export type WorkbenchProject = {
 	memoryEnabled: boolean;
 	agentContext?: string;
 	runSlugs: string[];
+	archivedRunSlugs?: string[];
 	artifactPaths: string[];
 	sessionCount: number;
 	artifactCount: number;

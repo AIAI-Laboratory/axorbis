@@ -11,7 +11,7 @@ The researcher is the primary information-gathering agent in Feynman. It searche
 
 The researcher agent handles bounded source discovery and extraction. By default it uses at most two search rounds, four queries per round, ten triaged candidates, and four selected full-source fetches. It stops early when repeated searches add no material claim, contradiction, or independent evidence.
 
-For broad Deep Research tasks, workflow prompts can spawn multiple researcher agents in parallel through one bounded async `workflowScript`. The lead performs cheap landscape discovery first, deduplicates candidate URLs, and assigns non-overlapping claim IDs and sources. Children use fresh context and return file-only evidence references.
+For broad Deep Research tasks, the runtime policy router can spawn multiple researcher agents in parallel through one bounded async `workflowScript`, while applying a small hard ceiling. The lead performs cheap landscape discovery first, deduplicates candidate URLs, and assigns non-overlapping claim IDs and sources. Children use fresh context and return file-only evidence references; the runtime blocks excess researcher, search, and fetch calls.
 
 ## Search strategy
 

@@ -172,24 +172,34 @@ function applyReplacementGroups(source, groups) {
 }
 
 function patchChildArtifactRouting(source) {
-	if (source.includes("AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION")) return source;
+	let patched = source;
 	const extensionAnchor = "\tconst extensionPaths = toolPlan.extensionArgs.filter((extensionPath) => !isSubagentRuntimeExtensionPath(extensionPath));";
-	if (!source.includes(extensionAnchor)) return source;
-	let patched = source.replace(extensionAnchor, [
-		"\tconst projectArtifactGuard = process.env.AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION?.trim();",
-		"\tconst extensionPaths = [...new Set([",
-		"\t\t...toolPlan.extensionArgs.filter((extensionPath) => !isSubagentRuntimeExtensionPath(extensionPath)),",
-		"\t\t...(projectArtifactGuard ? [projectArtifactGuard] : []),",
-		"\t])];",
-	].join("\n"));
+	if (!patched.includes("AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION")) {
+		if (!patched.includes(extensionAnchor)) return source;
+		patched = patched.replace(extensionAnchor, [
+			"\tconst projectArtifactGuard = process.env.AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION?.trim();",
+			"\tconst extensionPaths = [...new Set([",
+			"\t\t...toolPlan.extensionArgs.filter((extensionPath) => !isSubagentRuntimeExtensionPath(extensionPath)),",
+			"\t\t...(projectArtifactGuard ? [projectArtifactGuard] : []),",
+			"\t])];",
+		].join("\n"));
+	}
 	const envAnchor = "\tenv[PI_SUBAGENT_EXTENSION_BINDINGS_ENV] = encodeExtensionBindings(input.extensionBindings);";
-	if (patched.includes(envAnchor)) {
-		patched = patched.replace(envAnchor, [
-			envAnchor,
-			"\t// Preserve workbench project routing in detached child runners.",
+	if (patched.includes(envAnchor) && !patched.includes("AXORBIS_SUBAGENT_INFERENCE_ENV_VAR")) {
+			patched = patched.replace(envAnchor, [
+				envAnchor,
+				"\t// Never let a detached subagent inherit the lead's provider credential.",
+				"\tconst mainInferenceEnvVar = process.env.AXORBIS_SUBAGENT_INFERENCE_ENV_VAR?.trim();",
+				"\tif (mainInferenceEnvVar) env[mainInferenceEnvVar] = undefined;",
+				"\tif (process.env.AXORBIS_SUBAGENT_POOL_REQUIRED === \"1\") env.AXORBIS_SUBAGENT_POOL_REQUIRED = \"1\";",
+				"\t// Preserve workbench project routing in detached child runners.",
 			"\tif (process.env.AXORBIS_PROJECT_ARTIFACT_ROOT) env.AXORBIS_PROJECT_ARTIFACT_ROOT = process.env.AXORBIS_PROJECT_ARTIFACT_ROOT;",
 			"\tif (process.env.AXORBIS_PROJECT_ID) env.AXORBIS_PROJECT_ID = process.env.AXORBIS_PROJECT_ID;",
 			"\tif (process.env.AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION) env.AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION = process.env.AXORBIS_PROJECT_ARTIFACT_GUARD_EXTENSION;",
+			"\t// Preserve the provider alias pool and its credentials for detached subagents.",
+			"\tfor (const [key, value] of Object.entries(process.env)) {",
+			"\t\tif ((key === \"AXORBIS_SUBAGENT_PARENT_MODEL\" || key === \"AXORBIS_SUBAGENT_MODEL_ALIASES\" || key.startsWith(\"AXORBIS_SUBAGENT_KEY_\")) && value !== undefined) env[key] = value;",
+			"\t}",
 		].join("\n"));
 	}
 	return patched;
@@ -395,22 +405,34 @@ export function patchPiSubagentsSource(relativePath, source) {
 		case "child-launch.ts": {
 			const marker = "function resolveAxorbisSubagentModel(model: string | undefined, childIndex: number): string | undefined {";
 			if (!patched.includes(marker)) {
-				const helper = [
+			const helper = [
 					marker,
 					"\tconst requestedModel = model ?? process.env.AXORBIS_SUBAGENT_PARENT_MODEL;",
 					"\tif (!requestedModel) return model;",
+					"\tconst isAxorbisAlias = requestedModel.startsWith(\"axorbis_subagent_\");",
+					"\tconst poolRequired = process.env.AXORBIS_SUBAGENT_POOL_REQUIRED === \"1\";",
 					"\tconst raw = process.env.AXORBIS_SUBAGENT_MODEL_ALIASES;",
-					"\tif (!raw) return model;",
+					"\tif (!raw) {",
+					"\t\tif (poolRequired && !isAxorbisAlias) throw new Error(\"Subagent key pool is required; refusing to use the main provider key. Configure at least one subagent key.\");",
+					"\t\treturn model;",
+					"\t}",
 					"\ttry {",
 					"\t\tconst aliases = JSON.parse(raw) as Record<string, unknown>;",
 					"\t\tconst base = requestedModel.replace(/:(off|minimal|low|medium|high|xhigh|max)$/, \"\");",
 					"\t\tconst candidates = aliases[requestedModel] ?? aliases[base];",
-					"\t\tif (!Array.isArray(candidates) || candidates.length === 0) return model;",
+					"\t\tif (!Array.isArray(candidates) || candidates.length === 0) {",
+					"\t\t\tif (poolRequired && !isAxorbisAlias) throw new Error(\"Subagent model is not mapped to a configured key-pool alias; refusing to use the main provider key.\");",
+					"\t\t\treturn model;",
+					"\t\t}",
 					"\t\tconst selected = candidates[Math.abs(Number.isFinite(childIndex) ? childIndex : 0) % candidates.length];",
-					"\t\tif (typeof selected !== \"string\") return model;",
+					"\t\tif (typeof selected !== \"string\") {",
+					"\t\t\tif (poolRequired && !isAxorbisAlias) throw new Error(\"Subagent key pool selected an invalid alias; refusing to use the main provider key.\");",
+					"\t\t\treturn model;",
+					"\t\t}",
 					"\t\tconst suffix = model ? model.slice(base.length) : \"\";",
 					"\t\treturn `${selected}${suffix}`;",
-					"\t} catch {",
+					"\t} catch (error) {",
+					"\t\tif (poolRequired && !isAxorbisAlias) throw error;",
 					"\t\treturn model;",
 					"\t}",
 				"}",
@@ -426,6 +448,45 @@ export function patchPiSubagentsSource(relativePath, source) {
 					.replace("\t\tconst candidates = aliases[model] ?? aliases[base];", "\t\tconst candidates = aliases[requestedModel] ?? aliases[base];")
 					.replace("\t\tconst selected = candidates[Math.abs(childIndex) % candidates.length];", "\t\tconst selected = candidates[Math.abs(Number.isFinite(childIndex) ? childIndex : 0) % candidates.length];")
 					.replace("\t\tconst suffix = model.slice(base.length);", "\t\tconst suffix = model ? model.slice(base.length) : \"\";");
+			}
+			if (patched.includes(marker) && !patched.includes("AXORBIS_SUBAGENT_POOL_REQUIRED")) {
+				patched = patched
+					.replace(
+						"\tconst requestedModel = model ?? process.env.AXORBIS_SUBAGENT_PARENT_MODEL;",
+						[
+							"\tconst requestedModel = model ?? process.env.AXORBIS_SUBAGENT_PARENT_MODEL;",
+							"\tconst isAxorbisAlias = requestedModel?.startsWith(\"axorbis_subagent_\") ?? false;",
+							"\tconst poolRequired = process.env.AXORBIS_SUBAGENT_POOL_REQUIRED === \"1\";",
+						].join("\n"),
+					)
+					.replace(
+						"\tif (!raw) return model;",
+						[
+							"\tif (!raw) {",
+							"\t\tif (poolRequired && !isAxorbisAlias) throw new Error(\"Subagent key pool is required; refusing to use the main provider key. Configure at least one subagent key.\");",
+							"\t\treturn model;",
+							"\t}",
+						].join("\n"),
+					)
+					.replace(
+						"\t\tif (!Array.isArray(candidates) || candidates.length === 0) return model;",
+						[
+							"\t\tif (!Array.isArray(candidates) || candidates.length === 0) {",
+							"\t\t\tif (poolRequired && !isAxorbisAlias) throw new Error(\"Subagent model is not mapped to a configured key-pool alias; refusing to use the main provider key.\");",
+							"\t\t\treturn model;",
+							"\t\t}",
+						].join("\n"),
+					)
+					.replace(
+						"\t\tif (typeof selected !== \"string\") return model;",
+						[
+							"\t\tif (typeof selected !== \"string\") {",
+							"\t\t\tif (poolRequired && !isAxorbisAlias) throw new Error(\"Subagent key pool selected an invalid alias; refusing to use the main provider key.\");",
+							"\t\t\treturn model;",
+							"\t\t}",
+						].join("\n"),
+					)
+					.replace("\t} catch {", "\t} catch (error) {\n\t\tif (poolRequired && !isAxorbisAlias) throw error;");
 			}
 			patched = patched.replace(/\n\t\tmodel: input\.model,/g, "\n\t\tmodel: resolveAxorbisSubagentModel(input.model, input.childIndex),");
 			patched = patched.replace(/\n\t\tmodel: input\.model,/g, "\n\t\tmodel: resolveAxorbisSubagentModel(input.model, input.childIndex),");

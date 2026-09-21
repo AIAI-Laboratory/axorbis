@@ -12,6 +12,7 @@ export type { WorkbenchNoteRecord } from "../../../engine/workbench/memory.js";
 export type {
 	WorkbenchChatMessage,
 	WorkbenchChatSession,
+	WorkbenchChatUsage,
 	WorkbenchToolEvent,
 } from "../../../engine/workbench/chat.js";
 

@@ -1,6 +1,6 @@
 {
   "name": "@advaitpaliwal/feynman",
-  "version": "0.3.50",
+  "version": "0.3.51",
   "description": "Research-first CLI agent built on Pi and alphaXiv",
   "license": "MIT",
   "type": "module",

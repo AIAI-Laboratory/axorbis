@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from "node:crypto";
-import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 import { upsertProviderConfig } from "../model/models-json.js";
 import { migratedWorkbenchDataPath } from "./data-root.js";
@@ -30,6 +30,15 @@ export type AiProviderSubagentKey = {
 	id: string;
 	configured: true;
 	updatedAt?: string;
+	usage?: AiProviderSubagentUsageSummary;
+};
+
+export type AiProviderSubagentUsageSummary = {
+	inputTokens: number;
+	outputTokens: number;
+	totalTokenCount: number;
+	requestCount: number;
+	lastRequestAt?: string;
 };
 
 export type AiProviderPublic = {
@@ -83,6 +92,8 @@ export type AiProviderUsageRecord = {
 	latencyMs?: number;
 	httpStatus?: number;
 	errorCode?: string;
+	/** Stable source id used to make artifact reconciliation idempotent. */
+	sourceId?: string;
 	createdAt: string;
 };
 
@@ -299,6 +310,13 @@ function readUsage(workingDir: string): UsageStore {
 }
 function writeUsage(workingDir: string, records: AiProviderUsageRecord[]): void { writeJson(usagePath(workingDir), { schema: USAGE_SCHEMA, records: records.slice(-MAX_USAGE_RECORDS) }); }
 
+export function listAiProviderUsageRecords(workingDir: string, sessionId?: string): AiProviderUsageRecord[] {
+	return readUsage(workingDir).records
+		.filter((record) => !sessionId || record.sessionId === sessionId)
+		.slice()
+		.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+}
+
 function parseStored(record: Record<string, unknown>): AiProviderStored {
 	const providerKind = kind(record.kind);
 	const def = definition(providerKind);
@@ -385,7 +403,26 @@ export function summarizeAiProviderUsage(provider: AiProviderStored, records: Ai
 	};
 }
 
-function publicProvider(provider: AiProviderStored, records: AiProviderUsageRecord[], sessionId?: string): AiProviderPublic { return { ...provider, usage: summarizeAiProviderUsage(provider, records, sessionId) }; }
+function summarizeSubagentKeyUsage(keyId: string, keyIndex: number, records: AiProviderUsageRecord[]): AiProviderSubagentUsageSummary {
+	const keyRecords = records.filter((record) => record.keyId === keyId || record.keyId === `subagent-${keyIndex}`);
+	const sum = (getter: (record: AiProviderUsageRecord) => number) => keyRecords.reduce((total, record) => total + getter(record), 0);
+	const last = keyRecords.slice().sort((a, b) => a.createdAt.localeCompare(b.createdAt)).at(-1);
+	return {
+		inputTokens: sum((record) => recordNumber(record.inputTokens)),
+		outputTokens: sum((record) => recordNumber(record.outputTokens)),
+		totalTokenCount: sum((record) => recordNumber(record.totalTokenCount)),
+		requestCount: keyRecords.length,
+		...(last ? { lastRequestAt: last.createdAt } : {}),
+	};
+}
+
+function publicProvider(provider: AiProviderStored, records: AiProviderUsageRecord[], sessionId?: string): AiProviderPublic {
+	return {
+		...provider,
+		subagentKeys: provider.subagentKeys.map((key, index) => ({ ...key, usage: summarizeSubagentKeyUsage(key.id, index, records) })),
+		usage: summarizeAiProviderUsage(provider, records, sessionId),
+	};
+}
 
 export function listAiProviders(workingDir: string, sessionId?: string): AiProviderPublic[] {
 	const records = readUsage(workingDir).records;
@@ -479,6 +516,10 @@ export function getAiProviderRuntimeEnv(workingDir: string, explicitModel?: stri
 	const env: NodeJS.ProcessEnv = {
 		FEYNMAN_AI_PROVIDER_ID: provider.id,
 		FEYNMAN_AI_PROVIDER_ENDPOINT: provider.endpoint,
+		...(definition(provider.kind).inferenceEnvVar ? {
+			AXORBIS_SUBAGENT_POOL_REQUIRED: "1",
+			AXORBIS_SUBAGENT_INFERENCE_ENV_VAR: definition(provider.kind).inferenceEnvVar,
+		} : {}),
 		...(explicitModel ? { AXORBIS_SUBAGENT_PARENT_MODEL: explicitModel } : {}),
 	};
 	const envVar = definition(provider.kind).inferenceEnvVar;
@@ -598,19 +639,26 @@ export function recordAiProviderUsage(workingDir: string, input: {
 	latencyMs?: number;
 	httpStatus?: number;
 	errorCode?: string;
+	sourceId?: string;
 }): AiProviderUsageRecord | undefined {
 	const providerId = text(input.providerId, 100);
 	if (!providerId || !input.sessionId) return undefined;
+	const sourceId = text(input.sourceId, 512);
+	const existingStore = readUsage(workingDir);
+	if (sourceId) {
+		const existing = existingStore.records.find((record) => record.sourceId === sourceId);
+		if (existing) return existing;
+	}
 	const usage = input.usage;
 	const costObject = asRecord(usage.cost);
 	const promptTokenCount = usageNumber(usage.promptTokenCount ?? usage.prompt_token_count);
-	const cachedContentTokenCount = usageNumber(usage.cachedContentTokenCount ?? usage.cached_content_token_count ?? usage.cacheReadTokens ?? usage.cache_read_tokens);
+	const cachedContentTokenCount = usageNumber(usage.cachedContentTokenCount ?? usage.cached_content_token_count ?? usage.cacheReadTokens ?? usage.cache_read_tokens ?? usage.cacheRead);
 	const thoughtsTokenCount = usageNumber(usage.thoughtsTokenCount ?? usage.thoughts_token_count ?? usage.reasoningTokens ?? usage.reasoning_tokens ?? usage.reasoning);
 	const candidatesTokenCount = usageNumber(usage.candidatesTokenCount ?? usage.candidates_token_count)
 		|| Math.max(0, usageNumber(usage.outputTokens ?? usage.output_tokens) - thoughtsTokenCount);
-	const inputTokens = usageNumber(usage.inputTokens ?? usage.input_tokens)
+	const inputTokens = usageNumber(usage.inputTokens ?? usage.input_tokens ?? usage.input)
 		|| Math.max(0, promptTokenCount - cachedContentTokenCount);
-	const outputTokens = usageNumber(usage.outputTokens ?? usage.output_tokens)
+	const outputTokens = usageNumber(usage.outputTokens ?? usage.output_tokens ?? usage.output)
 		|| candidatesTokenCount + thoughtsTokenCount;
 	const totalTokenCount = usageNumber(usage.totalTokenCount ?? usage.total_tokens)
 		|| inputTokens + outputTokens + cachedContentTokenCount;
@@ -631,7 +679,7 @@ export function recordAiProviderUsage(workingDir: string, input: {
 		toolUsePromptTokenCount,
 		totalTokenCount,
 		cacheReadTokens: cachedContentTokenCount || usageNumber(usage.cacheReadTokens ?? usage.cache_read_tokens),
-		cacheWriteTokens: usageNumber(usage.cacheWriteTokens ?? usage.cache_write_tokens),
+		cacheWriteTokens: usageNumber(usage.cacheWriteTokens ?? usage.cache_write_tokens ?? usage.cacheWrite),
 		...(estimatedCostUsd !== undefined ? { estimatedCostUsd } : {}),
 		...(providerReportedCostUsd !== undefined ? { providerReportedCostUsd } : {}),
 		...(text(input.keyId, 120) ? { keyId: text(input.keyId, 120) } : {}),
@@ -641,9 +689,72 @@ export function recordAiProviderUsage(workingDir: string, input: {
 		...(input.latencyMs !== undefined && Number.isFinite(input.latencyMs) ? { latencyMs: Math.max(0, Math.round(input.latencyMs)) } : {}),
 		...(input.httpStatus !== undefined && Number.isFinite(input.httpStatus) ? { httpStatus: Math.round(input.httpStatus) } : {}),
 		...(text(input.errorCode, 120) ? { errorCode: text(input.errorCode, 120) } : {}),
+		...(sourceId ? { sourceId } : {}),
 		createdAt: nowIso(),
 	};
-	const store = readUsage(workingDir); writeUsage(workingDir, [...store.records, record]); return record;
+	writeUsage(workingDir, [...existingStore.records, record]); return record;
+}
+
+function subagentAliasKey(provider: AiProviderStored, model: string | undefined): { keyId: string; keyIndex: number } | undefined {
+	if (!model) return undefined;
+	const prefix = model.split("/", 1)[0];
+	const aliasPrefix = `axorbis_subagent_${safeAliasPart(provider.id)}_`;
+	if (!prefix.startsWith(aliasPrefix)) return undefined;
+	const indexText = prefix.slice(aliasPrefix.length);
+	if (!/^\d+$/.test(indexText)) return undefined;
+	const keyIndex = Number(indexText);
+	const key = provider.subagentKeys[keyIndex];
+	return key ? { keyId: key.id, keyIndex } : undefined;
+}
+
+/** Reconcile compact child metadata without reading prompts, transcripts, or tool output. */
+export function reconcileSubagentArtifactUsage(input: {
+	workingDir: string;
+	sessionDir: string;
+	sessionId: string;
+	afterMs?: number;
+}): number {
+	if (!input.sessionDir || !input.sessionId) return 0;
+	const artifactsDir = join(input.sessionDir, "subagent-artifacts");
+	if (!existsSync(artifactsDir)) return 0;
+	const providers = readProviderStore(input.workingDir).providers;
+	let recorded = 0;
+	for (const name of readdirSync(artifactsDir)) {
+		if (!name.endsWith("_meta.json")) continue;
+		const path = join(artifactsDir, name);
+		let stat: ReturnType<typeof statSync>;
+		try { stat = statSync(path); } catch { continue; }
+		if (input.afterMs !== undefined && stat.mtimeMs < input.afterMs) continue;
+		let metadata: Record<string, unknown>;
+		try {
+			metadata = asRecord(JSON.parse(readFileSync(path, "utf8")));
+		} catch { continue; }
+		const model = text(metadata.model, 240) ?? (Array.isArray(metadata.attemptedModels) ? text(metadata.attemptedModels[0], 240) : undefined);
+		const providerMatch = providers.flatMap((provider) => {
+			const key = subagentAliasKey(provider, model);
+			return key ? [{ provider, key }] : [];
+		})[0];
+		if (!providerMatch) continue;
+		const usage = asRecord(metadata.usage);
+		const timestamp = finite(metadata.timestamp);
+		const durationMs = finite(metadata.durationMs);
+		const sourceId = `subagent-artifact:${path}`;
+		const alreadyRecorded = readUsage(input.workingDir).records.some((record) => record.sourceId === sourceId);
+		const result = recordAiProviderUsage(input.workingDir, {
+			providerId: providerMatch.provider.id,
+			sessionId: input.sessionId,
+			model,
+			keyId: providerMatch.key.keyId,
+			usage,
+			appId: "axorbis-subagent",
+			userId: "local-user",
+			...(timestamp ? { requestStartedAt: new Date(timestamp - Math.max(0, durationMs ?? 0)).toISOString() } : {}),
+			...(durationMs !== undefined ? { latencyMs: durationMs } : {}),
+			sourceId,
+		});
+		if (result && !alreadyRecorded) recorded += 1;
+	}
+	return recorded;
 }
 
 function probeUrl(provider: AiProviderStored): string {

@@ -2,9 +2,18 @@ import type { WorkbenchArtifact, WorkbenchProject, WorkbenchResearchClaim, Workb
 
 export function projectQuestions(state: WorkbenchState, project: WorkbenchProject): WorkbenchRun[] {
 	const slugs = new Set(project.runSlugs);
+	const archived = new Set(project.archivedRunSlugs ?? []);
 	return state.runs
 		.filter((run) => run.source === "chat" && (run.projectId === project.id || slugs.has(run.slug)))
+		.filter((run) => !archived.has(run.slug))
 		.filter((run) => run.title !== project.name || run.artifactCount > 0)
+		.sort((a, b) => b.updatedAtMs - a.updatedAtMs);
+}
+
+export function projectArchivedQuestions(state: WorkbenchState, project: WorkbenchProject): WorkbenchRun[] {
+	const slugs = new Set(project.archivedRunSlugs ?? []);
+	return state.runs
+		.filter((run) => slugs.has(run.slug) && (run.projectId === project.id || project.runSlugs.includes(run.slug)))
 		.sort((a, b) => b.updatedAtMs - a.updatedAtMs);
 }
 

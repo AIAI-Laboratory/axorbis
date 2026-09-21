@@ -373,7 +373,7 @@ function buildProject(
 	kind: WorkbenchProjectKind,
 	runs: WorkbenchRun[],
 	artifacts: WorkbenchArtifact[],
-	options: { agentContext?: string; createdAt?: string; fallbackUpdatedAt?: string } = {},
+	options: { agentContext?: string; archivedRunSlugs?: string[]; createdAt?: string; fallbackUpdatedAt?: string } = {},
 ): WorkbenchProject {
 	const newestArtifact = artifacts[0];
 	const newestRun = runs[0];
@@ -388,6 +388,7 @@ function buildProject(
 		...buildWorkbenchProjectMetadata(id, { ...options, updatedAt, updatedAtMs }),
 		...(options.agentContext ? { agentContext: options.agentContext } : {}),
 		runSlugs: runs.map((run) => run.slug),
+		archivedRunSlugs: options.archivedRunSlugs ?? [],
 		artifactPaths: artifacts.map((artifact) => artifact.path),
 		sessionCount: runs.length, artifactCount: artifacts.length,
 		updatedAt, updatedAtMs,
@@ -406,7 +407,7 @@ function buildCustomProject(project: WorkbenchStoredProject, runs: WorkbenchRun[
 		"custom",
 		projectRuns,
 		projectArtifacts,
-		{ agentContext: project.agentContext, createdAt: project.createdAt, fallbackUpdatedAt: project.updatedAt },
+		{ agentContext: project.agentContext, archivedRunSlugs: project.archivedRunSlugs.filter((slug) => projectRuns.some((run) => run.slug === slug)), createdAt: project.createdAt, fallbackUpdatedAt: project.updatedAt },
 	);
 }
 

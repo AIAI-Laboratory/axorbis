@@ -183,6 +183,15 @@ export function readWorkbenchArtifactActions(workingDir: string): WorkbenchArtif
 	return readStore(workingDir).artifacts;
 }
 
+export function removeWorkbenchArtifactActions(workingDir: string, artifactPaths: Iterable<string>): void {
+	const paths = new Set(artifactPaths);
+	if (!paths.size) return;
+	const store = readStore(workingDir);
+	const remaining = store.artifacts.filter((record) => !paths.has(record.artifactPath));
+	if (remaining.length === store.artifacts.length) return;
+	writeStore(workingDir, { ...store, artifacts: remaining, updatedAt: nowIso() });
+}
+
 export function applyWorkbenchArtifactActions(
 	workingDir: string,
 	artifacts: WorkbenchArtifact[],

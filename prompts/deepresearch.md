@@ -1,34 +1,33 @@
 ---
-description: Run a source-grounded investigation with reusable evidence, selective verification, and adversarial review.
+description: Run a bounded, source-grounded investigation and produce an auditable research brief.
 args: <topic>
 section: Research Workflows
 topLevelCli: true
 ---
+
 ## Tool Discipline (Read First)
 
-Tool names are literal. Use only tools visible in the current tool set.
+Tool names are literal. Use only tools visible in the current session. If a tool returns `Tool not found` or `Invalid URL`, do not retry the same invalid call.
 
-- Call `web_search` for search; do not call `search_web`, `google_search`, `google:search`, `search_google`, or `WebSearch`.
-- Fetch URLs with `fetch_content`; do not call bare `fetch`, `WebFetch`, `read_url_content`, or pass an array as `url`. Use `urls` for multiple URLs when the tool supports it. Inspect stored search/fetch content with `get_search_content` when visible.
-- Use visible Feynman alpha tools such as `alpha_search` when present. For shell access, call `feynman alpha ...`; do not call the user's bare global `alpha` binary.
-- To ask the user a question, write plain chat text and wait for the next user message. Do not call `ask_user_question`, `ask_user`, `ask_followup_question`, or `user_choice`.
-- Do not use `Task` as an agent dispatcher. Use only the visible `subagent` tool when it exists.
-- If a tool returns `Tool not found` or `Invalid URL`, do not retry the same invalid call. Map to a canonical visible tool and valid arguments, or record the capability as blocked.
+- Call `web_search` for search; do not call `search_web` or other aliases.
+- Fetch URLs with `fetch_content`; do not call bare `fetch`. Use `urls` for multiple URLs when supported.
+- Use visible Feynman alpha tools such as `alpha_search`; for shell access call `feynman alpha ...`; do not call the user's bare global `alpha` binary.
+- Do not use `Task` as an agent dispatcher. Use only the visible `subagent` tool.
+- Ask questions in plain chat and wait for the next user message.
 
 Run deep research for: $@
 
-This is an execution request, not a request to explain or implement the workflow instructions.
-Execute the workflow. Do not answer by describing the protocol, do not explain these instructions, and do not restate the protocol. Your first actions should be tool calls that create directories and write the plan artifact.
+This is not a request to explain or implement the workflow instructions. Execute the workflow. Do not answer by describing the protocol. Keep the user-facing `/deepresearch` command and artifact contract unchanged, but use the bounded workflow below.
 
-## Run paths and required artifacts
+## Contract
 
-Derive a lowercase hyphenated slug of at most five words. Let `RUN_ROOT` be the active workbench project artifact directory supplied with the request, otherwise `.axorbis/artifacts`.
+Let `RUN_ROOT` be the active project artifact directory supplied by the workbench, otherwise `.axorbis/artifacts`. Derive a lowercase hyphenated slug of at most five useful words.
 
 Before approval, create only:
 
 - `RUN_ROOT/.plans/<slug>.md`
 
-After approval, every run must leave:
+After approval, leave these artifacts, including partial/blocked ones when a capability fails:
 
 - `RUN_ROOT/.plans/<slug>.md`
 - `RUN_ROOT/.drafts/<slug>-evidence.jsonl`
@@ -36,173 +35,95 @@ After approval, every run must leave:
 - `RUN_ROOT/.drafts/<slug>-draft.md`
 - `RUN_ROOT/.drafts/<slug>-cited.md`
 - `RUN_ROOT/.drafts/<slug>-verification.md`
-- `RUN_ROOT/.drafts/<slug>-metrics.json` when `feynman_deepresearch_metrics` is visible
+- `RUN_ROOT/.drafts/<slug>-metrics.json` when metrics are available
 - `RUN_ROOT/<slug>.md` or `RUN_ROOT/.papers/<slug>.md`
-- the adjacent `<slug>.provenance.md`
+- adjacent `<slug>.provenance.md`
 
-After plan approval, continue in degraded mode if a capability fails. Still write partial/blocked artifacts and use `Verification: BLOCKED`; never end with chat-only output. Never end with only an explanation in chat after plan approval.
+After plan approval, continue in degraded mode if a capability fails. Still write partial/blocked artifacts and use `Verification: BLOCKED`; never end with only an explanation in chat after plan approval. Mark missing checks as `blocked`, `unverified`, or `inferred`; do not invent sources, results, figures, or token savings.
 
-## 1. Plan and approval
+## 1. Route and plan
 
-Write `RUN_ROOT/.plans/<slug>.md` with:
+First call `feynman_deepresearch_policy` before searching or delegating. Estimate:
 
-- key questions and stable claim IDs (`C1`, `C2`, ...);
-- evidence needed and which claims need independent corroboration;
-- scale decision and estimated tool-call budget;
-- task ledger;
-- verification log;
-- decision log.
+- `breadth`: `direct`, `comparison`, `broad`, or `complex`;
+- `questionCount`: distinct questions to answer;
+- `entityCount`: papers, products, methods, or systems being compared;
+- `domainCount`: materially different domains;
+- `exhaustive`: true only when the user explicitly asks for exhaustive coverage.
 
-Make the scale decision before assigning owners. Save the plan through `memory_remember` as `deepresearch.<slug>.plan` only when that tool is visible.
+The returned policy is authoritative. Do not exceed its researcher, query, fetch, source, or verification budgets. The runtime also blocks over-budget search, fetch, and researcher calls.
 
-Then stop and ask for explicit confirmation before gathering evidence:
+Make the scale decision before assigning owners. Write the plan with key questions, stable claim IDs, evidence needed, scale decision, task ledger, verification log, decision log, and estimated tool-call budget. Save it with `memory_remember` as `deepresearch.<slug>.plan` only when that tool is visible.
+
+Then stop and ask for explicit confirmation before gathering evidence. Ask exactly:
 
 `Proceed with this deep research plan? Reply "yes" to continue, or tell me what to change.`
 
-Do not search, fetch, spawn subagents, draft, cite, review, or create placeholders before approval. If the user requests changes, update `RUN_ROOT/.plans/<slug>.md` first and ask again.
+Do not search, fetch, spawn subagents, draft, cite, review, or create placeholders before approval. If the user changes the plan, update `RUN_ROOT/.plans/<slug>.md` first and ask again.
 
-## 2. Scale conservatively
-
-Prefer lead-owned direct research when the task can reasonably be completed in approximately 15 tool calls or fewer.
-
-- Narrow question, single fact, or simple explainer: no researchers.
-- Direct comparison: at most 2 researchers.
-- Broad survey: 2–3 researchers.
-- Complex multi-domain research: 3–4 researchers.
-- More than 4 researchers: only when the user explicitly requests exhaustive coverage.
-
-Do not spawn researchers by default. Source count is not a quality metric.
-
-## 3. Discover, select, then fetch
+## 2. Gather compact evidence
 
 Use this lifecycle:
 
-`search → snippet/metadata triage → targeted fetch → evidence extraction → persist → continue from evidence`
+`search metadata/snippets → select sources → fetch targeted passages → persist claim cards`
 
-Never use `fetch everything → retain page bodies → compact later`.
+Do not use `includeContent: true` during broad discovery. The runtime forces it off for this workflow. The same source should normally be fetched once per run; reuse stored content with `get_search_content` where available. The verifier must not re-fetch every URL. Avoid PDF extraction unless explicitly requested.
 
-### Retrieval budget
-
-For each researcher and for a lead-owned branch:
-
-- maximum 2 search rounds;
-- maximum 4 queries per round;
-- triage no more than 10 candidate results;
-- no full-content fetches during initial landscape discovery;
-- at most 4 selected full-source fetches by default;
-- approximately 6–8 accepted sources maximum;
-- stop after two consecutive search attempts add no materially new claim, contradiction, or independent evidence.
-
-Prefer metadata, titles, snippets, abstracts, and search summaries for discovery. Fetch full content only after selecting a source for a named unresolved claim. Avoid PDF parsing unless explicitly requested; prefer HTML, official docs, paper metadata, abstracts, and source-specific text. If only a PDF exists, record that limitation honestly.
-
-### Fetch once and persist compact evidence
-
-Normalize URLs and maintain a source registry in the plan. The same source should normally be fetched once per run. Before any fetch, check the merged ledger and all active task ledgers for the normalized URL.
-
-Immediately after a fetch, write the smallest sufficient evidence record. Use one JSON object per line:
+Every evidence JSONL line must be compact and auditable:
 
 ```json
-{"claim_id":"C1","source_id":"T1-S1","url":"https://example.org/source","title":"Source title","claim":"Claim supported or contradicted","support_excerpt":"Shortest sufficient excerpt","location":"section, page, or paragraph","source_type":"primary","confidence":"high","fetched_at":"2026-01-01T00:00:00Z","verification_status":"fetched"}
+{"claim_id":"C1","source_id":"T1-S1","url":"https://example.org/source","title":"Source title","claim":"Supported or contradicted claim","support_excerpt":"Shortest sufficient passage","location":"section or paragraph","source_type":"primary","confidence":"high","fetched_at":"2026-01-01T00:00:00Z","verification_status":"fetched"}
 ```
 
-Preserve quantitative values, contradicting evidence, limitations, assumptions, and unresolved uncertainty. A metadata-only discovery is not evidence and must use `verification_status: "metadata-only"` without claiming source content.
+Metadata-only discoveries cannot support content claims. Preserve numbers, limitations, conflicts, assumptions, and uncertainty. Write evidence immediately; do not keep raw page bodies in the lead transcript.
 
 ### Direct mode
 
-The lead performs discovery and targeted fetches itself, writes `RUN_ROOT/.drafts/<slug>-evidence-direct.jsonl`, then merges/deduplicates it into `<slug>-evidence.jsonl`. Do not spawn verifier or reviewer subagents for a simple direct-mode run; perform the evidence check and adversarial review yourself.
+For `maxResearchers: 0`, search and extract evidence yourself. Narrow question, single fact, or simple explainer: no researchers; this should fit approximately 15 tool calls or fewer. Use distinct query angles, stop when the policy budget or two no-gain searches is reached, and write `RUN_ROOT/.drafts/<slug>-evidence-direct.jsonl` before merging it into `RUN_ROOT/.drafts/<slug>-evidence.jsonl`. In prose, this is the direct evidence path: writes `RUN_ROOT/.drafts/<slug>-evidence-direct.jsonl` before synthesis.
 
 ### Delegated mode
 
-The lead first performs a cheap snippet/metadata landscape pass, deduplicates candidate URLs, and assigns non-overlapping claim IDs and sources to 2–4 researchers. Write a short brief per researcher at `RUN_ROOT/.plans/<slug>-T1.md`, etc. Each brief must include claim IDs, unresolved questions, already-fetched URLs, output path, and the hard budget.
+Use only the number of researchers allowed by the policy. Compatibility scale guide: Direct comparison: at most 2 researchers. Broad survey: 2–3 researchers. Complex multi-domain research: 3–4 researchers. More than 4 researchers: only when the user explicitly requests exhaustive coverage. The runtime policy may cap those numbers lower. Assign disjoint claim IDs and source seams. Write a short brief per researcher at `RUN_ROOT/.plans/<slug>-T1.md`, etc. Each child must use fresh context, the supplied source registry, the hard researcher budget, and `outputMode: "file-only"`.
 
-Use fresh child context so workers receive only their agent prompt, task brief, and explicitly named files. Use file-only output so evidence is not copied back into the lead transcript.
-
-```json
-{
-  "workflowScript": "return await runs.all([{key:'T1',agent:'researcher',context:'fresh',task:'Read RUN_ROOT/.plans/<slug>-T1.md. Write only JSONL evidence to the configured output.',output:'RUN_ROOT/.drafts/<slug>-evidence-T1.jsonl',outputMode:'file-only',toolBudget:{soft:12,hard:18,block:['web_search','fetch_content','get_search_content']}},{key:'T2',agent:'researcher',context:'fresh',task:'Read RUN_ROOT/.plans/<slug>-T2.md. Write only JSONL evidence to the configured output.',output:'RUN_ROOT/.drafts/<slug>-evidence-T2.jsonl',outputMode:'file-only',toolBudget:{soft:12,hard:18,block:['web_search','fetch_content','get_search_content']}}]);",
-  "async": true,
-  "globalConcurrencyLimit": 4
-}
-```
-
-Keep tool-call JSON small. Do not embed the briefs in it or add unsupported keys. Wait for completion results, record failures, verify files on disk, validate every JSONL line, then merge all task ledgers by normalized URL and source ID into `RUN_ROOT/.drafts/<slug>-evidence.jsonl`. Do not paste their contents into chat.
-
-Once evidence is durable, continue from the ledger rather than rereading page bodies. If an explicit compaction action is available, compact old retrieval transcript before synthesis; otherwise do not spend calls trying to force compaction.
-
-## 4. Build the claim-evidence map
-
-Before drafting, write `RUN_ROOT/.drafts/<slug>-claims.json` as a compact array:
+Launch one bounded async workflow when parallelism helps:
 
 ```json
-[
-  {
-    "claim_id": "C1",
-    "claim": "Proposed report claim",
-    "supporting_source_ids": ["T1-S1"],
-    "contradicting_source_ids": [],
-    "confidence": "high",
-    "limitations": [],
-    "status": "supported"
-  }
-]
+{"workflowScript":"return await runs.all([{key:'T1',agent:'researcher',context:'fresh',task:'This is a Deep Research worker. Read RUN_ROOT/.plans/<slug>-T1.md. Write only compact JSONL claim evidence to the configured output.',output:'RUN_ROOT/.drafts/<slug>-evidence-T1.jsonl',outputMode:'file-only',toolBudget:{soft:8,hard:12,block:['web_search','fetch_content','get_search_content']}}]);","async":true,"globalConcurrencyLimit":4}
 ```
 
-Every important factual or quantitative claim must map to inspected evidence. Important claims that require corroboration need independent support. Do not silently collapse conflicting sources. Use `unsupported`, `conflicted`, `inferred`, or `blocked` when accurate.
+Keep tool-call JSON small. Do not embed briefs, page bodies, or child output in it. Wait for completion results, verify expected files, validate each JSONL line, deduplicate by normalized URL/source ID, and merge into `RUN_ROOT/.drafts/<slug>-evidence.jsonl`. Continue with partial coverage if one lane fails.
 
-Stop research when core questions have sufficient evidence, major claims have strong sources, corroboration exists where required, no important contradiction is unresolved, and two consecutive searches produce no material information gain.
+Retrieval guard: maximum 2 search rounds; maximum 4 queries per round; triage no more than 10 candidate results; at most 4 selected full-source fetches per worker by default; approximately 6–8 accepted sources maximum per worker. Stop after two consecutive search attempts add no materially new claim, contradiction, or independent evidence. Avoid PDF parsing unless explicitly requested.
 
-## 5. Synthesize from the map
+## 3. Claim map and synthesis
 
-Write `RUN_ROOT/.drafts/<slug>-draft.md` yourself. Do not delegate synthesis and do not reread raw sources by default. Use the claim map and evidence ledger.
+Before drafting, write `<slug>-claims.json` as a compact array mapping every important claim to supporting and contradicting source IDs, confidence, limitations, and status (`supported`, `conflicted`, `unsupported`, `inferred`, or `blocked`).
 
-Include an executive summary, findings by question/theme, caveats/disagreements, and open questions. Before citation, remove or weaken anything not traceable to an evidence record or raw artifact. Mark inferences as inferences. Never invent sources, results, figures, tables, or benchmarks.
+Choose the smallest synthesis path allowed by the policy:
 
-## 6. Cite with evidence-first verification
+- For `direct` runs, write `<slug>-draft.md` yourself from the claim map and evidence ledger. Do not reread raw pages.
+- For `comparison`, `broad`, or `complex` runs, call the `writer` subagent exactly once after the claim map and evidence ledger exist. Give it only those compact file paths plus the plan, use `context: "fresh"`, `outputMode: "file-only"`, and a hard child `toolBudget` of 2. The writer must not search, fetch, reread raw pages, create auxiliary files, or write anything except `<slug>-draft.md`. Do not embed claims or evidence in the tool-call JSON.
 
-For direct mode, add citations yourself and write `RUN_ROOT/.drafts/<slug>-cited.md`.
+Example writer call:
 
-For delegated mode, run the verifier only after the draft, merged evidence ledger, and claim map exist. Use `context: "fresh"` and `outputMode: "file-only"`. Give it only those paths and the cited output path.
+```json
+{"agent":"writer","context":"fresh","task":"Read only RUN_ROOT/.plans/<slug>.md, RUN_ROOT/.drafts/<slug>-claims.json, and RUN_ROOT/.drafts/<slug>-evidence.jsonl. Write the draft to RUN_ROOT/.drafts/<slug>-draft.md. Do not search, fetch, reread raw pages, create extra files, or add citations.","output":"RUN_ROOT/.drafts/<slug>-draft.md","outputMode":"file-only","toolBudget":{"soft":1,"hard":2,"block":["web_search","fetch_content","get_search_content","alpha_search","alpha_fetch"]}}
+```
 
-The verifier must use stored evidence first and must not re-fetch every URL. Re-fetch only when the excerpt is insufficient, the claim is central or quantitatively important, sources conflict, the source was not fetched, provenance is uncertain, or independent verification is materially necessary. Any new search must target one failed claim. Unsupported claims must be removed, weakened, targeted for additional evidence, or marked uncertain.
+This is the only writer launch in a Deep Research run. The child model request is routed through the configured subagent key pool, so its usage should show `Subagent key N`; an individual lead `write` tool event cannot switch keys because it is part of the lead model request. If the writer fails or the file is missing, write the draft once from the compact files as a degraded fallback. Include an executive summary, findings by question/theme, caveats/disagreements, and open questions. Every important factual, quantitative, or code-backed statement must have an evidence home.
 
-The verifier must complete before review. A launch receipt or intended filename is not completion; inspect the result and the output file.
+## 4. Selective citation and verification
 
-## 7. Selective adversarial review
+For direct runs, add citations yourself and write `<slug>-cited.md`, then write `<slug>-verification.md` yourself.
 
-For direct mode, write `RUN_ROOT/.drafts/<slug>-verification.md` yourself.
+For delegated runs, call `verifier` only after the draft, merged evidence ledger, and claim map exist. The verifier must complete before review. Give it only those compact paths. It must reuse stored evidence and must not re-fetch every URL; refetch only central, quantitative, disputed, insufficient, metadata-only, or provenance-uncertain claims. It must write `RUN_ROOT/.drafts/<slug>-cited.md` and report stored checks, targeted refetches, and unresolved claims.
 
-For delegated mode, run the reviewer only after the cited draft exists, with fresh context and file-only output. Give it the cited draft and claim map, not raw page bodies. The first pass uses the agent's medium reasoning default and focuses on central conclusions, logical leaps, contradictions, quantitative claims, weak evidence, methodological limitations, unsupported generalization, and missing counterevidence.
+Call `reviewer` only when the policy allows it and only after the cited draft exists; run the reviewer only after the cited draft exists. Give it the cited draft and claim map, not raw source bodies. The routine pass is compact and medium-thinking; launch a deeper pass only for a specific MAJOR/FATAL issue. Fix FATAL issues before delivery and record unresolved MAJOR issues as open questions.
 
-If it finds a `MAJOR` or `FATAL` issue that genuinely requires deeper analysis, launch one targeted high-reasoning pass for that issue only. Fix FATAL issues before delivery. Note unresolved MAJOR issues in Open Questions; accept MINOR issues.
+For 1–3 simple corrections use small edits. For larger rewrites write `RUN_ROOT/.drafts/<slug>-revised.md`. After any fix, verify on disk that unsupported wording is gone and corrected wording exists. Never claim a failed edit landed. The final candidate is the revised file if it exists, otherwise the cited file.
 
-For 1–3 simple corrections use small edits. For larger rewrites write `RUN_ROOT/.drafts/<slug>-revised.md`. After any fix, verify on disk that unsupported wording is gone and corrected wording exists. Never claim a failed edit landed.
+## 5. Metrics and delivery
 
-The final candidate is the revised file if it exists, otherwise the cited file.
+After all children finish, call `feynman_deepresearch_metrics` once with the merged evidence path and a workspace-relative metrics output path. Distinguish provider-reported uncached input tokens, output tokens, cache reads/writes, prompt totals, cumulative tokens, peak per-turn context, searches, fetches, stored-content reuse, researcher count, verifier refetches, and accepted sources. Never call cache reads an HTTP cache hit or peak context cumulative usage.
 
-## 8. Metrics and delivery
-
-If `feynman_deepresearch_metrics` is visible, call it after all workers finish with the slug, merged evidence path, and `RUN_ROOT/.drafts/<slug>-metrics.json`. The metrics artifact must distinguish:
-
-- provider-reported uncached input tokens;
-- output tokens;
-- cache-read and cache-write tokens;
-- prompt tokens (`input + cache read + cache write`);
-- cumulative tokens (`input + output + cache read + cache write`);
-- peak per-turn context;
-- searches and search queries;
-- full-content fetch calls and fetched URLs;
-- stored-content reuse;
-- researcher count;
-- verifier re-fetches;
-- accepted sources.
-
-Do not report peak context as cumulative use, cache reads as uncached input, or stored-content reuse as an HTTP cache hit. If the metrics tool is unavailable, record metrics as unavailable rather than guessing.
-
-Copy the final candidate to `RUN_ROOT/.papers/<slug>.md` for a paper-style draft or `RUN_ROOT/<slug>.md` otherwise. Write adjacent provenance containing date, research rounds, consulted/accepted/rejected sources, verification status, plan, evidence/claim/review paths, metrics path, failures, and unresolved checks.
-
-Before responding, verify every required artifact on disk and verify that any claimed fix is present. Read the final candidate and respond with:
-
-- `## Research synthesis`: the answer, 3–6 material findings, and important caveats consistent with verification status.
-- `## Files`: final report, provenance, plan, evidence ledger, claim map, verification, and metrics when present.
-
-Wrap every artifact path in inline code. State plainly when output is partial or blocked.
+Use the revised/cited candidate as the final artifact, copy it to `RUN_ROOT/<slug>.md` or `RUN_ROOT/.papers/<slug>.md`, and write adjacent provenance containing date, accepted/rejected sources, verification status, plan/evidence/claims/review/metrics paths, failures, and unresolved checks. Before replying, verify every required artifact and verify that any claimed fix is present on disk. Reply briefly with the final and provenance paths.

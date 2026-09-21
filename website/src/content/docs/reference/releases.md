@@ -9,6 +9,20 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
+No unreleased changes.
+
+## v0.3.51 - 2026-09-21
+
+### Research question lifecycle
+
+- Projects now support archiving research questions without deleting their sessions, files, or evidence, plus an explicit permanent-delete action for removing the question and its linked local research state.
+
+### Deep Research efficiency and auditability
+
+- Deep Research now uses bounded lead-owned search, compact evidence records, selective verification, and at most one bounded writer child for larger runs. Routine runs avoid replaying raw source bodies through later stages while preserving the existing command and artifact contract.
+- Subagents now use only configured subagent-key aliases. Detached child environments remove the Main Agent credential and fail closed when no subagent key is available; usage details identify the selected key without exposing secrets.
+- Added local per-stage metrics and per-call usage details for token classes, API calls, model/key selection, latency, and bounded research activity.
+
 ## v0.3.50 - 2026-09-20
 
 ### Axorbis research workspace

@@ -14,13 +14,14 @@ import {
 	readWorkbenchPiSessionInfo,
 	type WorkbenchPiSessionInfo,
 } from "./pi-session.js";
+import { listAiProviderUsageRecords, listAiProviders, type AiProviderUsageRecord } from "./ai-providers.js";
 import {
 	captureArtifactSnapshotBaseline,
 	recordArtifactSnapshotsForChanges,
 	type WorkbenchArtifactSnapshotBaseline,
 } from "./artifact-snapshots.js";
 import { isInsideDirectory, legacyWorkbenchDataPath, migratedWorkbenchDataPath, resolveWorkbenchStoredPath } from "./data-root.js";
-import { isLegacyEmptyWorkbenchReply, resolveEmptyWorkbenchReply } from "./empty-chat-reply.js";
+import { enrichDeepResearchCompletion, isLegacyEmptyWorkbenchReply, resolveEmptyWorkbenchReply } from "./empty-chat-reply.js";
 
 export type WorkbenchChatRole = "assistant" | "system" | "user";
 export type WorkbenchChatStatus = "complete" | "error" | "queued" | "running" | "stopped";
@@ -54,6 +55,37 @@ export type WorkbenchChatMessage = {
 	createdAt: string;
 	status: WorkbenchChatStatus;
 	toolEvents: WorkbenchToolEvent[];
+	usage?: WorkbenchChatUsage;
+};
+
+export type WorkbenchChatUsageCall = {
+	id: string;
+	providerId: string;
+	model?: string;
+	keyId?: string;
+	keyLabel?: string;
+	inputTokens: number;
+	outputTokens: number;
+	totalTokenCount: number;
+	promptTokenCount?: number;
+	candidatesTokenCount?: number;
+	thoughtsTokenCount?: number;
+	cachedContentTokenCount?: number;
+	toolUsePromptTokenCount?: number;
+	estimatedCostUsd?: number;
+	providerReportedCostUsd?: number;
+	createdAt: string;
+	latencyMs?: number;
+	httpStatus?: number;
+	errorCode?: string;
+};
+
+export type WorkbenchChatUsage = {
+	requestCount: number;
+	inputTokens: number;
+	outputTokens: number;
+	totalTokenCount: number;
+	calls: WorkbenchChatUsageCall[];
 };
 
 export type WorkbenchSessionConfig = {
@@ -357,6 +389,27 @@ export function listWorkbenchChatSessions(options: WorkbenchChatOptions): Workbe
 		.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+export function deleteWorkbenchChatSession(
+	options: WorkbenchChatOptions,
+	sessionId: string,
+): WorkbenchChatSession | undefined {
+	const id = normalizeSessionId(sessionId);
+	const path = chatPath(options.workingDir, id);
+	if (!existsSync(path)) return undefined;
+	const session = readSessionPath(path);
+	for (const attachment of session.attachments) {
+		try {
+			const absolutePath = resolveStoredUploadPath(options.workingDir, attachment.storagePath);
+			rmSync(absolutePath, { force: true });
+		} catch {
+			// A missing attachment must not prevent deleting the owning question.
+		}
+	}
+	rmSync(uploadDir(options.workingDir, id), { recursive: true, force: true });
+	rmSync(path, { force: true });
+	return session;
+}
+
 function readdirJsonFiles(dir: string): string[] {
 	return readdirSync(dir)
 		.filter((name) => name.endsWith(".json"))
@@ -566,6 +619,57 @@ function messageById(session: WorkbenchChatSession, messageId: string): Workbenc
 	return session.messages.find((message) => message.id === messageId);
 }
 
+function usageKeyLabel(record: AiProviderUsageRecord, providers: ReturnType<typeof listAiProviders>): string | undefined {
+	if (!record.keyId || record.keyId === "main") return "Main key";
+	const subagentIndex = /^subagent-(\d+)$/.exec(record.keyId)?.[1];
+	if (subagentIndex !== undefined) return `Subagent key ${Number(subagentIndex) + 1}`;
+	const provider = providers.find((item) => item.id === record.providerId);
+	const configuredIndex = provider?.subagentKeys.findIndex((key) => key.id === record.keyId) ?? -1;
+	return configuredIndex >= 0 ? `Subagent key ${configuredIndex + 1}` : undefined;
+}
+
+function chatUsageCall(record: AiProviderUsageRecord, providers: ReturnType<typeof listAiProviders>): WorkbenchChatUsageCall {
+	return {
+		id: record.id,
+		providerId: record.providerId,
+		...(record.model ? { model: record.model } : {}),
+		...(record.keyId ? { keyId: record.keyId } : {}),
+		keyLabel: usageKeyLabel(record, providers),
+		inputTokens: record.inputTokens,
+		outputTokens: record.outputTokens,
+		totalTokenCount: record.totalTokenCount,
+		...(record.promptTokenCount !== undefined ? { promptTokenCount: record.promptTokenCount } : {}),
+		...(record.candidatesTokenCount !== undefined ? { candidatesTokenCount: record.candidatesTokenCount } : {}),
+		...(record.thoughtsTokenCount !== undefined ? { thoughtsTokenCount: record.thoughtsTokenCount } : {}),
+		...(record.cachedContentTokenCount !== undefined ? { cachedContentTokenCount: record.cachedContentTokenCount } : {}),
+		...(record.toolUsePromptTokenCount !== undefined ? { toolUsePromptTokenCount: record.toolUsePromptTokenCount } : {}),
+		...(record.estimatedCostUsd !== undefined ? { estimatedCostUsd: record.estimatedCostUsd } : {}),
+		...(record.providerReportedCostUsd !== undefined ? { providerReportedCostUsd: record.providerReportedCostUsd } : {}),
+		createdAt: record.createdAt,
+		...(record.latencyMs !== undefined ? { latencyMs: record.latencyMs } : {}),
+		...(record.httpStatus !== undefined ? { httpStatus: record.httpStatus } : {}),
+		...(record.errorCode ? { errorCode: record.errorCode } : {}),
+	};
+}
+
+function chatUsageForTurn(workingDir: string, sessionId: string, startedAtMs: number): WorkbenchChatUsage | undefined {
+	const providers = listAiProviders(workingDir);
+	const calls = listAiProviderUsageRecords(workingDir, sessionId)
+		.filter((record) => {
+			const createdAtMs = Date.parse(record.createdAt);
+			return Number.isFinite(createdAtMs) && createdAtMs >= startedAtMs;
+		})
+		.map((record) => chatUsageCall(record, providers));
+	if (!calls.length) return undefined;
+	return {
+		requestCount: calls.length,
+		inputTokens: calls.reduce((total, call) => total + call.inputTokens, 0),
+		outputTokens: calls.reduce((total, call) => total + call.outputTokens, 0),
+		totalTokenCount: calls.reduce((total, call) => total + call.totalTokenCount, 0),
+		calls,
+	};
+}
+
 function recordChatTurnSnapshots(
 	options: WorkbenchChatOptions,
 	baseline: WorkbenchArtifactSnapshotBaseline,
@@ -597,12 +701,13 @@ export async function submitWorkbenchChatMessage(
 	};
 	writeSessionPath(path, session);
 	const snapshotBaseline = captureArtifactSnapshotBaseline(options.workingDir);
+	const turnStartedAtMs = Date.now();
 
 	try {
 		const executor = options.executor ?? runFeynmanWorkbenchPrompt;
 		const result = await executor({ ...options, session, message, viewportContext: input.viewportContext });
 		const finalReply = result.content.trim()
-			? { content: result.content.trim(), status: result.status ?? "complete" }
+			? { content: enrichDeepResearchCompletion(message, result.content.trim(), result.toolEvents ?? [], options.workingDir), status: result.status ?? "complete" }
 			: resolveEmptyWorkbenchReply(message, result.toolEvents ?? [], result.status ?? "complete");
 		const assistantMessage = createMessage(
 			"assistant",
@@ -610,21 +715,23 @@ export async function submitWorkbenchChatMessage(
 			finalReply.status,
 			result.toolEvents ?? [],
 		);
+		const usage = chatUsageForTurn(options.workingDir, session.id, turnStartedAtMs);
 		session = {
 			...session,
 			status: finalReply.status,
 			updatedAt: nowIso(),
-			messages: [...session.messages, assistantMessage],
+			messages: [...session.messages, usage ? { ...assistantMessage, usage } : assistantMessage],
 		};
 		recordChatTurnSnapshots(options, snapshotBaseline, session, assistantMessage);
 		session = await refreshWorkbenchPiSession(options, session);
 	} catch (error) {
 		const assistantMessage = createMessage("assistant", error instanceof Error ? error.message : String(error), "error");
+		const usage = chatUsageForTurn(options.workingDir, session.id, turnStartedAtMs);
 		session = {
 			...session,
 			status: "error",
 			updatedAt: nowIso(),
-			messages: [...session.messages, assistantMessage],
+			messages: [...session.messages, usage ? { ...assistantMessage, usage } : assistantMessage],
 		};
 		recordChatTurnSnapshots(options, snapshotBaseline, session, assistantMessage);
 		session = await refreshWorkbenchPiSession(options, session);
@@ -719,6 +826,7 @@ export async function streamWorkbenchChatMessage(
 	writeSessionPath(path, session);
 	await emit({ type: "session", session });
 	const snapshotBaseline = captureArtifactSnapshotBaseline(options.workingDir);
+	const turnStartedAtMs = Date.now();
 
 	try {
 		const request = { ...options, session, message, viewportContext: normalizedInput.viewportContext };
@@ -742,12 +850,14 @@ export async function streamWorkbenchChatMessage(
 		}
 		const currentToolEvents = messageById(session, assistantMessage.id)?.toolEvents ?? [];
 		const finalReply = result.content.trim()
-			? { content: result.content.trim(), status: result.status ?? "complete" }
+			? { content: enrichDeepResearchCompletion(message, result.content.trim(), result.toolEvents ?? currentToolEvents, options.workingDir), status: result.status ?? "complete" }
 			: resolveEmptyWorkbenchReply(message, result.toolEvents ?? currentToolEvents, result.status ?? "complete");
+		const usage = chatUsageForTurn(options.workingDir, session.id, turnStartedAtMs);
 		session = updateMessage(session, assistantMessage.id, {
 			content: finalReply.content,
 			status: finalReply.status,
 			toolEvents: result.toolEvents ?? currentToolEvents,
+			...(usage ? { usage } : {}),
 		});
 		session = { ...session, status: finalReply.status, updatedAt: nowIso() };
 		const currentAssistant = messageById(session, assistantMessage.id) ?? assistantMessage;
@@ -756,6 +866,7 @@ export async function streamWorkbenchChatMessage(
 	} catch (error) {
 		const messageText = error instanceof Error ? error.message : String(error);
 		const currentToolEvents = messageById(session, assistantMessage.id)?.toolEvents ?? [];
+		const usage = chatUsageForTurn(options.workingDir, session.id, turnStartedAtMs);
 		session = updateMessage(session, assistantMessage.id, {
 			content: messageText,
 			status: "error",
@@ -763,6 +874,7 @@ export async function streamWorkbenchChatMessage(
 				...event,
 				status: event.status === "running" ? "error" : event.status,
 			})),
+			...(usage ? { usage } : {}),
 		});
 		session = { ...session, status: "error", updatedAt: nowIso() };
 		const currentAssistant = messageById(session, assistantMessage.id) ?? assistantMessage;

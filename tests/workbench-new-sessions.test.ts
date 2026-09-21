@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { ensureWorkbenchChatSession, updateWorkbenchChatSessionConfig } from "../engine/workbench/chat.js";
+import { ensureWorkbenchChatSession, listWorkbenchChatSessions, updateWorkbenchChatSessionConfig } from "../engine/workbench/chat.js";
 import { buildWorkbenchRpcPrompt } from "../engine/workbench/chat-runtime.js";
 import { readWorkbenchOnboardingProfile } from "../engine/workbench/onboarding.js";
 import { createWorkbenchProject } from "../engine/workbench/projects.js";
@@ -182,6 +182,36 @@ test("workbench server creates Claude-style projects with an initial chat sessio
 		assert.equal(projectRow?.createdAt, payload.project.createdAt);
 		assert.equal(projectRow?.createdAtMs, Date.parse(payload.project.createdAt));
 		assert.ok(projectRow?.runSlugs.includes(payload.session.id));
+	} finally {
+		await handle.close();
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("workbench question actions archive without deleting and delete all session state", async () => {
+	const root = makeWorkspace();
+	const handle = await startWorkbenchServer({ workingDir: root, version: "0.0.0-test", host: "127.0.0.1", port: 0, token: "test-token" });
+	const request = (body: Record<string, unknown>) => fetch(`${handle.url}api/chat/session/action`, {
+		method: "POST",
+		headers: { "content-type": "application/json", cookie: "feynman_workbench=test-token" },
+		body: JSON.stringify(body),
+	});
+	try {
+		const created = await fetch(`${handle.url}api/project/new`, {
+			method: "POST",
+			headers: { "content-type": "application/json", cookie: "feynman_workbench=test-token" },
+			body: JSON.stringify({ name: "Question lifecycle" }),
+		});
+		const createdPayload = await created.json() as { project: { id: string }; session: { id: string } };
+		const base = { projectId: createdPayload.project.id, sessionId: createdPayload.session.id };
+		const archived = await (await request({ ...base, action: "archive" })).json() as { state: { projects: Array<{ id: string; archivedRunSlugs?: string[] }> } };
+		assert.ok(archived.state.projects.find((project) => project.id === base.projectId)?.archivedRunSlugs?.includes(base.sessionId));
+		const restored = await (await request({ ...base, action: "restore" })).json() as { state: { projects: Array<{ id: string; archivedRunSlugs?: string[] }> } };
+		assert.equal(restored.state.projects.find((project) => project.id === base.projectId)?.archivedRunSlugs?.includes(base.sessionId), false);
+		const deleted = await (await request({ ...base, action: "delete" })).json() as { state: { runs: Array<{ slug: string }>; projects: Array<{ id: string; runSlugs: string[] }> } };
+		assert.equal(deleted.state.runs.some((run) => run.slug === base.sessionId), false);
+		assert.equal(deleted.state.projects.find((project) => project.id === base.projectId)?.runSlugs.includes(base.sessionId), false);
+		assert.equal(listWorkbenchChatSessions({ workingDir: root }).some((session) => session.id === base.sessionId), false);
 	} finally {
 		await handle.close();
 		rmSync(root, { recursive: true, force: true });

@@ -36,6 +36,7 @@ import { updateWorkbenchPackageSettings, type WorkbenchPackageAction } from "./p
 import { buildPiCommandResourceGroup, mergePiCommandResourceGroup } from "./pi-commands.js";
 import { generateWorkbenchPlan, updateWorkbenchPlanAction, updateWorkbenchPlanStep } from "./plan.js";
 import { createWorkbenchProject } from "./projects.js";
+import { archiveWorkbenchQuestion, deleteWorkbenchQuestion } from "./question-actions.js";
 import { upsertWorkbenchFrameReadCursor } from "./read-cursors.js";
 import { requestWorkbenchReview } from "./review.js";
 import { readWorkbenchPdfText } from "./pdf-text.js";
@@ -531,6 +532,22 @@ async function handleWorkbenchRequest(
 					session,
 					state: buildServedWorkbenchState(options),
 				}, headers);
+				return;
+			}
+
+			if (url.pathname === "/api/chat/session/action" && request.method === "POST") {
+				const body = expectObject(await readJsonBody(request));
+				const action = stringField(body, "action");
+				const projectId = stringField(body, "projectId");
+				const runSlug = stringField(body, "sessionId");
+				if (action === "archive" || action === "restore") {
+					archiveWorkbenchQuestion({ workingDir: options.workingDir, projectId, runSlug, archived: action === "archive" });
+				} else if (action === "delete") {
+					deleteWorkbenchQuestion({ workingDir: options.workingDir, projectId, runSlug, sessionDir: options.sessionDir });
+				} else {
+					throw new Error("Question action must be archive, restore, or delete.");
+				}
+				sendJson(response, 200, { state: buildServedWorkbenchState(options) }, headers);
 				return;
 			}
 

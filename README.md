@@ -124,11 +124,13 @@ Typing in the composer adds an instruction for that workflow; it does not replac
 
 Axorbis keeps the research process centered on a project and its research question.
 
+Questions can be archived to move them out of the active project view while retaining their sessions, files, and evidence. Permanent deletion removes the question's messages, uploads, Pi session, linked artifacts, and related local action metadata.
+
 A typical path is:
 
 **Question → Sources → Claims → Evidence → Analysis → Output**
 
-Different workflows operate on that shared research context. Deep Research now keeps a compact evidence ledger and claim map so source content is fetched once where possible, reused for synthesis and verification, and measured by stage. Compare can structure evidence, Audit can challenge claims, Replicate can turn findings into an execution plan, and Draft can transform the resulting work into a polished artifact.
+Different workflows operate on that shared research context. Deep Research now routes each run through a bounded policy, keeps a compact evidence ledger and claim map, compacts old retrieval output before later model calls, and reuses source content for synthesis and selective verification. Compare can structure evidence, Audit can challenge claims, Replicate can turn findings into an execution plan, and Draft can transform the resulting work into a polished artifact.
 
 This shared workspace is the core of Axorbis: research modes are different tools working over the same body of evidence.
 
@@ -140,7 +142,7 @@ Axorbis uses a bring-your-own-key model and supports:
 
 `Anthropic` · `OpenAI` · `Gemini` · `OpenRouter` · `LM Studio` · `Ollama` · `LiteLLM` · custom providers
 
-Provider management includes encrypted credentials, token and cost tracking, monthly budgets, and configurable hard stops.
+Provider management includes encrypted credentials, token and cost tracking, and usage reporting.
 
 Provider secrets are stored encrypted and are not returned to the UI.
 

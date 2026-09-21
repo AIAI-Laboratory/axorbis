@@ -4,6 +4,69 @@ Workspace lab notebook for long-running or resumable research work.
 
 Use this file to track chronology, not release notes. Keep entries short, factual, and operational.
 
+### 2026-09-21 — isolate-subagent-credentials
+
+- Objective: Ensure subagents never use the Main Agent key as a subkey.
+- Changed: Detached child environments remove the main provider credential; child model resolution requires a configured `axorbis_subagent_*` alias and fails closed otherwise. Settings now labels the pool as required for subagents.
+- Verified: Typecheck, provider tests, Pi subagent patch tests (`33/33`), and an installed-runtime patch probe confirm the guard is applied idempotently.
+- Next: Run one child-backed research task and confirm provider activity records only a configured subagent key.
+
+### 2026-09-21 — deepresearch-completion-summary
+
+- Objective: Show the research result in chat when Deep Research returns a successful completion notice.
+- Changed: Successful completion messages now extract the final report's Executive Summary from the completed artifact write or the saved workspace file and append it to the chat response; existing artifact links and usage details remain visible.
+- Verified: Typecheck and focused Pi-stream tests (`7/7`) pass.
+- Next: Confirm one live completed Deep Research turn renders the summary before the usage panel.
+
+### 2026-09-21 — deepresearch-writer-quota-cap
+
+- Objective: Prevent Deep Research synthesis from repeatedly consuming the main provider key past a 250k-token quota.
+- Changed: Direct runs remain lead-owned; larger runs allow one fresh writer child with a two-turn hard cap, compact claim/evidence inputs, no search/fetch, and subagent-key-pool routing. The runtime now blocks additional writer launches per run.
+- Verified: Typecheck, focused Deep Research policy tests (`3/3`), production build, and `desktop:dev` startup pass. Three unrelated pre-existing content-policy failures remain in preview/lit/review prompt checks.
+- Next: Run one broad Deep Research job and confirm Activity shows at most one writer child on Subagent key 1/2 and the provider dashboard records that key.
+
+### 2026-09-21 — per-call-usage-key-labels
+
+- Objective: Show which configured key handled each recorded provider call.
+- Changed: Usage details now label calls as Main key or the matching Subagent key number without exposing secret values.
+- Verified: Typecheck, focused frame-message tests (`3/3`), production build, and desktop restart pass.
+- Next: Run one live research turn and confirm the displayed key label matches the provider dashboard.
+
+### 2026-09-21 — supplementary-usage-inspector
+
+- Objective: Let users hide supplementary documents and inspect token usage for each research command call.
+- Changed: Added a Show/Hide control for the supplementary-document list and persisted per-turn provider call usage on assistant messages, with API-call, input, output, total-token, model/key, and latency details in Activity.
+- Verified: Typecheck, focused frame-message tests (`3/3`), production build, and diff hygiene pass.
+- Next: Exercise one live research turn and confirm its Activity usage breakdown contains the expected provider calls.
+
+### 2026-09-21 — remove-budget-guardrails-ui
+
+- Objective: Remove the Budget guardrails section from provider settings.
+- Changed: Removed the budget controls, budget subtitle, and hard-stop status message from the visible AI Providers UI while preserving backend compatibility with existing stored provider data.
+- Verified: Typecheck, production build, and diff hygiene pass.
+- Next: None for this UI change.
+
+### 2026-09-21 — research-question-lifecycle
+
+- Objective: Let users archive a research question without deleting it, or permanently remove its session and artifacts.
+- Changed: Persisted archived question slugs per custom project, added archived navigation and question actions, and added a server-side deletion path for session JSON, uploads, Pi session, linked artifacts, and artifact-action metadata.
+- Verified: Typecheck, production build, diff hygiene, and the archive/delete lifecycle test pass; the full new-sessions suite has one unrelated existing open-science fixture failure.
+- Next: Manually exercise the desktop buttons against a real research question when the native window is available.
+
+### 2026-09-21 — subagent-key-usage-reconciliation
+
+- Objective: Make configured subagent-key rotation observable without storing prompts or transcripts in usage telemetry.
+- Changed: Reconciled compact Pi child metadata to the real encrypted key ids with idempotent source tracking, added per-key request/token summaries to provider settings, covered Pi's `input`/`output` usage shape, and forwarded the alias pool plus `AXORBIS_SUBAGENT_KEY_*` variables into detached child processes so provider dashboards receive requests from the configured keys.
+- Verified: Provider reconciliation tests (`5/5`), Pi patch tests (`33/33`), build, and both TypeScript typechecks pass. Live two-key provider-dashboard usage remains unverified until the next parallel subagent run.
+- Next: Run one parallel research task and confirm both key rows show non-zero request counts.
+
+### 2026-09-21 — deepresearch-token-optimization-runtime
+
+- Objective: Replace prompt-only Deep Research throttling with a runtime-bounded core while preserving the `/deepresearch` command and artifact contract.
+- Changed: Added a deterministic policy router, hard search/fetch/researcher gates, forced metadata-first search, and non-destructive compaction of older retrieval tool results before later model calls. Restored the evidence/claims/metrics workflow contract in the prompt and updated public docs. Provider error turns now settle on `message_end(error)`, and workbench prompts use `followUp` queueing while Pi/provider retries finish.
+- Verified: Deep Research policy, context-compaction, metrics, approval, provider-error cleanup, typecheck, and production build pass. Architecture check remains blocked by pre-existing oversized workbench and PaperRank files; no new policy file is implicated. Provider-token reduction and end-to-end live research remain unverified until an old/new A/B run is available.
+- Next: Run identical narrow, comparison, broad, and complex prompts and compare per-stage metrics plus citation/verification outcomes.
+
 ### 2026-09-20 — deepresearch-token-optimization
 
 - Objective: Reduce repeated `/deepresearch` context ingestion while preserving source traceability and adversarial verification.

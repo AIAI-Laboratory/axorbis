@@ -601,6 +601,9 @@ test("deepresearch keeps subagent tool calls small and skips subagents for narro
 	assert.match(deepResearchPrompt, /RUN_ROOT\/\.drafts\/<slug>-verification\.md/i);
 	assert.match(deepResearchPrompt, /Keep tool-call JSON small/i);
 	assert.match(deepResearchPrompt, /Write a short brief per researcher/i);
+	assert.match(deepResearchPrompt, /call the `writer` subagent exactly once/i);
+	assert.match(deepResearchPrompt, /hard child `toolBudget` of 2/i);
+	assert.match(deepResearchPrompt, /individual lead `write` tool event cannot switch keys/i);
 	assert.match(deepResearchPrompt, /Wait for completion results/i);
 	const examples = [...deepResearchPrompt.matchAll(/```json\n([\s\S]*?)\n```/g)]
 		.map((match) => JSON.parse(match[1]!));

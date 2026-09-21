@@ -31,8 +31,8 @@ import { readNotebookExecutionRecords, type WorkbenchNotebookExecutionRecord } f
 import { findWorkbenchProject } from "./projects.js";
 import { formatWorkbenchRuntimeContextForPrompt } from "./runtime-context.js";
 import { buildWorkbenchState, readWorkbenchFile } from "./scan.js";
-import { aiProviderIdForModel, assertAiProviderBudget, defaultAiProviderModel, getAiProviderRuntimeEnv, normalizeAiProviderModel, recordAiProviderUsage, syncAiProviderPiConfig } from "./ai-providers.js";
-import { isDeepResearchApproval, pendingDeepResearchPlan, resolveEmptyWorkbenchReply } from "./empty-chat-reply.js";
+import { aiProviderIdForModel, assertAiProviderBudget, defaultAiProviderModel, getAiProviderRuntimeEnv, normalizeAiProviderModel, recordAiProviderUsage, reconcileSubagentArtifactUsage, syncAiProviderPiConfig } from "./ai-providers.js";
+import { enrichDeepResearchCompletion, isDeepResearchApproval, pendingDeepResearchPlan, resolveEmptyWorkbenchReply } from "./empty-chat-reply.js";
 import { projectArtifactRoot } from "./artifact-roots.js";
 
 export type WorkbenchPromptStreamUpdate = {
@@ -79,6 +79,8 @@ type ActiveRpcRun = {
 		providerId?: string;
 		model?: string;
 		requestStartedAtMs: number;
+		sessionDir: string;
+		runStartedAtMs: number;
 	};
 };
 
@@ -605,6 +607,8 @@ class WorkbenchPiRpcClient {
 				providerId: aiProviderIdForModel(request.workingDir, request.session.config.model || defaultAiProviderModel(request.workingDir)),
 				model: normalizeAiProviderModel(request.workingDir, request.session.config.model || defaultAiProviderModel(request.workingDir)),
 				requestStartedAtMs: Date.now(),
+				sessionDir: request.sessionDir!,
+				runStartedAtMs: Date.now(),
 			},
 		};
 		clearTimeout(activeRun.timeout);
@@ -620,18 +624,27 @@ class WorkbenchPiRpcClient {
 			const response = await this.send({
 				type: "prompt",
 				message: buildWorkbenchRpcPrompt(request),
+				// Queue a late prompt instead of letting Pi reject it while a provider
+				// error or its built-in retry is still settling.
+				streamingBehavior: "followUp",
 			});
 			if (response.success === false) {
 				throw new Error(response.error || "Feynman Pi RPC prompt was rejected.");
 			}
 			await done;
 			await Promise.all(activeRun.pendingUpdates);
+			reconcileSubagentArtifactUsage({
+				workingDir: request.workingDir,
+				sessionDir: activeRun.usageContext.sessionDir,
+				sessionId: request.session.id,
+				afterMs: activeRun.usageContext.runStartedAtMs,
+			});
 		} finally {
 			clearTimeout(activeRun.timeout);
 			if (this.activeRun === activeRun) this.activeRun = undefined;
 		}
 		const finalReply = activeRun.content.trim()
-			? { content: activeRun.content.trim(), status: activeRun.status }
+			? { content: enrichDeepResearchCompletion(request.message, activeRun.content.trim(), [...activeRun.toolEvents.values()], request.workingDir), status: activeRun.status }
 			: resolveEmptyWorkbenchReply(request.message, [...activeRun.toolEvents.values()], activeRun.status);
 		if (!activeRun.toolEvents.size) {
 			const id = randomUUID();
@@ -700,7 +713,8 @@ class WorkbenchPiRpcClient {
 			activeRun.resolve();
 			return;
 		}
-			activeRun.pendingUpdates.push(handlePiJsonLine(line, activeRun.toolEvents, async (update) => {
+		const terminalProviderError = isTerminalProviderErrorEvent(event);
+		const updatePromise = handlePiJsonLine(line, activeRun.toolEvents, async (update) => {
 				const normalized: WorkbenchPromptStreamUpdate = { ...update };
 				if (update.contentDelta !== undefined) {
 					activeRun.content += update.contentDelta;
@@ -711,7 +725,17 @@ class WorkbenchPiRpcClient {
 				}
 				if (normalized.status) activeRun.status = normalized.status;
 				await activeRun.onUpdate(normalized);
-			}, activeRun.usageContext));
+			}, activeRun.usageContext);
+		activeRun.pendingUpdates.push(updatePromise);
+		if (terminalProviderError) {
+			// Some providers emit message_end(error) before agent_end. Resolve here
+			// so a 503/UNAVAILABLE turn cannot leave the workbench stuck as running.
+			updatePromise.then(() => {
+				if (this.activeRun !== activeRun) return;
+				activeRun.status = "error";
+				activeRun.resolve();
+			}).catch(activeRun.reject);
+		}
 	}
 
 	private rejectPending(error: Error): void {
@@ -815,6 +839,13 @@ function messageErrorText(message: unknown): string {
 	const error = unknownRecord(record.error);
 	const nested = error?.message;
 	return typeof nested === "string" && nested.trim() ? boundedText(nested.trim()) : "";
+}
+
+export function isTerminalProviderErrorEvent(event: Record<string, unknown>): boolean {
+	const message = unknownRecord(event.message);
+	return event.type === "message_end"
+		&& message?.role === "assistant"
+		&& message?.stopReason === "error";
 }
 
 function toolOutput(value: unknown): string | undefined {

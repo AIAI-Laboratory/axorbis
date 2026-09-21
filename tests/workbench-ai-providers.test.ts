@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -12,6 +12,7 @@ import {
 	getAiProviderRuntimeEnv,
 	listAiProviders,
 	normalizeAiProviderModel,
+	reconcileSubagentArtifactUsage,
 	recordAiProviderUsage,
 	removeAiProviderCredential,
 	syncAiProviderPiConfig,
@@ -65,6 +66,8 @@ test("AI provider catalog and vault persist redacted generic BYOK metadata", asy
 	const geminiEnv = getAiProviderRuntimeEnv(root, "google/gemini-2.5-pro");
 	assert.equal(geminiEnv.GEMINI_API_KEY, inferenceSecret);
 	assert.equal(geminiEnv.AXORBIS_SUBAGENT_KEY_GEMINI_0, "subagent-secret");
+	assert.equal(geminiEnv.AXORBIS_SUBAGENT_POOL_REQUIRED, "1");
+	assert.equal(geminiEnv.AXORBIS_SUBAGENT_INFERENCE_ENV_VAR, "GEMINI_API_KEY");
 	assert.match(geminiEnv.AXORBIS_SUBAGENT_MODEL_ALIASES ?? "", /axorbis_subagent_gemini_0\/gemini-2\.5-pro/);
 	assert.equal(geminiEnv.AXORBIS_SUBAGENT_PARENT_MODEL, "google/gemini-2.5-pro");
 	upsertAiProvider(root, { id: "custom", kind: "custom", endpoint: "https://models.example.test/v1", defaultModel: "research-model", inferenceApiKey: inferenceSecret });
@@ -129,6 +132,31 @@ test("Gemini usageMetadata is persisted with request telemetry and rate-limit st
 	assert.equal(provider.usage.lastRequest?.keyId, "subagent-2");
 	assert.equal(provider.usage.lastRequest?.latencyMs, 842);
 	assert.equal(provider.usage.estimatedCostUsd, 0.12);
+}));
+
+test("subagent artifact usage is reconciled to the configured key ids exactly once", async () => withIsolatedWorkbench((root) => {
+	const provider = upsertAiProvider(root, {
+		id: "gemini", kind: "gemini", models: ["gemini-2.5-pro"], defaultModel: "gemini-2.5-pro",
+		inferenceApiKey: "main-secret", subagentInferenceApiKeys: ["subagent-one", "subagent-two"],
+	});
+	const artifactsDir = join(root, "session", "subagent-artifacts");
+	mkdirSync(artifactsDir, { recursive: true });
+	for (const [index, inputTokens] of [11, 22].entries()) {
+		writeFileSync(join(artifactsDir, `run-${index}_researcher_meta.json`), JSON.stringify({
+			model: `axorbis_subagent_gemini_${index}/gemini-2.5-pro`,
+			usage: { input: inputTokens, output: 3, cacheRead: 4, turns: 1 },
+			durationMs: 120,
+			timestamp: Date.now(),
+		}));
+	}
+	assert.equal(reconcileSubagentArtifactUsage({ workingDir: root, sessionDir: join(root, "session"), sessionId: "session-subagents" }), 2);
+	assert.equal(reconcileSubagentArtifactUsage({ workingDir: root, sessionDir: join(root, "session"), sessionId: "session-subagents" }), 0);
+	const saved = listAiProviders(root).find((item) => item.id === "gemini")!;
+	assert.equal(saved.subagentKeys[0]?.id, provider.subagentKeys[0]?.id);
+	assert.equal(saved.subagentKeys[0]?.usage?.requestCount, 1);
+	assert.equal(saved.subagentKeys[0]?.usage?.inputTokens, 11);
+	assert.equal(saved.subagentKeys[1]?.usage?.requestCount, 1);
+	assert.equal(saved.subagentKeys[1]?.usage?.inputTokens, 22);
 }));
 
 test("AI provider connection test uses the vault server-side and redacts responses", async () => {

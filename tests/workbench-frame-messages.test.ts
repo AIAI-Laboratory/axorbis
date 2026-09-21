@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { submitWorkbenchChatMessage } from "../engine/workbench/chat.js";
+import { recordAiProviderUsage, upsertAiProvider } from "../engine/workbench/ai-providers.js";
 import { buildWorkbenchState } from "../engine/workbench/scan.js";
 import { startWorkbenchServer } from "../engine/workbench/server.js";
 
@@ -16,6 +17,35 @@ function makeFrameMessageWorkspace(): string {
 	writeFileSync(join(root, "CHANGELOG.md"), "# Changelog\n");
 	return root;
 }
+
+test("workbench chat attaches per-turn provider usage to the assistant message", async () => {
+	const root = makeFrameMessageWorkspace();
+	try {
+		upsertAiProvider(root, { id: "openai", kind: "openai", defaultModel: "gpt-5.5" });
+		const session = await submitWorkbenchChatMessage({
+			workingDir: root,
+			executor: async (request) => {
+				recordAiProviderUsage(root, {
+					providerId: "openai",
+					sessionId: request.session.id,
+					model: "openai/gpt-5.5",
+					keyId: "main",
+					usage: { inputTokens: 120, outputTokens: 30, totalTokenCount: 150 },
+				});
+				return { content: "Usage recorded." };
+			},
+		}, { id: "usage-session", projectId: "workspace", title: "Usage session", message: "measure this call" });
+		const assistant = session.messages.at(-1)!;
+		assert.equal(assistant.usage?.requestCount, 1);
+		assert.equal(assistant.usage?.inputTokens, 120);
+		assert.equal(assistant.usage?.outputTokens, 30);
+		assert.equal(assistant.usage?.totalTokenCount, 150);
+		assert.equal(assistant.usage?.calls[0]?.model, "openai/gpt-5.5");
+		assert.equal(assistant.usage?.calls[0]?.keyLabel, "Main key");
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
 
 test("workbench state exposes Claude-style frame message rows from Feynman chat sessions", async () => {
 	const root = makeFrameMessageWorkspace();

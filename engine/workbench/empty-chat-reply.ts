@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import type { WorkbenchChatMessage, WorkbenchChatStatus, WorkbenchToolEvent } from "./chat.js";
 import { AXORBIS_ARTIFACT_ROOT } from "./artifact-roots.js";
 
@@ -26,9 +29,13 @@ function completedArtifactWrite(event: WorkbenchToolEvent): CompletedArtifactWri
 		: undefined;
 }
 
+function isFinalReportPath(path: string): boolean {
+	return new RegExp(`^(?:${AXORBIS_ARTIFACT_ROOT.replace(".", "\\.")}(?:/projects/[a-z0-9._-]+)?|outputs|papers)/(?!\\.plans/|\\.drafts/).+\\.md$`, "u").test(path)
+		&& !path.endsWith(".provenance.md");
+}
+
 function isFinalReportWrite(write: CompletedArtifactWrite): boolean {
-	return new RegExp(`^(?:${AXORBIS_ARTIFACT_ROOT.replace(".", "\\.")}(?:/projects/[a-z0-9._-]+)?|outputs|papers)/(?!\\.plans/|\\.drafts/).+\\.md$`, "u").test(write.path)
-		&& !write.path.endsWith(".provenance.md");
+	return isFinalReportPath(write.path);
 }
 
 function completedFinalWrite(event: WorkbenchToolEvent): boolean {
@@ -73,6 +80,44 @@ function emptyFinalResearchReply(toolEvents: WorkbenchToolEvent[]): string | und
 		...paths.filter((path) => path.endsWith(".provenance.md")).map((path) => `- Provenance: \`${path}\``),
 		...supporting.map((path) => `- Supporting artifact: \`${path}\``),
 	].join("\n");
+}
+
+/**
+ * Some successful Deep Research turns return a completion notice after the
+ * artifact writes instead of repeating the report in the chat message. Keep
+ * the notice, but surface the report's compact executive summary as well.
+ */
+export function enrichDeepResearchCompletion(
+	userMessage: string,
+	content: string,
+	toolEvents: WorkbenchToolEvent[],
+	workingDir?: string,
+): string {
+	const completionNotice = /deep research[\s\S]{0,240}completed successfully/iu.test(content)
+		&& /all required artifacts/iu.test(content);
+	const deepResearchTurn = /^\/deepresearch(?:\s|$)/iu.test(userMessage.trimStart()) || /^yes$/iu.test(userMessage.trim());
+	if ((!completionNotice && !deepResearchTurn) || /##\s+Research synthesis/iu.test(content)) return content;
+	const writes = toolEvents.map(completedArtifactWrite).filter((item): item is CompletedArtifactWrite => Boolean(item));
+	let finalReport = writes.find(isFinalReportWrite);
+	if (!finalReport && workingDir) {
+		const workspaceRoot = resolve(workingDir);
+		const reportPath = [...content.matchAll(/((?:\.axorbis\/artifacts(?:\/projects\/[a-z0-9._-]+)?|outputs|papers)\/[a-z0-9._/-]+\.md)/giu)]
+			.map((match) => match[1]!)
+			.find((path) => isFinalReportPath(path));
+		if (reportPath) {
+			const absolutePath = resolve(workspaceRoot, reportPath);
+			if (absolutePath.startsWith(`${workspaceRoot}/`) && existsSync(absolutePath)) {
+				try {
+					finalReport = { path: reportPath, content: readFileSync(absolutePath, "utf8") };
+				} catch {
+					// Keep the completion notice when the report cannot be read.
+				}
+			}
+		}
+	}
+	const summary = finalReport ? conciseReportSummary(finalReport.content) : undefined;
+	if (!summary) return content;
+	return `${content.trim()}\n\n## Research synthesis\n\n${summary}`;
 }
 
 type PlanMessage = Pick<WorkbenchChatMessage, "role" | "status" | "content" | "toolEvents">;
