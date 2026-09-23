@@ -1,5 +1,5 @@
 ---
-description: Run a bounded, source-grounded investigation and produce an auditable research brief.
+description: Route a research question to a bounded, source-grounded investigation and cited brief.
 args: <topic>
 section: Research Workflows
 topLevelCli: true
@@ -43,17 +43,13 @@ After plan approval, continue in degraded mode if a capability fails. Still writ
 
 ## 1. Route and plan
 
-First call `feynman_deepresearch_policy` before searching or delegating. Estimate:
+First call `subagent` once with `agent: "deepresearch-router"`, `context: "fresh"`, and a task containing only the research question. This router has no tools or inherited context. Parse its JSON result; do not pass the full conversation, a plan, or source text. If routing fails, conservatively classify as `standard`, with `unknown` domain and a recorded failure reason. Then call `feynman_deepresearch_policy` with the router's `complexity`, `questionCount`, `entityCount`, `domainTags`, and `reason`; set `exhaustive` only when explicitly requested. Do this before searching or delegating research.
 
-- `breadth`: `direct`, `comparison`, `broad`, or `complex`;
-- `questionCount`: distinct questions to answer;
-- `entityCount`: papers, products, methods, or systems being compared;
-- `domainCount`: materially different domains;
-- `exhaustive`: true only when the user explicitly asks for exhaustive coverage.
+The route is based on observable wording: `simple` means one focused question and no comparison; `standard` means two to four questions, at least two compared entities, or two material domains; `deep` means five or more questions, three or more material domains, or explicit exhaustive coverage. The policy may escalate an under-classified route. Do not change these thresholds during a run.
 
 The returned policy is authoritative. Do not exceed its researcher, query, fetch, source, or verification budgets. The runtime also blocks over-budget search, fetch, and researcher calls.
 
-Make the scale decision before assigning owners. Write the plan with key questions, stable claim IDs, evidence needed, scale decision, task ledger, verification log, decision log, and estimated tool-call budget. Save it with `memory_remember` as `deepresearch.<slug>.plan` only when that tool is visible.
+Make the scale decision before assigning owners. Write the plan with the original question, router JSON, applied policy mode, domain tags, route reason, any escalation, key questions, stable claim IDs, evidence needed, task ledger, verification log, decision log, and estimated tool-call budget. Save it with `memory_remember` as `deepresearch.<slug>.plan` only when that tool is visible.
 
 Then stop and ask for explicit confirmation before gathering evidence. Ask exactly:
 
@@ -77,13 +73,13 @@ Every evidence JSONL line must be compact and auditable:
 
 Metadata-only discoveries cannot support content claims. Preserve numbers, limitations, conflicts, assumptions, and uncertainty. Write evidence immediately; do not keep raw page bodies in the lead transcript.
 
-### Direct mode
+### Researcher count by route
 
-For `maxResearchers: 0`, search and extract evidence yourself. Narrow question, single fact, or simple explainer: no researchers; this should fit approximately 15 tool calls or fewer. Use distinct query angles, stop when the policy budget or two no-gain searches is reached, and write `RUN_ROOT/.drafts/<slug>-evidence-direct.jsonl` before merging it into `RUN_ROOT/.drafts/<slug>-evidence.jsonl`. In prose, this is the direct evidence path: writes `RUN_ROOT/.drafts/<slug>-evidence-direct.jsonl` before synthesis.
+- `simple`: exactly one researcher, then writer. The lead checks each claim against its stored excerpt and source location while merging evidence and records those inline checks; there is no reviewer or separate verifier pass.
+- `standard`: one researcher when the question has at most two distinct subquestions; otherwise two researchers in parallel. Then writer and verifier; no reviewer.
+- `deep`: three researchers in parallel, then writer, verifier, and reviewer. The verifier must finish before the reviewer reads the cited draft.
 
-### Delegated mode
-
-Use only the number of researchers allowed by the policy. Compatibility scale guide: Direct comparison: at most 2 researchers. Broad survey: 2–3 researchers. Complex multi-domain research: 3–4 researchers. More than 4 researchers: only when the user explicitly requests exhaustive coverage. The runtime policy may cap those numbers lower. Assign disjoint claim IDs and source seams. Write a short brief per researcher at `RUN_ROOT/.plans/<slug>-T1.md`, etc. Each child must use fresh context, the supplied source registry, the hard researcher budget, and `outputMode: "file-only"`.
+Use only the number of researchers allowed by the policy. Assign disjoint claim IDs and source seams. Write a short brief per researcher at `RUN_ROOT/.plans/<slug>-T1.md`, etc. Each child must use fresh context, the supplied source registry, the hard researcher budget, and `outputMode: "file-only"`.
 
 Launch one bounded async workflow when parallelism helps:
 
@@ -99,10 +95,7 @@ Retrieval guard: maximum 2 search rounds; maximum 4 queries per round; triage no
 
 Before drafting, write `<slug>-claims.json` as a compact array mapping every important claim to supporting and contradicting source IDs, confidence, limitations, and status (`supported`, `conflicted`, `unsupported`, `inferred`, or `blocked`).
 
-Choose the smallest synthesis path allowed by the policy:
-
-- For `direct` runs, write `<slug>-draft.md` yourself from the claim map and evidence ledger. Do not reread raw pages.
-- For `comparison`, `broad`, or `complex` runs, call the `writer` subagent exactly once after the claim map and evidence ledger exist. Give it only those compact file paths plus the plan, use `context: "fresh"`, `outputMode: "file-only"`, and a hard child `toolBudget` of 2. The writer must not search, fetch, reread raw pages, create auxiliary files, or write anything except `<slug>-draft.md`. Do not embed claims or evidence in the tool-call JSON.
+For every route, call the `writer` subagent exactly once after the claim map and evidence ledger exist. Give it only those compact file paths plus the plan, use `context: "fresh"`, `outputMode: "file-only"`, and a hard child `toolBudget` of 2. The writer must not search, fetch, reread raw pages, create auxiliary files, or write anything except `<slug>-draft.md`. Do not embed claims or evidence in the tool-call JSON.
 
 Example writer call:
 
@@ -114,9 +107,9 @@ This is the only writer launch in a Deep Research run. The child model request i
 
 ## 4. Selective citation and verification
 
-For direct runs, add citations yourself and write `<slug>-cited.md`, then write `<slug>-verification.md` yourself.
+For `simple` runs, the lead adds citations from the inline-checked claim map and writes `<slug>-cited.md` and `<slug>-verification.md`. Record every claim ID, source ID, excerpt/location checked, outcome, and unresolved gap. Remove or soften claims whose stored evidence is insufficient. This is inline verification, not a full verifier pass.
 
-For delegated runs, call `verifier` only after the draft, merged evidence ledger, and claim map exist. The verifier must complete before review. Give it only those compact paths. It must reuse stored evidence and must not re-fetch every URL; refetch only central, quantitative, disputed, insufficient, metadata-only, or provenance-uncertain claims. It must write `RUN_ROOT/.drafts/<slug>-cited.md` and report stored checks, targeted refetches, and unresolved claims.
+For `standard` and `deep` runs, call `verifier` only after the draft, merged evidence ledger, and claim map exist. The verifier must complete before review. Give it only those compact paths. It must reuse stored evidence and must not re-fetch every URL; refetch only central, quantitative, disputed, insufficient, metadata-only, or provenance-uncertain claims. It must write `RUN_ROOT/.drafts/<slug>-cited.md` and report stored checks, targeted refetches, and unresolved claims.
 
 Call `reviewer` only when the policy allows it and only after the cited draft exists; run the reviewer only after the cited draft exists. Give it the cited draft and claim map, not raw source bodies. The routine pass is compact and medium-thinking; launch a deeper pass only for a specific MAJOR/FATAL issue. Fix FATAL issues before delivery and record unresolved MAJOR issues as open questions.
 

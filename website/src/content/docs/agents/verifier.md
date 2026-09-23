@@ -33,4 +33,4 @@ The verifier is honest about its limitations. When a claim cannot be verified be
 
 ## Used by
 
-The verifier agent is used by `/deepresearch` (final fact-checking pass), `/audit` (comparing paper claims to code), `/replicate` (verifying that the replication plan captures all necessary details), and non-trivial `/recipe` runs (checking the top recipe's key sources, dataset availability, and code paths). It serves as the quality control step that runs after the researcher and writer have produced their output.
+The verifier agent is used by standard and deep `/deepresearch` runs, `/audit` (comparing paper claims to code), `/replicate` (verifying that the replication plan captures all necessary details), and non-trivial `/recipe` runs (checking the top recipe's key sources, dataset availability, and code paths). Simple Deep Research runs record inline claim checks in the verification artifact instead.

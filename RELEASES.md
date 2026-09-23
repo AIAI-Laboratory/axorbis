@@ -8,6 +8,12 @@ GitHub release notes are generated from the matching `## vX.Y.Z` section in this
 
 No unreleased changes.
 
+## Unreleased
+
+### Deep Research routing
+
+- A tool-free router now classifies the question as simple, standard, or deep before planning and records its reason and domain tags in the plan. Simple runs use one researcher and writer with inline claim checks; standard runs use one or two researchers, writer, and verifier; deep runs add a reviewer.
+
 ## v0.3.51 - 2026-09-21
 
 ### Research question lifecycle

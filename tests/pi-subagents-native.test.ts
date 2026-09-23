@@ -74,9 +74,9 @@ nativeTest("research prompt and docs examples validate and collect failed childr
 			const call = JSON.parse(match[1]!);
 			if (!call.workflowScript && !call.agent) continue;
 			for (const key of Object.keys(call)) assert.ok(schema.properties[key], `${file}: unsupported ${key}`);
-			assert.equal(call.async, true);
 			for (const obsolete of ["tasks", "chain", "failFast", "concurrency"]) assert.equal(call[obsolete], undefined);
 			if (!call.workflowScript) continue;
+			assert.equal(call.async, true);
 			assert.deepEqual(workflows.validateWorkflowScript(call.workflowScript), { ok: true, errors: [] });
 			const launched: string[] = [];
 			const result = await workflows.runWorkflowScript({

@@ -467,9 +467,9 @@ test("agent docs describe subagent calls without overclaiming orchestration", ()
 
 	assert.doesNotMatch(combined, /workflow orchestrator|dispatched automatically|Each workflow dispatches|handles the entire source discovery|Every factual claim is linked|It is always the last agent|Every verification result includes/i);
 	assert.match(slashDocs, /through Pi's `subagent` tool when delegation helps/i);
-	assert.match(deepResearchDocs, /Narrow explainers stay lead-owned/i);
-	assert.match(researcherDocs, /narrow tasks stay lead-owned/i);
-	assert.match(researcherDocs, /can spawn multiple researcher agents in parallel/i);
+	assert.match(deepResearchDocs, /simple.*one researcher and a writer/i);
+	assert.match(researcherDocs, /one researcher handles a simple route/i);
+	assert.match(researcherDocs, /Parallel researchers run through one bounded async/i);
 	assert.match(writerDocs, /research claims/i);
 	assert.match(writerDocs, /usually runs near the end/i);
 	assert.match(verifierDocs, /Completed verification notes identify/i);
@@ -581,23 +581,24 @@ test("lit workflow recovers from plan edit JSON failures", () => {
 	assert.match(litPrompt, /continue to final artifact\/provenance verification/i);
 });
 
-test("deepresearch keeps subagent tool calls small and skips subagents for narrow explainers", () => {
+test("deepresearch routes before research and keeps subagent tool calls small", () => {
 	const deepResearchPrompt = readFileSync(join(repoRoot, "prompts", "deepresearch.md"), "utf8");
+	const router = readFileSync(join(repoRoot, ".axorbis", "agents", "deepresearch-router.md"), "utf8");
 
-	assert.match(deepResearchPrompt, /Narrow question, single fact, or simple explainer: no researchers/i);
+	assert.match(deepResearchPrompt, /agent: "deepresearch-router"/i);
+	assert.match(router, /^tools:\s*$/m);
+	assert.match(router, /Do not research, plan, or call tools/i);
 	assert.match(deepResearchPrompt, /Make the scale decision before assigning owners/i);
-	assert.match(deepResearchPrompt, /approximately 15 tool calls or fewer/i);
-	assert.match(deepResearchPrompt, /Direct comparison: at most 2 researchers/i);
-	assert.match(deepResearchPrompt, /Broad survey: 2–3 researchers/i);
-	assert.match(deepResearchPrompt, /Complex multi-domain research: 3–4 researchers/i);
-	assert.match(deepResearchPrompt, /More than 4 researchers: only when the user explicitly requests exhaustive coverage/i);
+	assert.match(deepResearchPrompt, /`simple`: exactly one researcher, then writer/i);
+	assert.match(deepResearchPrompt, /`standard`: one researcher.*otherwise two researchers in parallel/i);
+	assert.match(deepResearchPrompt, /`deep`: three researchers in parallel/i);
 	assert.match(deepResearchPrompt, /maximum 2 search rounds/i);
 	assert.match(deepResearchPrompt, /maximum 4 queries per round/i);
 	assert.match(deepResearchPrompt, /triage no more than 10 candidate results/i);
 	assert.match(deepResearchPrompt, /at most 4 selected full-source fetches/i);
 	assert.match(deepResearchPrompt, /approximately 6–8 accepted sources maximum/i);
 	assert.match(deepResearchPrompt, /two consecutive search attempts add no materially new claim/i);
-	assert.match(deepResearchPrompt, /writes `RUN_ROOT\/\.drafts\/<slug>-evidence-direct\.jsonl`/i);
+	assert.match(deepResearchPrompt, /router JSON, applied policy mode, domain tags, route reason/i);
 	assert.match(deepResearchPrompt, /RUN_ROOT\/\.drafts\/<slug>-verification\.md/i);
 	assert.match(deepResearchPrompt, /Keep tool-call JSON small/i);
 	assert.match(deepResearchPrompt, /Write a short brief per researcher/i);

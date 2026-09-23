@@ -2,7 +2,8 @@ import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
-export type DeepResearchMode = "direct" | "comparison" | "broad" | "complex";
+export type DeepResearchMode = "simple" | "standard" | "deep";
+export type DeepResearchDomain = "web-only" | "paper-search" | "bio" | "chem" | "genomics" | "unknown";
 
 export type DeepResearchPolicy = {
 	mode: DeepResearchMode;
@@ -16,20 +17,24 @@ export type DeepResearchPolicy = {
 	maxCumulativeTokens: number;
 	workerThinking: "low" | "medium";
 	allowReviewer: boolean;
+	allowVerifier: boolean;
+	domainTags: DeepResearchDomain[];
+	routeReason: string;
 };
 
 export type DeepResearchPolicyInput = {
-	breadth: DeepResearchMode;
+	complexity: DeepResearchMode;
 	questionCount: number;
 	entityCount: number;
-	domainCount: number;
+	domainTags: DeepResearchDomain[];
+	reason: string;
 	exhaustive?: boolean;
 };
 
-const POLICY_BY_MODE: Record<DeepResearchMode, Omit<DeepResearchPolicy, "mode">> = {
-	direct: {
-		maxResearchers: 0,
-		maxWriters: 0,
+const POLICY_BY_MODE: Record<DeepResearchMode, Omit<DeepResearchPolicy, "mode" | "domainTags" | "routeReason">> = {
+	simple: {
+		maxResearchers: 1,
+		maxWriters: 1,
 		maxSearchRounds: 2,
 		maxQueries: 6,
 		maxFetchedUrls: 4,
@@ -38,9 +43,10 @@ const POLICY_BY_MODE: Record<DeepResearchMode, Omit<DeepResearchPolicy, "mode">>
 		maxCumulativeTokens: 45_000,
 		workerThinking: "low",
 		allowReviewer: false,
+		allowVerifier: false,
 	},
-	comparison: {
-		maxResearchers: 1,
+	standard: {
+		maxResearchers: 2,
 		maxWriters: 1,
 		maxSearchRounds: 2,
 		maxQueries: 8,
@@ -50,20 +56,9 @@ const POLICY_BY_MODE: Record<DeepResearchMode, Omit<DeepResearchPolicy, "mode">>
 		maxCumulativeTokens: 70_000,
 		workerThinking: "medium",
 		allowReviewer: false,
+		allowVerifier: true,
 	},
-	broad: {
-		maxResearchers: 2,
-		maxWriters: 1,
-		maxSearchRounds: 2,
-		maxQueries: 8,
-		maxFetchedUrls: 8,
-		maxAcceptedSources: 14,
-		maxVerifierRefetches: 4,
-		maxCumulativeTokens: 105_000,
-		workerThinking: "medium",
-		allowReviewer: true,
-	},
-	complex: {
+	deep: {
 		maxResearchers: 3,
 		maxWriters: 1,
 		maxSearchRounds: 2,
@@ -74,6 +69,7 @@ const POLICY_BY_MODE: Record<DeepResearchMode, Omit<DeepResearchPolicy, "mode">>
 		maxCumulativeTokens: 135_000,
 		workerThinking: "medium",
 		allowReviewer: true,
+		allowVerifier: true,
 	},
 };
 
@@ -96,21 +92,23 @@ function boundedInteger(value: number, minimum: number, maximum: number): number
 }
 
 function effectiveMode(input: DeepResearchPolicyInput): DeepResearchMode {
-	if (input.exhaustive || input.domainCount >= 4 || input.questionCount >= 7) return "complex";
-	if (input.breadth === "complex" || input.domainCount >= 3 || input.questionCount >= 5) return "complex";
-	if (input.breadth === "broad" || input.domainCount >= 2 || input.questionCount >= 3) return "broad";
-	if (input.breadth === "comparison" || input.entityCount >= 2) return "comparison";
-	return "direct";
+	const materialDomains = new Set(input.domainTags.filter((tag) => tag !== "web-only" && tag !== "paper-search" && tag !== "unknown"));
+	if (input.exhaustive || input.complexity === "deep" || input.questionCount >= 5 || materialDomains.size >= 3) return "deep";
+	if (input.complexity === "standard" || input.questionCount >= 2 || input.entityCount >= 2 || materialDomains.size >= 2) return "standard";
+	return "simple";
 }
 
 export function selectDeepResearchPolicy(input: DeepResearchPolicyInput): DeepResearchPolicy {
-	const mode = effectiveMode({
+	const normalized = {
 		...input,
 		questionCount: boundedInteger(input.questionCount, 1, 12),
 		entityCount: boundedInteger(input.entityCount, 1, 12),
-		domainCount: boundedInteger(input.domainCount, 1, 8),
-	});
-	return { mode, ...POLICY_BY_MODE[mode] };
+		domainTags: [...new Set(input.domainTags)].slice(0, 6),
+	};
+	const mode = effectiveMode(normalized);
+	const reason = input.reason.trim();
+	const routeReason = mode === input.complexity ? reason : `${reason} Escalated to ${mode} by policy thresholds.`;
+	return { mode, ...POLICY_BY_MODE[mode], domainTags: normalized.domainTags.length ? normalized.domainTags : ["unknown"], routeReason };
 }
 
 function textContent(message: AgentMessage): string {
@@ -188,7 +186,7 @@ type RuntimeState = {
 function defaultState(): RuntimeState {
 	return {
 		active: false,
-		policy: selectDeepResearchPolicy({ breadth: "direct", questionCount: 1, entityCount: 1, domainCount: 1 }),
+		policy: selectDeepResearchPolicy({ complexity: "simple", questionCount: 1, entityCount: 1, domainTags: ["unknown"], reason: "Default until routing completes." }),
 		queries: 0,
 		fetchedUrls: 0,
 		researchers: 0,
@@ -197,15 +195,18 @@ function defaultState(): RuntimeState {
 }
 
 const POLICY_PARAMETERS = Type.Object({
-	breadth: Type.Union([
-		Type.Literal("direct"),
-		Type.Literal("comparison"),
-		Type.Literal("broad"),
-		Type.Literal("complex"),
+	complexity: Type.Union([
+		Type.Literal("simple"),
+		Type.Literal("standard"),
+		Type.Literal("deep"),
 	]),
 	questionCount: Type.Integer({ minimum: 1, maximum: 12 }),
 	entityCount: Type.Integer({ minimum: 1, maximum: 12 }),
-	domainCount: Type.Integer({ minimum: 1, maximum: 8 }),
+	domainTags: Type.Array(Type.Union([
+		Type.Literal("web-only"), Type.Literal("paper-search"), Type.Literal("bio"),
+		Type.Literal("chem"), Type.Literal("genomics"), Type.Literal("unknown"),
+	]), { minItems: 1, maxItems: 6 }),
+	reason: Type.String({ minLength: 8, maxLength: 500 }),
 	exhaustive: Type.Optional(Type.Boolean()),
 });
 

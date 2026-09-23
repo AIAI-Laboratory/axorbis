@@ -5,7 +5,7 @@ section: Workflows
 order: 1
 ---
 
-Deep research is the flagship Feynman workflow. It searches broadly enough to answer the question, then persists compact claim-level evidence so synthesis, citation, and review reuse the same inspected sources. Narrow explainers stay lead-owned; parallel researchers are reserved for comparisons, broad surveys, and multi-domain questions.
+Deep research classifies the question before gathering evidence, then persists compact claim-level records so synthesis, citation, and review reuse the same inspected sources. The route and its reason are saved in the plan.
 
 ## Usage
 
@@ -25,9 +25,9 @@ Both forms are equivalent. The workflow first writes a plan to the active projec
 
 ## How it works
 
-The deep research workflow proceeds through five phases. First, Feynman creates a plan with key questions, source strategy, scale decision, task ledger, and verification log, then asks for confirmation before executing.
+The deep research workflow proceeds through five phases. First, a tool-free router reads only the question and selects `simple`, `standard`, or `deep` from observable cues: the number of subquestions, compared entities, specialist domains, and whether exhaustive coverage was requested. Feynman writes that decision, its reason, key questions, source strategy, task ledger, and verification log to the plan, then asks for confirmation before executing.
 
-Second, after approval, a runtime policy router chooses the smallest useful scale. Narrow explainers stay lead-owned; comparisons use at most one researcher, broad surveys at most two, and complex multi-domain work at most three. The policy also caps query, fetch, accepted-source, and verifier-refetch budgets. Exhaustive coverage does not remove the hard ceiling; it is recorded as a bounded, potentially partial run.
+Second, after approval, `simple` uses one researcher and a writer with inline claim checks by the lead; `standard` uses one or two researchers, a writer, and a verifier; `deep` uses three researchers, a writer, a verifier, and a reviewer. The policy also caps query, fetch, accepted-source, and verifier-refetch budgets. Exhaustive coverage does not remove the hard ceiling; it is recorded as a bounded, potentially partial run.
 
 Parallel evidence gathering uses fresh child context and one async `workflowScript` with `runs.all` and a concurrency limit of three. Each child reads a non-overlapping task brief, has at most two search rounds, triages at most ten candidates, fetches only selected sources, and returns a file reference instead of copying evidence into the lead transcript. The runtime compacts older retrieval tool results before later model calls, while the full evidence remains available through stored-content lookup and the on-disk ledger.
 
@@ -35,7 +35,7 @@ Third, Feynman discovers with snippets and metadata before fetching. A selected 
 
 Fourth, synthesis reads the claim map and evidence ledger instead of reopening every source. Research stops when core claims are supported, necessary corroboration exists, important contradictions are resolved or explicit, and two consecutive searches add no material information.
 
-Finally, the verifier checks stored evidence first and only re-fetches sources for central, quantitative, conflicting, insufficient, or provenance-uncertain claims. The reviewer concentrates on high-impact weaknesses rather than rereading all raw sources. For comparison and survey runs, synthesis uses one bounded writer child over the compact claim/evidence files; narrow direct runs remain lead-owned. That writer is the unit routed through the configured subagent key pool, while individual lead file-write events stay on the lead request. A metrics artifact separates uncached input, output, cache reads/writes, cumulative usage, peak context, retrieval counts, and stage attribution. The report and provenance remain under the active project.
+Finally, simple runs cite claims checked inline against the stored evidence. Standard and deep runs use a verifier that checks stored evidence first and only re-fetches sources for central, quantitative, conflicting, insufficient, or provenance-uncertain claims. Deep runs also use a reviewer for high-impact weaknesses. Every route uses one bounded writer child over the compact claim/evidence files. A metrics artifact separates uncached input, output, cache reads/writes, cumulative usage, peak context, retrieval counts, and stage attribution. The report and provenance remain under the active project.
 
 ## Output format
 

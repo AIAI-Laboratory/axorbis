@@ -9,7 +9,9 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 
 ## Unreleased
 
-No unreleased changes.
+## Unreleased
+
+- Deep Research routes each question as simple, standard, or deep before planning, records the decision and reason, and selects the corresponding researcher, writer, verifier, and reviewer path.
 
 ## v0.3.51 - 2026-09-21
 

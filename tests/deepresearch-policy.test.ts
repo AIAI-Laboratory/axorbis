@@ -15,24 +15,30 @@ function toolResult(toolName: string, text: string): AgentMessage {
 	};
 }
 
-test("deep research policy routes conservative workloads without researcher fan-out", () => {
-	const direct = selectDeepResearchPolicy({ breadth: "direct", questionCount: 1, entityCount: 1, domainCount: 1 });
-	assert.equal(direct.mode, "direct");
-	assert.equal(direct.maxResearchers, 0);
-	assert.equal(direct.maxWriters, 0);
-	assert.equal(direct.maxCumulativeTokens, 45_000);
+test("deep research policy routes one focused question to researcher and writer", () => {
+	const simple = selectDeepResearchPolicy({ complexity: "simple", questionCount: 1, entityCount: 1, domainTags: ["bio"], reason: "One focused biology question." });
+	assert.equal(simple.mode, "simple");
+	assert.equal(simple.maxResearchers, 1);
+	assert.equal(simple.maxWriters, 1);
+	assert.equal(simple.allowVerifier, false);
+	assert.equal(simple.allowReviewer, false);
+	assert.deepEqual(simple.domainTags, ["bio"]);
+	assert.equal(simple.maxCumulativeTokens, 45_000);
 
-	const complex = selectDeepResearchPolicy({ breadth: "broad", questionCount: 8, entityCount: 4, domainCount: 4 });
-	assert.equal(complex.mode, "complex");
-	assert.equal(complex.maxResearchers, 3);
-	assert.equal(complex.maxWriters, 1);
-	assert.equal(complex.allowReviewer, true);
+	const deep = selectDeepResearchPolicy({ complexity: "deep", questionCount: 8, entityCount: 4, domainTags: ["bio", "chem", "genomics"], reason: "Eight questions across three specialist domains." });
+	assert.equal(deep.mode, "deep");
+	assert.equal(deep.maxResearchers, 3);
+	assert.equal(deep.maxWriters, 1);
+	assert.equal(deep.allowVerifier, true);
+	assert.equal(deep.allowReviewer, true);
 });
 
-test("deep research policy escalates comparison requests with multiple entities", () => {
-	const policy = selectDeepResearchPolicy({ breadth: "direct", questionCount: 1, entityCount: 3, domainCount: 1 });
-	assert.equal(policy.mode, "comparison");
-	assert.equal(policy.maxResearchers, 1);
+test("deep research policy escalates a comparison labeled simple", () => {
+	const policy = selectDeepResearchPolicy({ complexity: "simple", questionCount: 1, entityCount: 3, domainTags: ["paper-search"], reason: "Comparison of three methods." });
+	assert.equal(policy.mode, "standard");
+	assert.equal(policy.maxResearchers, 2);
+	assert.equal(policy.allowVerifier, true);
+	assert.match(policy.routeReason, /Escalated to standard/);
 });
 
 test("deep research context compaction bounds old retrieval results and preserves recent context", () => {
