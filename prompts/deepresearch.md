@@ -31,10 +31,13 @@ After approval, leave these artifacts, including partial/blocked ones when a cap
 
 - `RUN_ROOT/.plans/<slug>.md`
 - `RUN_ROOT/.drafts/<slug>-evidence.jsonl`
+- `RUN_ROOT/.drafts/<slug>-evidence-Tn.jsonl` for each researcher lane (full audit artifact)
+- `RUN_ROOT/.drafts/<slug>-summary-Tn.json` and `<slug>-verified-Tn.json` for each researcher lane
 - `RUN_ROOT/.drafts/<slug>-claims.json`
 - `RUN_ROOT/.drafts/<slug>-draft.md`
 - `RUN_ROOT/.drafts/<slug>-cited.md`
 - `RUN_ROOT/.drafts/<slug>-verification.md`
+- `RUN_ROOT/.drafts/<slug>-review.md` and `<slug>-review-summary.json` for deep runs
 - `RUN_ROOT/.drafts/<slug>-metrics.json` when metrics are available
 - `RUN_ROOT/<slug>.md` or `RUN_ROOT/.papers/<slug>.md`
 - adjacent `<slug>.provenance.md`
@@ -75,43 +78,45 @@ Metadata-only discoveries cannot support content claims. Preserve numbers, limit
 
 ### Researcher count by route
 
-- `simple`: exactly one researcher, then writer. The lead checks each claim against its stored excerpt and source location while merging evidence and records those inline checks; there is no reviewer or separate verifier pass.
-- `standard`: use the policy's one or two `researcherProfiles` (two when there are at least three subquestions or two specialist domains), then writer and verifier; no reviewer.
-- `deep`: three researchers in parallel, then writer, verifier, and reviewer. The verifier must finish before the reviewer reads the cited draft.
+- `simple`: exactly one researcher, then writer. The lead checks each claim against its summary excerpt and source location and records those inline checks; there is no reviewer or separate verifier child.
+- `standard`: use the policy's one or two `researcherProfiles`; verify each lane's claims immediately after that lane finishes, then writer; no reviewer.
+- `deep`: three researchers in parallel; verify each lane's claims immediately after that lane finishes, then writer and reviewer.
 
 Use the returned `researcherProfiles` exactly, with one child per profile entry; write each selected agent name as a literal in `workflowScript` so the runtime can count researcher calls. Do not call the shared `researcher` agent for Deep Research. Profile selection follows domain tags: `web-only` → web, `paper-search` or `unknown` → paper, and `bio` / `chem` / `genomics` → the matching specialist profile, each with a paper-search tool. For mixed specialist domains, assign separate lanes and disjoint claims; never grant the full science database tool to a child. These profiles are the supported Pi mechanism for a domain tool subset because this version of `subagent` has no per-call `tools` field. Assign disjoint claim IDs and source seams. Write a short brief per researcher at `RUN_ROOT/.plans/<slug>-T1.md`, etc. Each child must use fresh context, the supplied source registry, the hard researcher budget, and `outputMode: "file-only"`.
+
+Each researcher writes two files: a full JSONL evidence artifact and a schema-version-1 summary JSON at `RUN_ROOT/.drafts/<slug>-summary-Tn.json`. Its brief names both exact paths. Each summary claim has `claim_id`, `claim`, `confidence` (`high|medium|low`), and `sources` containing `source_id`, `url`, optional `doi`, `location`, `support_excerpt`, `verification_status`, and one-based `evidence_line`. The source fields must exactly match that line in the full artifact. The next child sees only the summary, not the full JSONL.
 
 Launch one bounded async workflow when parallelism helps:
 
 ```json
-{"workflowScript":"return await runs.all([{key:'T1',agent:'deepresearch-researcher-paper',context:'fresh',task:'This is a Deep Research worker. Read RUN_ROOT/.plans/<slug>-T1.md. Write only compact JSONL claim evidence to the configured output.',output:'RUN_ROOT/.drafts/<slug>-evidence-T1.jsonl',outputMode:'file-only',toolBudget:{soft:8,hard:12,block:['web_search','fetch_content','get_search_content']}}]);","async":true,"globalConcurrencyLimit":4}
+{"workflowScript":"return await runs.all([{key:'T1',agent:'deepresearch-researcher-paper',context:'fresh',task:'This is a Deep Research worker. Read RUN_ROOT/.plans/<slug>-T1.md. Write full JSONL to the configured output and a structured summary to RUN_ROOT/.drafts/<slug>-summary-T1.json.',output:'RUN_ROOT/.drafts/<slug>-evidence-T1.jsonl',outputMode:'file-only',toolBudget:{soft:8,hard:12,block:['web_search','fetch_content','get_search_content']}}]);","async":true,"globalConcurrencyLimit":4}
 ```
 
-Keep tool-call JSON small. Do not embed briefs, page bodies, or child output in it. Wait for completion results, verify expected files, validate each JSONL line, deduplicate by normalized URL/source ID, and merge into `RUN_ROOT/.drafts/<slug>-evidence.jsonl`. Continue with partial coverage if one lane fails.
+Keep tool-call JSON small. Do not embed briefs, page bodies, or child output in it. As each lane completes, call `feynman_deepresearch_handoff` with `kind: "researcher"`, its full evidence path, and summary path. This validates the summary against the full artifact without loading that artifact into lead context. For standard/deep, immediately call `deepresearch-claim-verifier` with fresh context and only that lane's summary path; output `<slug>-verified-Tn.json` in file-only mode. Call the handoff validator again with the verified path. A rejected or missing summary is blocked, never silently passed to writer. For simple, the lead performs the same per-claim checks from the summary and records outcomes in `<slug>-verification.md`. Deduplicate by normalized URL/source ID when merging the full JSONL for audit and metrics. Continue with partial coverage if a lane fails, marking its claims blocked.
 
 Retrieval guard: maximum 2 search rounds; maximum 4 queries per round; triage no more than 10 candidate results; at most 4 selected full-source fetches per worker by default; approximately 6–8 accepted sources maximum per worker. Stop after two consecutive search attempts add no materially new claim, contradiction, or independent evidence. Avoid PDF parsing unless explicitly requested.
 
 ## 3. Claim map and synthesis
 
-Before drafting, write `<slug>-claims.json` as a compact array mapping every important claim to supporting and contradicting source IDs, confidence, limitations, and status (`supported`, `conflicted`, `unsupported`, `inferred`, or `blocked`).
+Before drafting, write `<slug>-claims.json` as a compact array derived only from validated lane summaries, mapping every important claim to supporting and contradicting source IDs, confidence, limitations, and status (`supported`, `conflicted`, `unsupported`, `inferred`, or `blocked`). Preserve `evidence_line`, URL/DOI, and source location in the source registry. For standard/deep, use verified summaries. The full evidence ledger is an audit artifact and is never a routine downstream input.
 
-For every route, call the `writer` subagent exactly once after the claim map and evidence ledger exist. Give it only those compact file paths plus the plan, use `context: "fresh"`, `outputMode: "file-only"`, and a hard child `toolBudget` of 2. The writer must not search, fetch, reread raw pages, create auxiliary files, or write anything except `<slug>-draft.md`. Do not embed claims or evidence in the tool-call JSON.
+For every route, call the `writer` subagent exactly once after the claim map and summaries exist. Give it only the plan, claim map, and validated summary paths (verified summaries for standard/deep), use `context: "fresh"`, `outputMode: "file-only"`, and a hard child `toolBudget` of 2. The writer must not search, fetch, reread raw pages or evidence JSONL, create auxiliary files, or write anything except `<slug>-draft.md`. Do not embed claims or evidence in the tool-call JSON.
 
 Example writer call:
 
 ```json
-{"agent":"writer","context":"fresh","task":"Read only RUN_ROOT/.plans/<slug>.md, RUN_ROOT/.drafts/<slug>-claims.json, and RUN_ROOT/.drafts/<slug>-evidence.jsonl. Write the draft to RUN_ROOT/.drafts/<slug>-draft.md. Do not search, fetch, reread raw pages, create extra files, or add citations.","output":"RUN_ROOT/.drafts/<slug>-draft.md","outputMode":"file-only","toolBudget":{"soft":1,"hard":2,"block":["web_search","fetch_content","get_search_content","alpha_search","alpha_fetch"]}}
+{"agent":"writer","context":"fresh","task":"Read only RUN_ROOT/.plans/<slug>.md, RUN_ROOT/.drafts/<slug>-claims.json, and the validated summary-Tn.json or verified-Tn.json paths listed in the plan. Write the draft to RUN_ROOT/.drafts/<slug>-draft.md. Do not read evidence JSONL or raw pages, search, fetch, create extra files, or add citations.","output":"RUN_ROOT/.drafts/<slug>-draft.md","outputMode":"file-only","toolBudget":{"soft":1,"hard":2,"block":["web_search","fetch_content","get_search_content","alpha_search","alpha_fetch"]}}
 ```
 
 This is the only writer launch in a Deep Research run. The child model request is routed through the configured subagent key pool, so its usage should show `Subagent key N`; an individual lead `write` tool event cannot switch keys because it is part of the lead model request. If the writer fails or the file is missing, write the draft once from the compact files as a degraded fallback. Include an executive summary, findings by question/theme, caveats/disagreements, and open questions. Every important factual, quantitative, or code-backed statement must have an evidence home.
 
-## 4. Selective citation and verification
+## 4. Citation and review
 
 For `simple` runs, the lead adds citations from the inline-checked claim map and writes `<slug>-cited.md` and `<slug>-verification.md`. Record every claim ID, source ID, excerpt/location checked, outcome, and unresolved gap. Remove or soften claims whose stored evidence is insufficient. This is inline verification, not a full verifier pass.
 
-For `standard` and `deep` runs, call `verifier` only after the draft, merged evidence ledger, and claim map exist. The verifier must complete before review. Give it only those compact paths. It must reuse stored evidence and must not re-fetch every URL; refetch only central, quantitative, disputed, insufficient, metadata-only, or provenance-uncertain claims. It must write `RUN_ROOT/.drafts/<slug>-cited.md` and report stored checks, targeted refetches, and unresolved claims.
+For `standard` and `deep` runs, the claim-verifier has already checked every lane's summary before drafting. The lead adds citations from the verified claim map, removes or softens unsupported claims, and writes `<slug>-cited.md` and `<slug>-verification.md`. Record claim IDs, source IDs, summary excerpt/location, outcomes, any targeted refetch, and unresolved gaps. Do not launch a redundant full-report verifier pass. A cited statement must match the verified claim, and every citation must resolve to a URL/DOI and an evidence line in the full audit artifact.
 
-Call `reviewer` only when the policy allows it and only after the cited draft exists; run the reviewer only after the cited draft exists. Give it the cited draft and claim map, not raw source bodies. The routine pass is compact and medium-thinking; launch a deeper pass only for a specific MAJOR/FATAL issue. Fix FATAL issues before delivery and record unresolved MAJOR issues as open questions.
+For deep runs, call `deepresearch-reviewer` only after the cited draft exists. Give it only the cited draft and verified summaries. It writes full `<slug>-review.md` and `<slug>-review-summary.json`; the lead reads only the review summary in routine handoff. Call `feynman_deepresearch_handoff` with `kind: "reviewer"`, both review paths, and `citedPath` before applying fixes. The routine pass is medium-thinking; launch a deeper pass only for a specific MAJOR/FATAL issue. Fix FATAL issues before delivery and record unresolved MAJOR issues as open questions.
 
 For 1–3 simple corrections use small edits. For larger rewrites write `RUN_ROOT/.drafts/<slug>-revised.md`. After any fix, verify on disk that unsupported wording is gone and corrected wording exists. Never claim a failed edit landed. The final candidate is the revised file if it exists, otherwise the cited file.
 

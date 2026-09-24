@@ -310,6 +310,8 @@ function transcriptData(path: string | undefined): { usage: Usage; peak: number;
 
 function stageName(agent: unknown): string {
 	if (typeof agent === "string" && (agent === "researcher" || agent.startsWith("deepresearch-researcher-"))) return "researcher";
+	if (agent === "deepresearch-claim-verifier") return "verifier";
+	if (agent === "deepresearch-reviewer") return "reviewer";
 	return agent === "writer" || agent === "verifier" || agent === "reviewer" ? agent : "other";
 }
 
@@ -375,7 +377,7 @@ export function buildDeepResearchMetrics(input: {
 		const candidates = [
 			"researcher", "deepresearch-researcher-web", "deepresearch-researcher-paper",
 			"deepresearch-researcher-bio", "deepresearch-researcher-chem", "deepresearch-researcher-genomics",
-			"verifier", "reviewer", "writer", "worker", "delegate",
+			"verifier", "deepresearch-claim-verifier", "reviewer", "deepresearch-reviewer", "writer", "worker", "delegate",
 		]
 			.map((agent) => resolve(input.sessionDir, "subagent-artifacts", `${runId}_${agent}_meta.json`));
 		const metaPath = candidates.find((path) => existsSync(path));

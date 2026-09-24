@@ -551,8 +551,9 @@ test("deepresearch asks for confirmation after planning before execution", () =>
 test("deepresearch citation and review stages are sequential and avoid giant edits", () => {
 	const deepResearchPrompt = readFileSync(join(repoRoot, "prompts", "deepresearch.md"), "utf8");
 
-	assert.match(deepResearchPrompt, /verifier must complete before review/i);
-	assert.match(deepResearchPrompt, /run the reviewer only after the cited draft exists/i);
+	assert.match(deepResearchPrompt, /verify each lane's claims immediately after that lane finishes/i);
+	assert.match(deepResearchPrompt, /call `deepresearch-reviewer` only after the cited draft exists/i);
+	assert.match(deepResearchPrompt, /full `<slug>-review\.md` and `<slug>-review-summary\.json`/i);
 	assert.match(deepResearchPrompt, /RUN_ROOT\/\.drafts\/<slug>-cited\.md/i);
 	assert.match(deepResearchPrompt, /For 1–3 simple corrections use small edits/i);
 	assert.match(deepResearchPrompt, /RUN_ROOT\/\.drafts\/<slug>-revised\.md/i);
@@ -605,7 +606,7 @@ test("deepresearch routes before research and keeps subagent tool calls small", 
 	assert.match(deepResearchPrompt, /call the `writer` subagent exactly once/i);
 	assert.match(deepResearchPrompt, /hard child `toolBudget` of 2/i);
 	assert.match(deepResearchPrompt, /individual lead `write` tool event cannot switch keys/i);
-	assert.match(deepResearchPrompt, /Wait for completion results/i);
+	assert.match(deepResearchPrompt, /As each lane completes/i);
 	const examples = [...deepResearchPrompt.matchAll(/```json\n([\s\S]*?)\n```/g)]
 		.map((match) => JSON.parse(match[1]!));
 	const parallel = examples.find((example) => typeof example.workflowScript === "string");

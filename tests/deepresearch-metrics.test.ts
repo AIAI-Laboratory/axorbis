@@ -43,15 +43,15 @@ test("deep research metrics separate token classes and attribute child stages", 
 			transcriptPath: researcherTranscript,
 		}));
 
-		const verifierTranscript = join(childDir, "verify01_verifier_transcript.jsonl");
+		const verifierTranscript = join(childDir, "verify01_deepresearch-claim-verifier_transcript.jsonl");
 		writeFileSync(verifierTranscript, [
 			JSON.stringify({ recordType: "message", role: "assistant", usage: { input: 7, output: 3, cacheRead: 2, cacheWrite: 0 } }),
 			JSON.stringify({ recordType: "tool_start", toolCallId: "vf1", toolName: "fetch_content", argsPayload: JSON.stringify({ url: "https://research.example/a" }) }),
 			JSON.stringify({ recordType: "tool_end", toolCallId: "vf1", toolName: "fetch_content", isError: false }),
 		].join("\n") + "\n");
-		writeFileSync(join(childDir, "verify01_verifier_meta.json"), JSON.stringify({
+		writeFileSync(join(childDir, "verify01_deepresearch-claim-verifier_meta.json"), JSON.stringify({
 			runId: "verify01",
-			agent: "verifier",
+			agent: "deepresearch-claim-verifier",
 			usage: { input: 7, output: 3, cacheRead: 2, cacheWrite: 0, turns: 1 },
 			transcriptPath: verifierTranscript,
 		}));

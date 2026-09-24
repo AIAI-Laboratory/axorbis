@@ -27,17 +27,17 @@ Both forms are equivalent. The workflow first writes a plan to the active projec
 
 The deep research workflow proceeds through five phases. First, a tool-free router reads only the question and selects `simple`, `standard`, or `deep` from observable cues: the number of subquestions, compared entities, specialist domains, and whether exhaustive coverage was requested. Feynman writes that decision, its reason, key questions, source strategy, task ledger, and verification log to the plan, then asks for confirmation before executing.
 
-Second, after approval, `simple` uses one researcher and a writer with inline claim checks by the lead; `standard` uses one or two researchers, a writer, and a verifier; `deep` uses three researchers, a writer, a verifier, and a reviewer. The policy also caps query, fetch, accepted-source, and verifier-refetch budgets. Exhaustive coverage does not remove the hard ceiling; it is recorded as a bounded, potentially partial run.
+Second, after approval, `simple` uses one researcher and a writer with inline claim checks by the lead; `standard` uses one or two researchers, claim-level verification as each lane completes, then a writer; `deep` uses three researchers, the same incremental verification, a writer, and a reviewer. The policy also caps query, fetch, accepted-source, and verifier-refetch budgets. Exhaustive coverage does not remove the hard ceiling; it is recorded as a bounded, potentially partial run.
 
 Parallel evidence gathering uses fresh child context and one async `workflowScript` with `runs.all` and a concurrency limit of four. Each child reads a non-overlapping task brief, has at most two search rounds, triages at most ten candidates, fetches only selected sources, and returns a file reference instead of copying evidence into the lead transcript. The runtime compacts older retrieval tool results before later model calls, while the full evidence remains available through stored-content lookup and the on-disk ledger.
 
 The router also tags the question by evidence domain. Each researcher lane uses a Pi agent profile with only the relevant web, paper, bio, chemistry, or genomics tools; unknown domains receive web and basic paper search. Scientific profiles expose short source-restricted views of the existing database backend. Pi's current `subagent` call cannot override `tools` per invocation, so the plan records the selected profiles and their allowlists for audit.
 
-Third, Feynman discovers with snippets and metadata before fetching. A selected source is normally fetched once, then reduced immediately to a JSONL evidence record with claim and source IDs, a short supporting excerpt, location, confidence, provenance, and verification status. The merged evidence ledger feeds a compact claim map that preserves support, contradiction, limitations, and uncertainty. PDF extraction is avoided unless explicitly requested.
+Third, Feynman discovers with snippets and metadata before fetching. A selected source is normally fetched once, then reduced immediately to a JSONL evidence record with claim and source IDs, a short supporting excerpt, location, confidence, provenance, and verification status. Each researcher also writes a versioned summary whose sources point to exact JSONL line numbers and URL/DOI locations. The summary is validated against the durable evidence and feeds a compact claim map that preserves support, contradiction, limitations, and uncertainty. PDF extraction is avoided unless explicitly requested.
 
-Fourth, synthesis reads the claim map and evidence ledger instead of reopening every source. Research stops when core claims are supported, necessary corroboration exists, important contradictions are resolved or explicit, and two consecutive searches add no material information.
+Fourth, synthesis reads the claim map and validated summaries instead of reopening the evidence ledger or every source. Research stops when core claims are supported, necessary corroboration exists, important contradictions are resolved or explicit, and two consecutive searches add no material information.
 
-Finally, simple runs cite claims checked inline against the stored evidence. Standard and deep runs use a verifier that checks stored evidence first and only re-fetches sources for central, quantitative, conflicting, insufficient, or provenance-uncertain claims. Deep runs also use a reviewer for high-impact weaknesses. Every route uses one bounded writer child over the compact claim/evidence files. A metrics artifact separates uncached input, output, cache reads/writes, cumulative usage, peak context, retrieval counts, and stage attribution. The report and provenance remain under the active project.
+Finally, simple runs cite claims checked inline against the summary. Standard and deep runs verify each lane summary claim by claim as soon as that researcher finishes; targeted re-fetches are reserved for central, quantitative, conflicting, insufficient, or provenance-uncertain claims. The writer receives only validated summaries and the claim map. Deep runs also use a dedicated reviewer that writes a full audit and a structured findings summary. The lead cites from verified claims without another full-report verifier pass. A metrics artifact separates uncached input, output, cache reads/writes, cumulative usage, peak context, retrieval counts, and stage attribution. The report and provenance remain under the active project.
 
 ## Output format
 
@@ -49,7 +49,7 @@ The research brief follows a consistent structure:
 - **Open Questions** -- Unresolved issues and promising research directions
 - **References** -- Full citation list with links to source papers and articles
 
-Supporting artifacts include `<slug>-evidence.jsonl`, `<slug>-claims.json`, `<slug>-verification.md`, and `<slug>-metrics.json` when the metrics tool is available.
+Supporting artifacts include `<slug>-evidence.jsonl`, per-lane summary and verified-summary JSON files, `<slug>-claims.json`, `<slug>-verification.md`, a full review and findings summary for deep runs, and `<slug>-metrics.json` when available.
 
 ## Customization
 
