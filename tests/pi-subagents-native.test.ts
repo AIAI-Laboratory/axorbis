@@ -82,7 +82,7 @@ nativeTest("research prompt and docs examples validate and collect failed childr
 			const result = await workflows.runWorkflowScript({
 				script: call.workflowScript, globalConcurrencyLimit: call.globalConcurrencyLimit,
 				launch: async (key: string, params: Record<string, unknown>) => {
-					assert.equal(params.agent, "researcher");
+					assert.ok(params.agent === "researcher" || params.agent === "deepresearch-researcher-paper");
 					assert.equal(typeof params.output, "string");
 					launched.push(key);
 					return { key, ok: false, output: "", error: "fixture source unavailable", artifactPaths: [] };

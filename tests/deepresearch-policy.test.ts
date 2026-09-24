@@ -23,6 +23,7 @@ test("deep research policy routes one focused question to researcher and writer"
 	assert.equal(simple.allowVerifier, false);
 	assert.equal(simple.allowReviewer, false);
 	assert.deepEqual(simple.domainTags, ["bio"]);
+	assert.deepEqual(simple.researcherProfiles, ["deepresearch-researcher-bio"]);
 	assert.equal(simple.maxCumulativeTokens, 45_000);
 
 	const deep = selectDeepResearchPolicy({ complexity: "deep", questionCount: 8, entityCount: 4, domainTags: ["bio", "chem", "genomics"], reason: "Eight questions across three specialist domains." });
@@ -31,6 +32,9 @@ test("deep research policy routes one focused question to researcher and writer"
 	assert.equal(deep.maxWriters, 1);
 	assert.equal(deep.allowVerifier, true);
 	assert.equal(deep.allowReviewer, true);
+	assert.deepEqual(deep.researcherProfiles, [
+		"deepresearch-researcher-bio", "deepresearch-researcher-chem", "deepresearch-researcher-genomics",
+	]);
 });
 
 test("deep research policy escalates a comparison labeled simple", () => {
@@ -39,6 +43,14 @@ test("deep research policy escalates a comparison labeled simple", () => {
 	assert.equal(policy.maxResearchers, 2);
 	assert.equal(policy.allowVerifier, true);
 	assert.match(policy.routeReason, /Escalated to standard/);
+	assert.deepEqual(policy.researcherProfiles, ["deepresearch-researcher-paper"]);
+});
+
+test("unknown falls back to paper and web while two specialist domains get separate lanes", () => {
+	const unknown = selectDeepResearchPolicy({ complexity: "simple", questionCount: 1, entityCount: 1, domainTags: ["unknown"], reason: "One question without a clear specialist domain." });
+	assert.deepEqual(unknown.researcherProfiles, ["deepresearch-researcher-paper"]);
+	const mixed = selectDeepResearchPolicy({ complexity: "standard", questionCount: 2, entityCount: 2, domainTags: ["chem", "genomics"], reason: "Compares chemistry and genomic evidence." });
+	assert.deepEqual(mixed.researcherProfiles, ["deepresearch-researcher-chem", "deepresearch-researcher-genomics"]);
 });
 
 test("deep research context compaction bounds old retrieval results and preserves recent context", () => {

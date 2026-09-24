@@ -12,6 +12,7 @@ This page summarizes what changed in recent Feynman releases. GitHub releases us
 ## Unreleased
 
 - Deep Research routes each question as simple, standard, or deep before planning, records the decision and reason, and selects the corresponding researcher, writer, verifier, and reviewer path.
+- Its researcher lanes use domain-scoped web, paper, bio, chemistry, or genomics tool profiles. Unknown domains fall back to web and paper search.
 
 ## v0.3.51 - 2026-09-21
 

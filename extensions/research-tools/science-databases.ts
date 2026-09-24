@@ -17,9 +17,9 @@ import { getUniProtEntries } from "./science-database-genes-ontologies.js";
 import { searchEnsembl } from "./science-database-ensembl.js";
 
 type CoreScienceDatabaseSource = "arxiv" | "biorxiv" | "chembl" | "clinicaltrials" | "crossref" | "datacite" | "ensembl" | "europepmc" | "medrxiv" | "openalex" | "pdb" | "pubmed" | "uniprot";
-type ScienceDatabaseSource = CoreScienceDatabaseSource | SpecialtyScienceDatabaseSource;
+export type ScienceDatabaseSource = CoreScienceDatabaseSource | SpecialtyScienceDatabaseSource;
 
-type ScienceDatabaseSearchParams = {
+export type ScienceDatabaseSearchParams = {
 	chemblEntity?: ChemblEntity;
 	ensemblSpecies?: string;
 	limit?: number;
@@ -488,7 +488,7 @@ async function searchPdb(params: ScienceDatabaseSearchParams): Promise<Record<st
 	};
 }
 
-async function scienceDatabaseSearch(params: ScienceDatabaseSearchParams): Promise<Record<string, unknown>> {
+export async function scienceDatabaseSearch(params: ScienceDatabaseSearchParams): Promise<Record<string, unknown>> {
 	const variantExact = await searchVariantExact(params);
 	if (variantExact) return variantExact;
 	const gnomadExact = await searchGnomadExact(params.query, params.limit);

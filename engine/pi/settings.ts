@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, extname, join } from "node:path";
 
 import type { ModelRegistry, ModelRuntime, PackageSource } from "@earendil-works/pi-coding-agent";
 
@@ -20,6 +20,15 @@ export type FeynmanSettingsRuntime = {
 };
 
 const RESEARCHER_EXTENSION_MARKER = "_feynmanResearchToolsExtension";
+const RESEARCHER_DOMAIN_EXTENSION_MARKER = "_feynmanDeepResearchDomainToolsExtension";
+const RESEARCHER_AGENT_NAMES = [
+	"researcher",
+	"deepresearch-researcher-web",
+	"deepresearch-researcher-paper",
+	"deepresearch-researcher-bio",
+	"deepresearch-researcher-chem",
+	"deepresearch-researcher-genomics",
+] as const;
 
 function findModel(modelLookup: ModelLookup, provider: string, id: string) {
 	return "find" in modelLookup
@@ -160,6 +169,7 @@ function ensureResearcherExtension(
 	researchToolsExtensionPath: string | undefined,
 ): void {
 	if (!researchToolsExtensionPath) return;
+	const domainToolsExtensionPath = join(dirname(researchToolsExtensionPath), `deepresearch-domain-tools${extname(researchToolsExtensionPath)}`);
 
 	if (settings.subagents !== undefined && !isRecord(settings.subagents)) return;
 	const subagents = settings.subagents ?? {};
@@ -169,22 +179,29 @@ function ensureResearcherExtension(
 	const agentOverrides = subagents.agentOverrides ?? {};
 	subagents.agentOverrides = agentOverrides;
 
-	if (agentOverrides.researcher !== undefined && !isRecord(agentOverrides.researcher)) return;
-	const researcher = agentOverrides.researcher ?? {};
-	agentOverrides.researcher = researcher;
+	for (const agentName of RESEARCHER_AGENT_NAMES) {
+		if (agentOverrides[agentName] !== undefined && !isRecord(agentOverrides[agentName])) continue;
+		const researcher = agentOverrides[agentName] ?? {};
+		agentOverrides[agentName] = researcher;
 
-	const configuredExtensions = researcher.subagentOnlyExtensions;
-	if (
-		configuredExtensions !== undefined
-		&& (!Array.isArray(configuredExtensions) || configuredExtensions.some((entry) => typeof entry !== "string"))
-	) return;
+		const configuredExtensions = researcher.subagentOnlyExtensions;
+		if (
+			configuredExtensions !== undefined
+			&& (!Array.isArray(configuredExtensions) || configuredExtensions.some((entry) => typeof entry !== "string"))
+		) continue;
 
-	const previousManagedPath = researcher[RESEARCHER_EXTENSION_MARKER];
-	const preservedExtensions = (configuredExtensions ?? []).filter(
-		(entry) => entry !== previousManagedPath && entry !== researchToolsExtensionPath,
-	);
-	researcher.subagentOnlyExtensions = [...preservedExtensions, researchToolsExtensionPath];
-	researcher[RESEARCHER_EXTENSION_MARKER] = researchToolsExtensionPath;
+		const previousManagedPath = researcher[RESEARCHER_EXTENSION_MARKER];
+		const previousDomainPath = researcher[RESEARCHER_DOMAIN_EXTENSION_MARKER];
+		const managedPaths = agentName === "researcher"
+			? [researchToolsExtensionPath]
+			: [researchToolsExtensionPath, domainToolsExtensionPath];
+		const preservedExtensions = (configuredExtensions ?? []).filter(
+			(entry) => entry !== previousManagedPath && entry !== previousDomainPath && !managedPaths.includes(entry),
+		);
+		researcher.subagentOnlyExtensions = [...preservedExtensions, ...managedPaths];
+		researcher[RESEARCHER_EXTENSION_MARKER] = researchToolsExtensionPath;
+		if (agentName !== "researcher") researcher[RESEARCHER_DOMAIN_EXTENSION_MARKER] = domainToolsExtensionPath;
+	}
 }
 
 export async function normalizeFeynmanSettings(

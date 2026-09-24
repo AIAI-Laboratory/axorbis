@@ -36,9 +36,9 @@ test("deep research metrics separate token classes and attribute child stages", 
 			JSON.stringify({ recordType: "tool_start", toolCallId: "g1", toolName: "get_search_content", argsPayload: JSON.stringify({ responseId: "stored-a" }) }),
 			JSON.stringify({ recordType: "tool_end", toolCallId: "g1", toolName: "get_search_content", isError: false }),
 		].join("\n") + "\n");
-		writeFileSync(join(childDir, "research01_researcher_meta.json"), JSON.stringify({
+		writeFileSync(join(childDir, "research01_deepresearch-researcher-bio_meta.json"), JSON.stringify({
 			runId: "research01",
-			agent: "researcher",
+			agent: "deepresearch-researcher-bio",
 			usage: { input: 20, output: 4, cacheRead: 10, cacheWrite: 0, turns: 2 },
 			transcriptPath: researcherTranscript,
 		}));

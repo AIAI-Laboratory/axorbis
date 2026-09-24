@@ -252,6 +252,10 @@ test("normalizeFeynmanSettings gives the researcher child its Hugging Face tool 
 		settings.subagents?.agentOverrides?.researcher?.subagentOnlyExtensions,
 		[researchToolsExtensionPath],
 	);
+	assert.deepEqual(
+		settings.subagents?.agentOverrides?.["deepresearch-researcher-bio"]?.subagentOnlyExtensions,
+		[researchToolsExtensionPath, join(root, "app", "extensions", "deepresearch-domain-tools.ts")],
+	);
 });
 
 test("normalizeFeynmanSettings preserves custom researcher child extensions and adds the provider", async () => {

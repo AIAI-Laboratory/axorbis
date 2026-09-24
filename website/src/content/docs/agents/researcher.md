@@ -11,7 +11,7 @@ The researcher is the primary information-gathering agent in Feynman. It searche
 
 The researcher agent handles bounded source discovery and extraction. By default it uses at most two search rounds, four queries per round, ten triaged candidates, and four selected full-source fetches. It stops early when repeated searches add no material claim, contradiction, or independent evidence.
 
-For Deep Research, one researcher handles a simple route, one or two handle a standard route, and three handle a deep route. A tool-free router records the route and reason before planning. Parallel researchers run through one bounded async `workflowScript`; the lead assigns non-overlapping claim IDs and sources. Children use fresh context and return file-only evidence references; the runtime blocks excess researcher, search, and fetch calls.
+For Deep Research, one researcher handles a simple route, one or two handle a standard route, and three handle a deep route. A tool-free router records the route, reason, and domain tags before planning. Each lane selects a domain-scoped researcher profile, with web and paper search as the unknown-domain fallback. Parallel researchers run through one bounded async `workflowScript`; the lead assigns non-overlapping claim IDs and sources. Children use fresh context and return file-only evidence references; the runtime blocks excess researcher, search, and fetch calls.
 
 ## Search strategy
 

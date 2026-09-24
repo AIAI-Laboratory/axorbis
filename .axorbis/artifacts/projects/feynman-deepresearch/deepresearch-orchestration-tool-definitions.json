@@ -1,0 +1,225 @@
+{
+  "schema": "feynman.deepresearchToolDefinitions.v1",
+  "method": "Pi SDK active tool definitions; JSON length of {name,description,parameters}, plus prompt snippets/guidelines separately; estimated tokens = ceil(chars/4) per child. This is not provider-reported usage.",
+  "comparisons": {
+    "narrowBio": {
+      "question": "What protein domains does TP53 contain?",
+      "before": {
+        "lanes": [
+          {
+            "agent": "researcher",
+            "activeTools": [
+              "read",
+              "write",
+              "edit",
+              "bash",
+              "grep",
+              "find",
+              "ls",
+              "web_search",
+              "fetch_content",
+              "get_search_content",
+              "hf_dataset_info",
+              "hf_repo_files",
+              "hf_repo_read_file"
+            ],
+            "definitionChars": 15833,
+            "estimatedDefinitionTokens": 3959,
+            "guidanceChars": 2809,
+            "estimatedGuidanceTokens": 703
+          }
+        ],
+        "definitionChars": 15833,
+        "estimatedDefinitionTokens": 3959,
+        "guidanceChars": 2809,
+        "estimatedGuidanceTokens": 703
+      },
+      "after": {
+        "lanes": [
+          {
+            "agent": "deepresearch-researcher-bio",
+            "activeTools": [
+              "read",
+              "write",
+              "edit",
+              "bash",
+              "grep",
+              "find",
+              "ls",
+              "web_search",
+              "fetch_content",
+              "get_search_content",
+              "feynman_deepresearch_paper_search",
+              "feynman_deepresearch_bio_search",
+              "hf_dataset_info",
+              "hf_repo_files",
+              "hf_repo_read_file"
+            ],
+            "definitionChars": 17230,
+            "estimatedDefinitionTokens": 4308,
+            "guidanceChars": 3263,
+            "estimatedGuidanceTokens": 816
+          }
+        ],
+        "definitionChars": 17230,
+        "estimatedDefinitionTokens": 4308,
+        "guidanceChars": 3263,
+        "estimatedGuidanceTokens": 816
+      }
+    },
+    "interdisciplinary": {
+      "question": "How do TP53 protein interactions, drug affinities, and cancer variants inform target selection?",
+      "before": {
+        "lanes": [
+          {
+            "agent": "researcher",
+            "activeTools": [
+              "read",
+              "write",
+              "edit",
+              "bash",
+              "grep",
+              "find",
+              "ls",
+              "web_search",
+              "fetch_content",
+              "get_search_content",
+              "hf_dataset_info",
+              "hf_repo_files",
+              "hf_repo_read_file"
+            ],
+            "definitionChars": 15833,
+            "estimatedDefinitionTokens": 3959,
+            "guidanceChars": 2809,
+            "estimatedGuidanceTokens": 703
+          },
+          {
+            "agent": "researcher",
+            "activeTools": [
+              "read",
+              "write",
+              "edit",
+              "bash",
+              "grep",
+              "find",
+              "ls",
+              "web_search",
+              "fetch_content",
+              "get_search_content",
+              "hf_dataset_info",
+              "hf_repo_files",
+              "hf_repo_read_file"
+            ],
+            "definitionChars": 15833,
+            "estimatedDefinitionTokens": 3959,
+            "guidanceChars": 2809,
+            "estimatedGuidanceTokens": 703
+          },
+          {
+            "agent": "researcher",
+            "activeTools": [
+              "read",
+              "write",
+              "edit",
+              "bash",
+              "grep",
+              "find",
+              "ls",
+              "web_search",
+              "fetch_content",
+              "get_search_content",
+              "hf_dataset_info",
+              "hf_repo_files",
+              "hf_repo_read_file"
+            ],
+            "definitionChars": 15833,
+            "estimatedDefinitionTokens": 3959,
+            "guidanceChars": 2809,
+            "estimatedGuidanceTokens": 703
+          }
+        ],
+        "definitionChars": 47499,
+        "estimatedDefinitionTokens": 11877,
+        "guidanceChars": 8427,
+        "estimatedGuidanceTokens": 2109
+      },
+      "after": {
+        "lanes": [
+          {
+            "agent": "deepresearch-researcher-bio",
+            "activeTools": [
+              "read",
+              "write",
+              "edit",
+              "bash",
+              "grep",
+              "find",
+              "ls",
+              "web_search",
+              "fetch_content",
+              "get_search_content",
+              "feynman_deepresearch_paper_search",
+              "feynman_deepresearch_bio_search",
+              "hf_dataset_info",
+              "hf_repo_files",
+              "hf_repo_read_file"
+            ],
+            "definitionChars": 17230,
+            "estimatedDefinitionTokens": 4308,
+            "guidanceChars": 3263,
+            "estimatedGuidanceTokens": 816
+          },
+          {
+            "agent": "deepresearch-researcher-chem",
+            "activeTools": [
+              "read",
+              "write",
+              "edit",
+              "bash",
+              "grep",
+              "find",
+              "ls",
+              "web_search",
+              "fetch_content",
+              "get_search_content",
+              "feynman_deepresearch_paper_search",
+              "feynman_deepresearch_chem_search"
+            ],
+            "definitionChars": 14926,
+            "estimatedDefinitionTokens": 3732,
+            "guidanceChars": 2309,
+            "estimatedGuidanceTokens": 578
+          },
+          {
+            "agent": "deepresearch-researcher-genomics",
+            "activeTools": [
+              "read",
+              "write",
+              "edit",
+              "bash",
+              "grep",
+              "find",
+              "ls",
+              "web_search",
+              "fetch_content",
+              "get_search_content",
+              "feynman_deepresearch_paper_search",
+              "feynman_deepresearch_genomics_search",
+              "hf_dataset_info",
+              "hf_repo_files",
+              "hf_repo_read_file"
+            ],
+            "definitionChars": 17267,
+            "estimatedDefinitionTokens": 4317,
+            "guidanceChars": 3278,
+            "estimatedGuidanceTokens": 820
+          }
+        ],
+        "definitionChars": 49423,
+        "estimatedDefinitionTokens": 12357,
+        "guidanceChars": 8850,
+        "estimatedGuidanceTokens": 2214
+      }
+    }
+  }
+}

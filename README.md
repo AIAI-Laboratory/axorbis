@@ -130,7 +130,7 @@ A typical path is:
 
 **Question → Sources → Claims → Evidence → Analysis → Output**
 
-Different workflows operate on that shared research context. Deep Research first classifies the question as simple, standard, or deep, records the route and reason in its plan, then uses a bounded research pipeline. It keeps a compact evidence ledger and claim map, compacts old retrieval output before later model calls, and reuses source content for synthesis and selective verification. Compare can structure evidence, Audit can challenge claims, Replicate can turn findings into an execution plan, and Draft can transform the resulting work into a polished artifact.
+Different workflows operate on that shared research context. Deep Research first classifies the question as simple, standard, or deep, records the route and reason in its plan, then uses a bounded research pipeline. Researcher lanes receive web, paper, bio, chemistry, or genomics tools according to the question's domain tags. It keeps a compact evidence ledger and claim map, compacts old retrieval output before later model calls, and reuses source content for synthesis and selective verification. Compare can structure evidence, Audit can challenge claims, Replicate can turn findings into an execution plan, and Draft can transform the resulting work into a polished artifact.
 
 This shared workspace is the core of Axorbis: research modes are different tools working over the same body of evidence.
 

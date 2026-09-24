@@ -49,7 +49,7 @@ The route is based on observable wording: `simple` means one focused question an
 
 The returned policy is authoritative. Do not exceed its researcher, query, fetch, source, or verification budgets. The runtime also blocks over-budget search, fetch, and researcher calls.
 
-Make the scale decision before assigning owners. Write the plan with the original question, router JSON, applied policy mode, domain tags, route reason, any escalation, key questions, stable claim IDs, evidence needed, task ledger, verification log, decision log, and estimated tool-call budget. Save it with `memory_remember` as `deepresearch.<slug>.plan` only when that tool is visible.
+Make the scale decision before assigning owners. Write the plan with the original question, router JSON, applied policy mode, domain tags, route reason, any escalation, the policy's `researcherProfiles` and their scoped tool subsets, key questions, stable claim IDs, evidence needed, task ledger, verification log, decision log, and estimated tool-call budget. Save it with `memory_remember` as `deepresearch.<slug>.plan` only when that tool is visible.
 
 Then stop and ask for explicit confirmation before gathering evidence. Ask exactly:
 
@@ -76,15 +76,15 @@ Metadata-only discoveries cannot support content claims. Preserve numbers, limit
 ### Researcher count by route
 
 - `simple`: exactly one researcher, then writer. The lead checks each claim against its stored excerpt and source location while merging evidence and records those inline checks; there is no reviewer or separate verifier pass.
-- `standard`: one researcher when the question has at most two distinct subquestions; otherwise two researchers in parallel. Then writer and verifier; no reviewer.
+- `standard`: use the policy's one or two `researcherProfiles` (two when there are at least three subquestions or two specialist domains), then writer and verifier; no reviewer.
 - `deep`: three researchers in parallel, then writer, verifier, and reviewer. The verifier must finish before the reviewer reads the cited draft.
 
-Use only the number of researchers allowed by the policy. Assign disjoint claim IDs and source seams. Write a short brief per researcher at `RUN_ROOT/.plans/<slug>-T1.md`, etc. Each child must use fresh context, the supplied source registry, the hard researcher budget, and `outputMode: "file-only"`.
+Use the returned `researcherProfiles` exactly, with one child per profile entry; write each selected agent name as a literal in `workflowScript` so the runtime can count researcher calls. Do not call the shared `researcher` agent for Deep Research. Profile selection follows domain tags: `web-only` → web, `paper-search` or `unknown` → paper, and `bio` / `chem` / `genomics` → the matching specialist profile, each with a paper-search tool. For mixed specialist domains, assign separate lanes and disjoint claims; never grant the full science database tool to a child. These profiles are the supported Pi mechanism for a domain tool subset because this version of `subagent` has no per-call `tools` field. Assign disjoint claim IDs and source seams. Write a short brief per researcher at `RUN_ROOT/.plans/<slug>-T1.md`, etc. Each child must use fresh context, the supplied source registry, the hard researcher budget, and `outputMode: "file-only"`.
 
 Launch one bounded async workflow when parallelism helps:
 
 ```json
-{"workflowScript":"return await runs.all([{key:'T1',agent:'researcher',context:'fresh',task:'This is a Deep Research worker. Read RUN_ROOT/.plans/<slug>-T1.md. Write only compact JSONL claim evidence to the configured output.',output:'RUN_ROOT/.drafts/<slug>-evidence-T1.jsonl',outputMode:'file-only',toolBudget:{soft:8,hard:12,block:['web_search','fetch_content','get_search_content']}}]);","async":true,"globalConcurrencyLimit":4}
+{"workflowScript":"return await runs.all([{key:'T1',agent:'deepresearch-researcher-paper',context:'fresh',task:'This is a Deep Research worker. Read RUN_ROOT/.plans/<slug>-T1.md. Write only compact JSONL claim evidence to the configured output.',output:'RUN_ROOT/.drafts/<slug>-evidence-T1.jsonl',outputMode:'file-only',toolBudget:{soft:8,hard:12,block:['web_search','fetch_content','get_search_content']}}]);","async":true,"globalConcurrencyLimit":4}
 ```
 
 Keep tool-call JSON small. Do not embed briefs, page bodies, or child output in it. Wait for completion results, verify expected files, validate each JSONL line, deduplicate by normalized URL/source ID, and merge into `RUN_ROOT/.drafts/<slug>-evidence.jsonl`. Continue with partial coverage if one lane fails.

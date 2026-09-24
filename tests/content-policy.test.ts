@@ -590,7 +590,7 @@ test("deepresearch routes before research and keeps subagent tool calls small", 
 	assert.match(router, /Do not research, plan, or call tools/i);
 	assert.match(deepResearchPrompt, /Make the scale decision before assigning owners/i);
 	assert.match(deepResearchPrompt, /`simple`: exactly one researcher, then writer/i);
-	assert.match(deepResearchPrompt, /`standard`: one researcher.*otherwise two researchers in parallel/i);
+	assert.match(deepResearchPrompt, /`standard`: use the policy's one or two `researcherProfiles`/i);
 	assert.match(deepResearchPrompt, /`deep`: three researchers in parallel/i);
 	assert.match(deepResearchPrompt, /maximum 2 search rounds/i);
 	assert.match(deepResearchPrompt, /maximum 4 queries per round/i);

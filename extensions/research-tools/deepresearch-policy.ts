@@ -20,6 +20,7 @@ export type DeepResearchPolicy = {
 	allowVerifier: boolean;
 	domainTags: DeepResearchDomain[];
 	routeReason: string;
+	researcherProfiles: string[];
 };
 
 export type DeepResearchPolicyInput = {
@@ -31,7 +32,7 @@ export type DeepResearchPolicyInput = {
 	exhaustive?: boolean;
 };
 
-const POLICY_BY_MODE: Record<DeepResearchMode, Omit<DeepResearchPolicy, "mode" | "domainTags" | "routeReason">> = {
+const POLICY_BY_MODE: Record<DeepResearchMode, Omit<DeepResearchPolicy, "mode" | "domainTags" | "routeReason" | "researcherProfiles">> = {
 	simple: {
 		maxResearchers: 1,
 		maxWriters: 1,
@@ -98,6 +99,18 @@ function effectiveMode(input: DeepResearchPolicyInput): DeepResearchMode {
 	return "simple";
 }
 
+export function selectDeepResearchResearcherProfiles(mode: DeepResearchMode, input: DeepResearchPolicyInput): string[] {
+	const specialistDomains = [...new Set(input.domainTags.filter((tag): tag is "bio" | "chem" | "genomics" =>
+		tag === "bio" || tag === "chem" || tag === "genomics"))];
+	const fallback = input.domainTags.includes("web-only") && !input.domainTags.includes("paper-search")
+		? "web"
+		: "paper";
+	const count = mode === "simple" ? 1 : mode === "deep" ? 3
+		: input.questionCount >= 3 || specialistDomains.length >= 2 ? 2 : 1;
+	return Array.from({ length: count }, (_, index) =>
+		`deepresearch-researcher-${specialistDomains[index] ?? specialistDomains[index % specialistDomains.length] ?? fallback}`);
+}
+
 export function selectDeepResearchPolicy(input: DeepResearchPolicyInput): DeepResearchPolicy {
 	const normalized = {
 		...input,
@@ -108,7 +121,13 @@ export function selectDeepResearchPolicy(input: DeepResearchPolicyInput): DeepRe
 	const mode = effectiveMode(normalized);
 	const reason = input.reason.trim();
 	const routeReason = mode === input.complexity ? reason : `${reason} Escalated to ${mode} by policy thresholds.`;
-	return { mode, ...POLICY_BY_MODE[mode], domainTags: normalized.domainTags.length ? normalized.domainTags : ["unknown"], routeReason };
+	return {
+		mode,
+		...POLICY_BY_MODE[mode],
+		domainTags: normalized.domainTags.length ? normalized.domainTags : ["unknown"],
+		routeReason,
+		researcherProfiles: selectDeepResearchResearcherProfiles(mode, normalized),
+	};
 }
 
 function textContent(message: AgentMessage): string {
@@ -163,9 +182,9 @@ function urlCount(input: Record<string, unknown>): number {
 }
 
 function researcherCount(input: Record<string, unknown>): number {
-	if (typeof input.agent === "string") return input.agent === "researcher" ? 1 : 0;
+	if (typeof input.agent === "string") return input.agent === "researcher" || input.agent.startsWith("deepresearch-researcher-") ? 1 : 0;
 	if (typeof input.workflowScript !== "string") return 0;
-	return [...input.workflowScript.matchAll(/\bagent\s*:\s*["']researcher["']/g)].length || 1;
+	return [...input.workflowScript.matchAll(/\bagent\s*:\s*["'](?:researcher|deepresearch-researcher-[a-z]+)["']/g)].length;
 }
 
 function writerCount(input: Record<string, unknown>): number {

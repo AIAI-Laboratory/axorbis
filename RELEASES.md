@@ -13,6 +13,7 @@ No unreleased changes.
 ### Deep Research routing
 
 - A tool-free router now classifies the question as simple, standard, or deep before planning and records its reason and domain tags in the plan. Simple runs use one researcher and writer with inline claim checks; standard runs use one or two researchers, writer, and verifier; deep runs add a reviewer.
+- Deep Research researcher lanes now select Pi-supported tool profiles by domain. Each scientific profile exposes a short, source-restricted paper, bio, chemistry, or genomics search tool backed by the existing databases; unknown topics use web and paper search. Other workflows retain their existing researcher and science tools.
 
 ## v0.3.51 - 2026-09-21
 
