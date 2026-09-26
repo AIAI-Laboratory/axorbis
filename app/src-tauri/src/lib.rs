@@ -13,6 +13,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::review_environment,
             commands::list_google_keys,
+            commands::jev_key_info,
+            commands::save_jev_key,
+            commands::remove_jev_key,
             commands::add_google_key,
             commands::remove_google_key,
             commands::choose_workspace,
@@ -21,6 +24,7 @@ pub fn run() {
             commands::read_review,
             commands::review_input,
             commands::reference_graph,
+            commands::crossref_article,
             commands::update_review,
             commands::delete_review,
             commands::read_review_artifact,
