@@ -36,6 +36,7 @@ pub struct ReviewEnvironment {
     version: Option<String>,
     default_workspace: String,
     key_count: usize,
+    jev_key_available: bool,
 }
 
 #[derive(Serialize)]
@@ -403,12 +404,88 @@ pub fn review_environment() -> ReviewEnvironment {
         version,
         default_workspace: default_workspace().to_string_lossy().into_owned(),
         key_count: axorbis_google_keys().len(),
+        jev_key_available: provider_api_key("TYPESAFE_API_KEY").is_some(),
     }
 }
 
 #[command]
 pub fn list_google_keys() -> Vec<GoogleKeyInfo> {
     google_key_info()
+}
+
+#[command]
+pub fn jev_key_info() -> Option<GoogleKeyInfo> {
+    let agent_dir = PathBuf::from(env::var_os("HOME")?).join(".axorbis/agent");
+    axorbis_env_key(&agent_dir, "TYPESAFE_API_KEY").map(|entry| GoogleKeyInfo {
+        id: "Jev AI".into(),
+        source: entry.source.into(),
+        variable: entry.variable,
+        manageable: entry.manageable,
+    })
+}
+
+#[command]
+pub fn save_jev_key(api_key: String) -> Result<GoogleKeyInfo, String> {
+    let value = api_key.trim();
+    if !(8..=512).contains(&value.len())
+        || !value.chars().all(|character| character.is_ascii_graphic())
+    {
+        return Err("Enter a valid API key without spaces or line breaks.".into());
+    }
+    let _guard = KEY_FILE_LOCK
+        .lock()
+        .map_err(|_| "Key management is unavailable.")?;
+    if env::var("TYPESAFE_API_KEY")
+        .ok()
+        .is_some_and(|key| !key.trim().is_empty())
+    {
+        return Err(
+            "The Jev key is provided by the process environment and cannot be replaced here."
+                .into(),
+        );
+    }
+    let path = agent_key_file()?;
+    let contents = read_managed_key_file(&path)?;
+    let mut lines: Vec<String> = contents
+        .lines()
+        .filter(|line| {
+            line.trim_start().starts_with('#')
+                || line
+                    .split_once('=')
+                    .is_none_or(|(name, _)| name.trim() != "TYPESAFE_API_KEY")
+        })
+        .map(str::to_string)
+        .collect();
+    lines.push(format!("TYPESAFE_API_KEY={value}"));
+    save_managed_key_file(&path, &format!("{}\n", lines.join("\n")))?;
+    jev_key_info().ok_or("Could not confirm the Jev key was saved.".into())
+}
+
+#[command]
+pub fn remove_jev_key() -> Result<(), String> {
+    let _guard = KEY_FILE_LOCK
+        .lock()
+        .map_err(|_| "Key management is unavailable.")?;
+    if !jev_key_info().is_some_and(|key| key.manageable) {
+        return Err("The Jev key cannot be removed here.".into());
+    }
+    let path = agent_key_file()?;
+    let contents = read_managed_key_file(&path)?;
+    let lines: Vec<&str> = contents
+        .lines()
+        .filter(|line| {
+            line.trim_start().starts_with('#')
+                || line
+                    .split_once('=')
+                    .is_none_or(|(name, _)| name.trim() != "TYPESAFE_API_KEY")
+        })
+        .collect();
+    let next = if lines.is_empty() {
+        String::new()
+    } else {
+        format!("{}\n", lines.join("\n"))
+    };
+    save_managed_key_file(&path, &next)
 }
 
 #[command]
@@ -531,6 +608,7 @@ pub fn start_review(
     workspace: Option<String>,
     input: ReviewInput,
     key_selection: Option<String>,
+    classification_mode: Option<String>,
     project: Option<String>,
     source_review_id: Option<String>,
     resume_checkpoint: Option<bool>,
@@ -546,6 +624,23 @@ pub fn start_review(
         Vec::new()
     } else {
         select_google_keys(configured_keys, &selection)?
+    };
+    if api_keys.is_empty() {
+        return Err(
+            "A Gemini API key is required for concept planning and evidence analysis.".into(),
+        );
+    }
+    let classification_mode = classification_mode.unwrap_or_else(|| "gemini".into());
+    if classification_mode != "gemini" && classification_mode != "jev" {
+        return Err("Unsupported classification mode.".into());
+    }
+    let jev_key = if classification_mode == "jev" {
+        Some(
+            provider_api_key("TYPESAFE_API_KEY")
+                .ok_or("Configure a Jev AI key in Settings before enabling Jev classification.")?,
+        )
+    } else {
+        None
     };
     let key_labels: Vec<String> = if selection == "auto" {
         (1..=api_keys.len())
@@ -576,11 +671,12 @@ pub fn start_review(
     let started_at = now_ms();
     let status = json!({ "id": id, "title": input.title.trim(), "state": "running", "startedAt": started_at, "updatedAt": started_at,
         "workspace": workspace, "directory": directory, "progress": [], "error": null,
-        "keySelection": selection, "keyCount": api_keys.len(),
+        "keySelection": selection, "keyCount": api_keys.len(), "classificationMode": classification_mode,
         "keyUsage": key_labels.iter().map(|label| json!({ "id": label, "state": "idle", "active": false, "requests": 0, "tokens": 0 })).collect::<Vec<_>>(),
         "project": project, "input": input, "sourceReviewId": source_review_id });
     write_status(&directory, &status)?;
     let payload = json!({ "apiKeys": api_keys, "keyLabels": key_labels, "model": "gemini-3.5-flash-lite",
+        "classificationMode": classification_mode, "typesafeApiKey": jev_key,
         "openalexApiKey": openalex_api_key(),
         "semanticScholarApiKey": provider_api_key("SEMANTIC_SCHOLAR_API_KEY"),
         "coreApiKey": provider_api_key("CORE_API_KEY"),
@@ -607,6 +703,7 @@ pub fn start_review(
         "SEMANTIC_SCHOLAR_API_KEY",
         "CORE_API_KEY",
         "GEMINI_API_KEY",
+        "TYPESAFE_API_KEY",
     ] {
         command.env_remove(name);
     }
@@ -731,6 +828,37 @@ pub async fn reference_graph(
 }
 
 #[command]
+pub async fn crossref_article(app: AppHandle, doi: String, title: String) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let payload = json!({ "doi": doi, "title": title });
+        let mut child = Command::new(python_program())
+            .arg(runner_path(&app)?)
+            .arg("--crossref-article")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .map_err(|_| "Could not start the Crossref lookup.".to_string())?;
+        child
+            .stdin
+            .take()
+            .ok_or("Could not send the selected article.")?
+            .write_all(&serde_json::to_vec(&payload).map_err(|error| error.to_string())?)
+            .map_err(|_| "Could not send the selected article.")?;
+        let output = child
+            .wait_with_output()
+            .map_err(|_| "Crossref lookup did not finish.".to_string())?;
+        if !output.status.success() {
+            return Err("Crossref lookup failed. Try again later.".into());
+        }
+        serde_json::from_slice(&output.stdout)
+            .map_err(|_| "Crossref returned invalid article metadata.".to_string())
+    })
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[command]
 pub fn update_review(
     state: State<'_, ReviewState>,
     workspace: Option<String>,
@@ -841,6 +969,7 @@ pub fn read_review_artifact(
             | "protocol.json"
             | "status.json"
             | "runner.log"
+            | "gemini-calls.jsonl"
     ) {
         return Err("This review file cannot be previewed.".into());
     }
