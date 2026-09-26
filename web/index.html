@@ -1,12 +1,28 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Axorbis Research Workspace</title>
-	</head>
-	<body>
-		<div id="root"></div>
-		<script type="module" src="/src/app/research-main.tsx"></script>
-	</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Axorbis Research Workspace</title>
+    <style>
+      html, body { margin: 0; min-height: 100%; }
+      body { background: #fafafa; color: #151515; font-family: system-ui, sans-serif; }
+      #boot-shell { box-sizing: border-box; display: grid; justify-items: center; align-content: center; width: 100%; height: 100dvh; padding: 24px; text-align: center; }
+      #boot-shell img { width: min(135px, 28vw); height: min(135px, 28vw); object-fit: contain; animation: boot-float 2.4s ease-in-out infinite; }
+      #boot-shell h1 { max-width: 750px; margin: 22px 0 7px; font-size: clamp(23px, 2.25vw, 30px); font-weight: 600; line-height: 1.22; letter-spacing: -.02em; }
+      #boot-shell p { margin: 0; color: #767676; font-size: 13px; line-height: 1.5; }
+      #boot-shell small { display: block; max-width: 750px; margin-top: 8px; color: #767676; font-size: 11px; line-height: 1.5; opacity: .7; }
+      #boot-shell .status { margin-top: 16px; color: #767676; font: 12px ui-monospace, monospace; }
+      #boot-shell .status::before { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border: 2px solid #e8e8e8; border-top-color: #ff3b30; border-radius: 50%; vertical-align: -1px; animation: boot-spin .7s linear infinite; content: ""; }
+      @keyframes boot-float { 0%, 100% { transform: translateY(0) scale(.98); opacity: .82; } 50% { transform: translateY(-7px) scale(1); opacity: 1; } }
+      @keyframes boot-spin { to { transform: rotate(360deg); } }
+      @media (prefers-color-scheme: dark) { body { background: #111; color: #f6f6f6; } #boot-shell p, #boot-shell small, #boot-shell .status { color: #a9a9a9; } }
+      @media (prefers-reduced-motion: reduce) { #boot-shell img, #boot-shell .status::before { animation: none; } }
+    </style>
+  </head>
+  <body>
+    <div id="root"><main id="boot-shell" aria-live="polite"><img src="/axorbis-loading.svg" alt="" /><h1>“So we really ought to look into theories that don’t work, and science that isn’t science.”</h1><p>Vì vậy, ta thật sự nên xem xét những lý thuyết không hiệu quả và thứ khoa học vốn không phải là khoa học.</p><small>Cargo Cult Science (Khoa học “sùng bái hàng hóa”) — Richard P. Feynman, Caltech Commencement Address (1974)</small><div class="status" role="status" aria-label="Đang tải"></div></main></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

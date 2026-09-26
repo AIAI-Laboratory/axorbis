@@ -1,15 +1,16 @@
 [package]
 name = "axorbis-desktop"
-version = "0.3.51"
-description = "Native desktop launcher for the Axorbis research workspace"
-authors = ["Advait Paliwal"]
+version = "0.1.0"
+description = "Desktop literature review workspace powered by SynthScholar"
+authors = ["Axorbis contributors"]
 edition = "2021"
 
 [build-dependencies]
 tauri-build = { version = "2.0.0", features = [] }
 
 [dependencies]
-tauri = { version = "2.0.0", features = ["tray-icon"] }
+tauri = { version = "2.0.0", features = [] }
 tauri-plugin-dialog = "2.0.0"
+tauri-plugin-opener = "2.0.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

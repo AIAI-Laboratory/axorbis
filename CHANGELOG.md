@@ -4,6 +4,13 @@ Workspace lab notebook for long-running or resumable research work.
 
 Use this file to track chronology, not release notes. Keep entries short, factual, and operational.
 
+### 2026-09-26 — synthscholar-literature-review
+
+- Objective: Replace the Feynman runtime with a SynthScholar powered literature review workflow while retaining the Axorbis desktop visual design.
+- Changed: Removed the legacy CLI, Pi runtime, workbench services, prompts, extensions, and unrelated UI features. Added a Tauri-to-Python review runner with local progress, cancellation, Markdown/JSON/BibTeX outputs, and the original Axorbis styles and fonts.
+- Verified: SynthScholar 0.0.11 imports and its protocol/pipeline constructors work in the pinned Python environment; web build, Python bridge tests, and Tauri check/tests pass. A paid OpenRouter review run remains unverified because no review key was supplied.
+- Next: Run one real review with an OpenRouter key and inspect the report's citations and PRISMA counts.
+
 ### 2026-09-21 — isolate-subagent-credentials
 
 - Objective: Ensure subagents never use the Main Agent key as a subkey.
@@ -5305,3 +5312,85 @@ Use this file to track chronology, not release notes. Keep entries short, factua
 - Reduced oversized headings, navigation and panel spacing, card roundness, shadows, and decorative gradients across Home, projects, research questions, activity, notes, AI providers, dialogs, and first-run screens without changing workflows.
 - Regenerated the desktop icon from the supplied SVG with a transparent optical safe area so the Dock artwork appears smaller; the original source artwork is untouched. Updated the icon generator to emit only desktop assets into the repository.
 - Verified: Workbench typecheck/build, desktop and Axorbis shell tests (5/5), native desktop launch with a live Feynman backend, and generated icon inspection. Architecture check remains blocked by the existing oversized `engine/workbench/server.ts`, unrelated to this CSS/icon pass. Native UI screenshot inspection was unavailable because computer-use permission was denied. Next: visually review Home, Research, Providers, and Dock at normal and magnified sizes on the running app.
+### 2026-09-22 — student-employment-dashboard-layout
+
+- Reworked the standalone student employment dashboard to follow the supplied wireframe: centered year/semester filters, employment donut, enterprise count, gender donut, progress process, and the students-without-enterprise table.
+- Added compact supporting metrics below the three primary blocks while preserving responsive behavior, filtering, pagination, dialogs, and mock-data switching.
+- Verified: `student-employment-dashboard/npm run build` passed; localhost preview checked at desktop and 390px mobile width. State: `verified`.
+### 2026-09-22 — internship-round-management
+
+- Reframed the dashboard around student internship rounds rather than graduate employment: round filters, assignment ratios, receiving-company count, round workflow, and unassigned student records.
+- Updated metadata, README, labels, statuses, and mock data to match the internship-round domain. State: `verified`.
+### 2026-09-22 — internship-round-reporting
+
+- Corrected the domain model: students find their own companies and report whether they have one; the faculty tracks, receives, and verifies the reports without assigning placements.
+- Replaced assignment language and statuses with company-reporting language, and changed the table to track the full student list for the selected internship round. State: `verified`.
+
+### 2026-09-22 — internship-wireframe-summary
+
+- Removed the gender-composition donut and replaced it with a single circular male-student ratio metric, matching the supplied wireframe beside the enterprise count and reporting chart.
+- Verified: `student-employment-dashboard/npm run build` passed. State: `verified`.
+
+### 2026-09-22 — internship-progress-milestones
+
+- Updated the internship progress timeline to six milestones: Bắt đầu, Thông báo sinh viên, Kết thúc học phần KTCN, Kết thúc học phần TSNN, Thu hồ sơ, and Nhập điểm.
+- Adjusted stage calculation and compact label sizing so the six milestones remain readable across desktop and mobile layouts. State: `verified`.
+
+### 2026-09-22 — year4-student-ratio
+
+- Corrected the summary metric to represent the number of fourth-year students over the total student count, removing the previous gender-based data fields and labels.
+- Renamed the component and mock-data field to match the year-four metric. State: `verified`.
+
+### 2026-09-22 — year4-pie-chart
+
+- Replaced the fourth-year summary circle with a responsive pie/donut chart showing fourth-year students versus students from other years, while preserving the percentage and count in the center.
+- Verified: `student-employment-dashboard/npm run build` passed and the localhost preview rendered without console warnings. State: `verified`.
+
+### 2026-09-22 — overview-grid-balance
+
+- Aligned the three overview panels to a shared row height so the enterprise count card no longer floats between the two charts.
+- Preserved the compact responsive layout on mobile. State: `verified`.
+
+### 2026-09-22 — enterprise-card-donut
+
+- Added a compact green donut to the enterprise-count card, using the reported-company percentage while keeping the 86-unit metric and green progress bar.
+- Reworked the card body into a responsive chart-and-metric layout so spacing and vertical alignment match the neighboring cards. State: `verified`.
+
+### 2026-09-22 — faculty-major-status-scope
+
+- Scoped the student data to one Information Technology faculty with four majors: Khoa học máy tính, Kỹ thuật phần mềm, Mạng máy tính và truyền thông dữ liệu, and Hệ thống thông tin.
+- Reduced student statuses to Có doanh nghiệp and Không có doanh nghiệp, and updated filters, table columns, summary labels, mock data, and student dialogs accordingly. State: `verified`.
+
+### 2026-09-23 — enterprise-participation-insights
+
+- Added mock company and sector data for all nine internship rounds, with company counts and student totals matching each round's summary.
+- Added a sector share chart, a top-10 receiving-company chart, and scrollable lists of friendly and new companies to the standalone dashboard.
+- Verified: all nine datasets reconcile with their summary counts, `student-employment-dashboard/npm run build` passed, and the new panels rendered in the localhost preview. State: `verified`. Next: connect company analytics to a real source when backend data becomes available.
+
+### 2026-09-23 — internship-student-profile
+
+- Replaced the fourth-year-only donut with a breakdown of year 3, year 4, and other students; added dashboards for major, academic result, and English certificate or commitment status.
+- Added these fields to individual mock student records and their detail/edit dialog, with year also visible in the table. Dashboard aggregates now update from student records when a profile changes.
+- Verified: all nine mock rounds reconcile to their student totals, `student-employment-dashboard/npm run build` passed, and editing a student's year, result, and English status updated the displayed counts in the localhost preview. State: `verified`. Next: connect these student fields to the institution's actual data source.
+
+### 2026-09-23 — internship-company-response-statuses
+
+- Split students without a confirmed company into Chưa phản hồi, Đang chờ PV/KQPV, and Không có doanh nghiệp; the employment donut, legend, table badge/filter, and edit form now show all four statuses.
+- Clarified that the 356-student summary is the combined group without a confirmed company. The default round now has 892 / 119 / 119 / 118 students across the four statuses.
+- Verified: all nine datasets reconcile to their totals, `student-employment-dashboard/npm run build` passed, and the four-category card and edit options rendered in the localhost preview. State: `verified`. Next: source response status from actual internship records.
+
+### 2026-09-23 — deepresearch-orchestration, Step 1
+
+- Added a tool-free Deep Research question router, three complexity routes, policy escalation, and route reasoning in the plan contract. Simple uses one researcher and writer with inline claim checks; standard and deep add the prescribed verification and review stages.
+- Verified: typecheck, targeted policy and prompt/runtime contract tests, and an offline `What is BM25?` route fixture. Live provider run is blocked because the selected model has no API key; token delta is unmeasured. Full `npm test` with localhost access reported 1,155 passes and 24 failures outside the Step 1 files, so the full-suite gate remains blocked. Next: report Step 1 results and wait before Step 2.
+
+### 2026-09-24 — deepresearch-orchestration, Step 2
+
+- Added Deep Research-only researcher profiles selected from router domain tags, plus source-restricted paper, bio, chemistry, and genomics tools over the existing science database backend. The shared researcher and other workflows retain their tool contracts.
+- Verified: scoped schemas, profile allowlists, settings injection, metrics attribution, native subagent workflow, typecheck, and two offline research-question routes. Pi SDK definition estimate rose by 349 tokens for one bio lane and 480 tokens for three interdisciplinary lanes compared with the existing researcher, which had no science database tool. Live provider usage remains unmeasured because referenced key environment variables are absent. Full `npm test` repeated the same 24 baseline failures. Next: implement structured handoff and claim-level verification.
+
+### 2026-09-24 — deepresearch-orchestration, Step 3
+
+- Added versioned per-lane claim summaries linked to exact JSONL evidence lines and source URLs/DOIs. A handoff validator checks source fields without returning full evidence to model context. Standard/deep lanes now use a low-thinking claim verifier when each researcher finishes; the writer receives only validated summaries. Deep review has a dedicated profile that writes both a full audit and a findings summary.
+- Verified: BM25 fixture with 3 claims and 6 sources, validator and runtime-tool tests, metrics attribution, 63/63 targeted Deep Research tests, typecheck, and build. The fixture's estimated handoff content fell from 766 to 578 tokens at 4 characters/token; the lead handoff tool adds about 202 estimated definition tokens. The initial CLI attempt lacked injected key variables. Full `npm test` recorded 1,160 passes and the same 24 baseline failures outside changed Deep Research tests. Next: obtain runtime credentials for a live sample and address baseline test debt separately.
+- Live run update: found encrypted main and subagent Gemini keys in the Axorbis workbench vault and supplied them only to child-process environment. A tiny Gemini 3.5 Flash request succeeded; the full `/deepresearch What is BM25?` requests on 3.5 Flash Lite and 3.5 Flash repeatedly returned provider HTTP 503 before routing, with zero usage and no plan. State: `blocked` by provider availability. Next: retry the live workflow after the provider recovers; compare actual usage and inspect final artifacts.

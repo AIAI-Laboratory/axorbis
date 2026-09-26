@@ -1,0 +1,28 @@
+.rw-count-up { display: inline-block; font-variant-numeric: tabular-nums; }
+
+.rw-usage-breakdown > span { transition: width 480ms cubic-bezier(.2, .8, .2, 1); }
+.rw-run-mode .run-key-summary-track > i { transition: flex-grow 480ms cubic-bezier(.2, .8, .2, 1); }
+.rw-run-mode .run-control-status.running > svg:first-child { animation: rw-status-pulse 1.8s ease-in-out infinite; }
+.rw-run-mode .run-timeline-list { scroll-behavior: smooth; }
+.rw-run-mode .run-timeline-event.newest { animation: rw-log-arrive 360ms cubic-bezier(.2, .8, .2, 1); }
+.rw-run-mode .run-paper-tabs button::after { transition: transform 180ms ease, opacity 180ms ease; }
+.rw-run-mode .run-paper-tabs button:not(.active)::after { opacity: 0; transform: scaleX(.55); }
+
+@keyframes rw-status-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .55; transform: scale(.86); }
+}
+
+@keyframes rw-log-arrive {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rw-usage-breakdown > span,
+  .rw-run-mode .run-key-summary-track > i,
+  .rw-run-mode .run-paper-tabs button::after { transition: none; }
+  .rw-run-mode .run-control-status.running > svg:first-child,
+  .rw-run-mode .run-timeline-event.newest { animation: none; }
+  .rw-run-mode .run-timeline-list { scroll-behavior: auto; }
+}

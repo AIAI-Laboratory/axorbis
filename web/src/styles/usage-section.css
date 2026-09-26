@@ -1,0 +1,34 @@
+.rw-usage-section { margin-top: 0; }
+.rw-usage-panel { border: 1px solid var(--line); background: var(--surface); }
+.rw-usage-metrics { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); padding: 18px 20px; }
+.rw-usage-metrics > div { display: grid; align-content: start; min-width: 0; gap: 5px; padding: 0 20px; border-left: 1px solid var(--line); }
+.rw-usage-metrics > div:first-child { padding-left: 0; border-left: 0; }
+.rw-usage-metrics > div:last-child { padding-right: 0; }
+.rw-usage-metrics span { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: var(--rw-text-caption); }
+.rw-usage-metrics strong { color: var(--ink); font: 600 21px/1.2 var(--font-data); letter-spacing: -.04em; }
+.rw-usage-metrics .rw-usage-total strong { font-size: 30px; }
+.rw-usage-metrics .rw-usage-total svg { color: var(--red); }
+.rw-usage-metrics small { color: var(--muted); font-size: var(--rw-text-caption); }
+.rw-usage-breakdown { display: flex; height: 7px; margin: 0 20px; overflow: hidden; background: var(--line); }
+.rw-usage-breakdown .input { background: var(--red); }
+.rw-usage-breakdown .output { background: var(--muted); }
+.rw-usage-legend { display: flex; gap: 18px; padding: 7px 20px 16px; color: var(--muted); font-size: var(--rw-text-caption); }
+.rw-usage-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.rw-usage-legend i { width: 8px; height: 8px; }
+.rw-usage-legend i.input { background: var(--red); }
+.rw-usage-legend i.output { background: var(--muted); }
+.rw-usage-empty { margin: 0; padding: 0 20px 18px; color: var(--muted); font-size: var(--rw-text-control); }
+@media (max-width: 850px) {
+  .rw-usage-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 0; }
+  .rw-usage-metrics .rw-usage-total { grid-column: 1 / -1; padding: 0 0 14px; border-bottom: 1px solid var(--line); }
+  .rw-usage-metrics > div:nth-child(2) { padding-left: 0; border-left: 0; }
+}
+@media (max-width: 600px) {
+  .rw-usage-section { margin-top: 0; }
+  .rw-usage-metrics { padding: 15px; }
+  .rw-usage-metrics > div { padding: 0 10px; }
+  .rw-usage-metrics strong { font-size: 16px; }
+  .rw-usage-metrics .rw-usage-total strong { font-size: 26px; }
+  .rw-usage-breakdown { margin-inline: 15px; }
+  .rw-usage-legend { padding-inline: 15px; }
+}

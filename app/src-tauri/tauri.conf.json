@@ -1,42 +1,31 @@
 {
   "productName": "Axorbis",
-  "version": "0.3.51",
-  "identifier": "com.axorbis.feynman",
+  "version": "0.1.0",
+  "identifier": "com.axorbis.literature-review",
   "build": {
     "beforeDevCommand": {
-      "script": "npm run dev:workbench-web --prefix ..",
+      "script": "npm run dev --prefix ..",
       "wait": false
     },
     "beforeBuildCommand": "npm run build --prefix ..",
-    "frontendDist": "../ui"
+    "devUrl": "http://127.0.0.1:1420",
+    "frontendDist": "../../dist/review-web"
   },
   "app": {
     "windows": [
-      {
-        "title": "Axorbis",
-        "width": 1400,
-        "height": 900,
-        "minWidth": 760,
-        "minHeight": 600
-      }
+      { "title": "Axorbis", "width": 1400, "height": 900, "minWidth": 760, "minHeight": 600 }
     ],
     "withGlobalTauri": true,
     "security": {
-      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost http://127.0.0.1:* http://localhost:*; img-src 'self' asset: http://asset.localhost; style-src 'self'; script-src 'self'"
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self'"
     }
   },
   "bundle": {
     "active": true,
     "icon": [
-      "icons/32x32.png",
-      "icons/64x64.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
+      "icons/32x32.png", "icons/64x64.png", "icons/128x128.png",
+      "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"
     ],
-    "resources": {
-      "../runtime/": "runtime/"
-    }
+    "resources": { "../../integration/review_runner.py": "integration/review_runner.py", "../../integration/cs_engine.py": "integration/cs_engine.py" }
   }
 }

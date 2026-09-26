@@ -1,44 +1,37 @@
 mod commands;
-mod menu;
-mod tray;
 
-use commands::BackendState;
-use tauri::{Manager, RunEvent, WindowEvent};
+use commands::ReviewState;
+use tauri::RunEvent;
 
 pub fn run() {
-    let backend = BackendState::default();
-    let shutdown_backend = backend.clone();
-
+    let reviews = ReviewState::default();
+    let shutdown = reviews.clone();
     tauri::Builder::default()
-        .manage(backend)
+        .manage(reviews)
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            commands::desktop_info,
+            commands::review_environment,
+            commands::list_google_keys,
+            commands::add_google_key,
+            commands::remove_google_key,
             commands::choose_workspace,
-            commands::start_backend,
-            commands::stop_backend,
+            commands::start_review,
+            commands::list_reviews,
+            commands::read_review,
+            commands::review_input,
+            commands::reference_graph,
+            commands::update_review,
+            commands::delete_review,
+            commands::read_review_artifact,
+            commands::cancel_review,
+            commands::open_review_output,
         ])
-        .setup(|app| {
-            if let Some(window) = app.get_webview_window("main") {
-                app.state::<BackendState>().set_bootstrap_url(window.url()?);
-            }
-            menu::setup(app)?;
-            tray::setup(app)?;
-            Ok(())
-        })
-        .on_window_event(|window, event| {
-            if window.label() == "main" {
-                if let WindowEvent::CloseRequested { api, .. } = event {
-                    api.prevent_close();
-                    let _ = window.hide();
-                }
-            }
-        })
         .build(tauri::generate_context!())
-        .expect("error while building the Axorbis desktop application")
+        .expect("error while building the Axorbis literature review desktop application")
         .run(move |_app, event| {
             if matches!(event, RunEvent::Exit | RunEvent::ExitRequested { .. }) {
-                shutdown_backend.stop();
+                shutdown.stop();
             }
         });
 }

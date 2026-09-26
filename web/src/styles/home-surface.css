@@ -1,0 +1,103 @@
+/* Home follows the same full-width research surface and compact panels as a review. */
+.rw-app .rw-home {
+  width: 100%;
+  max-width: none;
+  min-height: calc(100dvh - var(--topbar-h));
+  margin: 0;
+  padding: 24px clamp(20px, 3vw, 44px) 40px;
+  background: var(--surface);
+}
+
+.rw-app .rw-home .rw-page-intro {
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rw-app .rw-home .rw-page-title-row {
+  align-items: flex-start;
+  gap: 24px;
+  margin-top: 6px;
+}
+
+.rw-app .rw-home .rw-home-hero-quote h1 {
+  max-width: 960px;
+  margin: 6px 0 8px;
+  font-size: clamp(24px, 2.25vw, 32px);
+  line-height: 1.18;
+}
+
+.rw-app .rw-home .rw-home-hero-quote footer {
+  font-size: var(--rw-text-caption);
+}
+
+.rw-app .rw-home .rw-page-title-row > .rw-button {
+  min-height: 36px;
+  margin-top: 4px;
+  border-radius: 3px;
+  font-size: var(--rw-text-control);
+}
+
+.rw-app .rw-home .rw-home-columns {
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr);
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.rw-app .rw-home .rw-row-list,
+.rw-app .rw-home .rw-quick-projects {
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
+}
+
+.rw-app .rw-home .rw-work-row,
+.rw-app .rw-home .rw-quick-projects button {
+  min-height: 56px;
+  padding: 8px 2px;
+}
+
+.rw-app .rw-home .rw-work-row:last-child,
+.rw-app .rw-home .rw-quick-projects button:last-child {
+  border-bottom: 1px solid var(--line) !important;
+}
+
+.rw-app .rw-home .rw-usage-panel {
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.rw-app .rw-home .rw-usage-metrics { padding: 18px 0; }
+.rw-app .rw-home .rw-usage-breakdown { margin-inline: 0; }
+.rw-app .rw-home .rw-usage-legend { padding-inline: 0; }
+.rw-app .rw-home .rw-usage-empty { padding-inline: 0; }
+
+.rw-app .rw-home .rw-row-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 3px;
+}
+
+.rw-app .rw-home .rw-project-initial {
+  border-radius: 3px;
+}
+
+@media (max-width: 900px) {
+  .rw-app .rw-home .rw-home-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .rw-app .rw-home .rw-home-columns aside { margin-top: 0; }
+}
+
+@media (max-width: 700px) {
+  .rw-app .rw-home { padding: 18px 16px 32px; }
+  .rw-app .rw-home .rw-page-title-row { flex-direction: column; gap: 12px; }
+  .rw-app .rw-home .rw-home-hero-quote h1 { font-size: 25px; }
+  .rw-app .rw-home .rw-page-title-row > .rw-button { margin-top: 0; }
+  .rw-app .rw-home .rw-usage-metrics { padding: 15px 0; }
+}
