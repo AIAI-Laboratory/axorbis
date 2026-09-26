@@ -1,237 +1,35 @@
-<div align="center">
+# Axorbis Literature Intelligence
 
-# Axorbis
+A desktop literature mapping tool for Computer Science topics. It uses the pinned [SynthScholar 0.0.11](https://github.com/sensein/synthscholar) public search and full text clients, then applies a conservative local evidence pipeline. The app does not run SynthScholar's biomedical PRISMA, RoB or GRADE stages.
 
-**An evidence-first AI research workspace for turning questions into traceable, reproducible research.**
+## Setup
 
-Questions · Sources · Claims · Experiments · Outputs — kept together in one local, auditable workspace.
+Requirements: Node.js 22+, Python 3.11+, Rust, and the [Tauri 2 prerequisites](https://v2.tauri.app/start/prerequisites/).
 
-<img src="img/banner.png" alt="Axorbis — an evidence-first AI research workspace built on the Feynman research engine" width="100%" />
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-
-[Quick Start](#quick-start) · [Research Workflows](#research-workflows) · [How It Works](#how-it-works) · [Security](#security)
-
-</div>
-
----
-
-## What is Axorbis?
-
-Axorbis is a desktop research workspace built on the Feynman research engine.
-
-It brings research questions, sources, claims, evidence, experiments, and generated outputs into one place so that findings remain connected to the evidence behind them.
-
-Instead of treating AI research as a sequence of isolated chat sessions, Axorbis organizes the work into a local, inspectable research process.
-
-## Why Axorbis?
-
-Research often fragments across browser tabs, papers, notebooks, scripts, and chat windows. That makes it difficult to answer a basic question:
-
-**Where did this conclusion come from?**
-
-Axorbis is designed around evidence traceability. Claims stay connected to sources, research workflows share the same workspace, and provider configuration remains under your control.
-
-The result is a research environment built for discovery, verification, synthesis, and reproducibility rather than isolated text generation.
-
----
-
-## Quick Start
-
-### Requirements
-
-* Node.js 22.22–25.x
-* npm
-* Rust
-* [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/)
-
-### Run from source
-
-```bash
-git clone https://github.com/AIAI-Laboratory/axorbis.git
-cd axorbis
-
-nvm use || nvm install
-
-npm ci
-npm ci --prefix app
-
+```sh
+npm install
+python3 integration/setup.py
 npm run desktop:dev
 ```
 
-### Configure an AI provider
+The desktop app uses this checkout's `.venv/bin/python` in development. For an installed build, set `SYNTHSCHOLAR_PYTHON` to a Python interpreter with `integration/requirements.txt` installed. A Gemini key is optional. Select one key or automatic rotation in the start form to use AI for concept profiling; the monitor records per-key requests and reported input/output tokens. Without a key, the deterministic pipeline still runs and model usage remains unavailable. An optional OpenAlex key can be set as `OPENALEX_API_KEY` in the desktop process environment or `~/.axorbis/agent/.env`; it goes to Python through stdin and is never written to a review folder. CORE and Semantic Scholar keys can be supplied through their respective `CORE_API_KEY` and `SEMANTIC_SCHOLAR_API_KEY` environment variables.
 
-From the command line:
+## Workflow and limits
 
-```bash
-npm run dev -- setup
-```
+Enter a CS topic or research question, optional core concepts and related terms, a publication date range, and a maximum result count per query. Query understanding derives or profiles concepts, then combines them into multiple searches across arXiv, Semantic Scholar, OpenAlex, Crossref and CORE, subject to provider availability. Each provider and exact query is recorded. Records are merged by canonical DOI, arXiv ID, normalized exact title, then fuzzy title with matching author and year. Screening requires all four checks to pass: knowledge graph study, temporal/dynamic graph centrality, inductive/generalization setting, and a reasoning/completion task. The publication date range is checked deterministically during screening; a missing or out-of-range year is excluded. Full text is resolved for included papers, with arXiv PDF retrieval when available.
 
-Or open:
+Selected Gemini keys are paced at least five seconds apart across the run and passed to Python only through stdin; they are never saved in the review folder. The extractor keeps exact sentences from saved full text or abstracts and records source-relative character offsets. The basic evidence gate requires at least three studies with evidence, 50% basic coverage and six grounded spans before it emits atomic single-source claims. Matrix evaluation settings use full-text evidence only and show unassessed values when no matching full-text passage was extracted. A missing phrase in an abstract never creates a gap. Gap verification requires at least three full-text-evidenced studies, 50% deep coverage, six full-text spans and successful counter-searches across the configured sources; explicit abstract future-work passages remain `abstract_supported` until then. Runs failing the basic gate are marked `insufficient_evidence`; a passed corpus currently reaches `mapping_complete`. The scoped counter-search never proves that no prior work exists. Cross-study narrative synthesis is not implemented, so the app never labels a synthesis complete.
 
-**Settings → AI Providers**
+Abstracts are enriched, when missing, from Semantic Scholar, OpenAlex, Crossref and publisher landing-page metadata before evidence availability is assessed. Full-text passages are strong evidence and can support detailed experimental claims and gap verification. Abstract passages are limited evidence for the stated task, method, contribution, high-level findings, and explicit limitations or future work. Metadata-only records remain available for screening follow-up and bibliographic exports, but they do not support scientific claims. Papers are not excluded just because full text is unavailable; records without enough abstract evidence remain in manual review. Evidence spans record `source_level` and offsets into either the saved full text or abstract. The evidence gate reports basic coverage (abstract or full text) separately from deep coverage (full text only); a gap can only become verified with sufficient deep coverage and successful counter-search validation.
 
-Axorbis supports provider configuration for Anthropic, OpenAI, Gemini, OpenRouter, LM Studio, Ollama, LiteLLM, and custom providers.
+The selected workspace receives a unique `<slug>-<timestamp>` folder containing `protocol.json`, `status.json`, `review.json`, `review.md`, `references.bib`, `runner.log`, and `source-text/*.txt` for retrieved full texts. `review.json` contains the corpus, query provenance, criterion decisions, evidence spans, study profiles, evidence matrix, atomic claims, taxonomy, and quality metrics. Source passages can be checked using the saved file path or abstract offsets. Existing review folders remain readable. Stopping a run preserves whatever files have already been written. Rerunning starts a new folder and searches again.
 
----
+## Checks
 
-## What You Get
-
-### Evidence you can inspect
-
-Research is organized around sources, claims, and evidence rather than disconnected model responses.
-
-You can inspect how findings relate to their supporting material and keep research artifacts inside the same workspace.
-
-### Research workflows from one composer
-
-Axorbis exposes 12 research modes for tasks ranging from literature review and comparison to replication planning, auditing, drafting, and bounded experiment loops.
-
-The same research question can move through multiple workflows without rebuilding context from scratch.
-
-### A local desktop research environment
-
-Axorbis runs as a Tauri desktop application with local workspace storage, managed backend lifecycle, encrypted provider credentials, tokenized localhost sessions, and configurable AI providers.
-
----
-
-## Research Workflows
-
-The composer maps each research mode to a workflow in the Feynman engine.
-
-| Mode                  | Command         | Purpose                                                    |
-| --------------------- | --------------- | ---------------------------------------------------------- |
-| **Ask**               | Free-form       | Ask questions about the current research problem           |
-| **Deep Research**     | `/deepresearch` | Build a cited brief from reusable claim-level evidence      |
-| **Literature Review** | `/lit`          | Review papers by topic, lab, PI, or author                 |
-| **Summarize**         | `/summarize`    | Summarize a paper, report, or research artifact            |
-| **Compare**           | `/compare`      | Build a source-grounded comparison matrix                  |
-| **Audit**             | `/audit`        | Compare claims against public code for reproducibility     |
-| **Recipe**            | `/recipe`       | Find ranked, implementable ML training recipes             |
-| **Replicate**         | `/replicate`    | Plan replication of a paper, result, or claim              |
-| **Auto Research**     | `/autoresearch` | Run a bounded experiment loop with hypothesis testing      |
-| **Watch**             | `/watch`        | Establish a research watch baseline and follow-ups         |
-| **Draft**             | `/draft`        | Turn findings into a polished paper-style draft            |
-| **Review**            | `/review`       | Produce internal critique, objections, and a revision plan |
-
-When a workflow other than **Ask** is selected, pressing Enter uses the current research question as the workflow input.
-
-Typing in the composer adds an instruction for that workflow; it does not replace the current research question.
-
----
-
-## How It Works
-
-Axorbis keeps the research process centered on a project and its research question.
-
-Questions can be archived to move them out of the active project view while retaining their sessions, files, and evidence. Permanent deletion removes the question's messages, uploads, Pi session, linked artifacts, and related local action metadata.
-
-A typical path is:
-
-**Question → Sources → Claims → Evidence → Analysis → Output**
-
-Different workflows operate on that shared research context. Deep Research first classifies the question as simple, standard, or deep, records the route and reason in its plan, then uses a bounded research pipeline. Researcher lanes receive web, paper, bio, chemistry, or genomics tools according to the question's domain tags. It keeps a full evidence ledger for audit and passes validated claim summaries with exact source and evidence-line references between agents. Standard and deep runs verify each researcher lane before drafting; deep runs add a structured review handoff. Compare can structure evidence, Audit can challenge claims, Replicate can turn findings into an execution plan, and Draft can transform the resulting work into a polished artifact.
-
-This shared workspace is the core of Axorbis: research modes are different tools working over the same body of evidence.
-
----
-
-## AI Provider Management
-
-Axorbis uses a bring-your-own-key model and supports:
-
-`Anthropic` · `OpenAI` · `Gemini` · `OpenRouter` · `LM Studio` · `Ollama` · `LiteLLM` · custom providers
-
-Provider management includes encrypted credentials, token and cost tracking, and usage reporting.
-
-Provider secrets are stored encrypted and are not returned to the UI.
-
----
-
-## Desktop Architecture
-
-Axorbis is packaged as a native application with Tauri.
-
-The desktop layer handles workspace selection, application startup, tray behavior, native commands, packaging, and the lifecycle of the local backend.
-
-The backend is bound to `localhost` and accessed through tokenized sessions.
-
----
-
-## Security
-
-Axorbis is designed around local research ownership:
-
-* Research state, artifacts, and sessions remain in the selected workspace.
-* Provider credentials are encrypted at rest.
-* Provider secrets are not returned to the UI.
-* The desktop backend binds to `localhost`.
-* Sessions use tokenized URLs.
-* The project states that it does not use telemetry or cloud synchronization.
-
----
-
-## Build & Release
-
-Run the verification checks:
-
-```bash
-npm run typecheck
+```sh
+npm run build
+npm test
 npm run desktop:check
 ```
 
-Create a development build:
-
-```bash
-npm run desktop:build
-```
-
-Create a self-contained release with a native installer:
-
-```bash
-npm run desktop:release-build
-```
-
----
-
-## Repository Layout
-
-```text
-engine/       Feynman research engine, CLI, and Workbench backend
-web/          UI source bundled into the desktop application
-app/          Tauri host, native commands, icons, and packaging
-prompts/      Research workflow prompt definitions
-extensions/   Pi research tools and integration extensions
-img/          Axorbis icon and banner assets
-scripts/      Build, staging, and verification scripts
-tests/        Engine, Workbench, and desktop tests
-website/      Documentation site sources
-```
-
----
-
-## Project Direction
-
-Axorbis preserves the Feynman open research engine while developing a native workspace around it.
-
-The project is focused on capabilities that improve:
-
-**discovery · reading · evidence ranking · verification · reproduction · synthesis · research observability**
-
-The goal is not simply to produce more AI-generated text, but to make research outputs easier to inspect, trace, challenge, and reproduce.
-
----
-
-## License
-
-Axorbis is released under the [MIT License](LICENSE).
-
----
-
-<div align="center">
-
-<img src="img/icon.png" alt="Axorbis" width="48" />
-
-**Research beyond convention. Pursuing truth**
-
-</div>
+Desktop code is MIT licensed. SynthScholar is an external Apache-2.0 dependency; see its [source and license](https://github.com/sensein/synthscholar).

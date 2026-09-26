@@ -1,240 +1,33 @@
 {
-  "name": "@advaitpaliwal/feynman",
-  "version": "0.3.51",
-  "description": "Research-first CLI agent built on Pi and alphaXiv",
+  "name": "axorbis-literature-review",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop literature review workspace powered by SynthScholar",
   "license": "MIT",
   "type": "module",
-  "engines": {
-    "node": ">=22.22.0 <26"
-  },
-  "bin": {
-    "axorbis": "bin/feynman.js",
-    "feynman": "bin/feynman.js"
-  },
-  "files": [
-    "bin/",
-    "dist/",
-    "metadata/",
-    ".axorbis/agents/",
-    ".axorbis/config/",
-    ".axorbis/runtime-package-lock.json",
-    ".axorbis/runtime-workspace.tgz",
-    ".axorbis/runtime-workspace.sha256",
-    ".axorbis/settings.json",
-    ".axorbis/SYSTEM.md",
-    ".axorbis/themes/",
-    "extensions/",
-    "fixtures/",
-    "prompts/",
-    "logo.mjs",
-    "logo.d.mts",
-    "scripts/build-native-bundle.mjs",
-    "scripts/check-architecture.mjs",
-    "scripts/check-node-version.mjs",
-    "scripts/clean-publish-artifacts.mjs",
-    "scripts/extract-release-notes.mjs",
-    "scripts/install/",
-    "scripts/lib/",
-    "scripts/patch-embedded-pi.mjs",
-    "scripts/prepare-runtime-workspace.mjs",
-    "scripts/prune-runtime-deps.mjs",
-    "scripts/prune-publish-deps.mjs",
-    "scripts/sync-website-installers.mjs",
-    "scripts/verify-package-artifact.mjs",
-    "scripts/verify-package-budget.mjs",
-    "scripts/verify-installed-docparser.mjs",
-    "scripts/verify-installed-esbuild.mjs",
-    "scripts/verify-installed-runtime.mjs",
-    "skills/",
-    "engine/config/paths.ts",
-    "engine/workbench/data-root.ts",
-    "engine/workbench/oauth-store.ts",
-    "engine/workbench/settings-store.ts",
-    ".nvmrc",
-    "AGENTS.md",
-    "CONTRIBUTING.md",
-    "RELEASES.md",
-    "README.md",
-    ".env.example"
-  ],
-  "bundleDependencies": [
-    "@advaitpaliwal/alpha-hub",
-    "@earendil-works/pi-agent-core",
-    "@earendil-works/pi-ai",
-    "@earendil-works/pi-coding-agent",
-    "@earendil-works/pi-tui",
-    "@opentelemetry/api",
-    "@earendil-works/pi-client",
-    "@earendil-works/pi-server",
-    "esbuild"
-  ],
   "scripts": {
-    "preinstall": "node ./scripts/check-node-version.mjs",
-    "build": "npm run build:workbench-web && tsc -p tsconfig.build.json",
-    "build:workbench-web": "vite build --config web/vite.config.ts",
-    "build:native-bundle": "node ./scripts/build-native-bundle.mjs",
-    "dev": "tsx engine/index.ts",
-    "dev:workbench-web": "vite --config web/vite.config.ts --host 127.0.0.1 --port 1420 --strictPort",
-    "prepack": "node ./scripts/clean-publish-artifacts.mjs && npm run build && node ./scripts/patch-embedded-pi.mjs && node ./scripts/prepare-runtime-workspace.mjs --rebuild && node ./scripts/prune-publish-deps.mjs",
-    "runtime:lock": "node ./scripts/prepare-runtime-workspace.mjs --refresh-lock",
-    "start": "tsx engine/index.ts",
-    "start:dist": "node ./bin/feynman.js",
-    "test": "node ./scripts/patch-embedded-pi.mjs && node --import tsx --test --test-concurrency=1 tests/*.test.ts tests/*.test.mjs",
-    "typecheck": "tsc --noEmit && npm run typecheck:workbench-web",
-    "typecheck:workbench-web": "tsc -p web/tsconfig.json --noEmit",
-    "architecture:check": "node ./scripts/check-architecture.mjs",
+    "dev": "vite --config web/vite.config.ts",
+    "build": "tsc -p web/tsconfig.json --noEmit && vite build --config web/vite.config.ts",
+    "typecheck": "tsc -p web/tsconfig.json --noEmit",
+    "test": "python3 integration/run_tests.py",
     "desktop:dev": "npm run tauri:dev --prefix app",
     "desktop:check": "cargo fmt --check --manifest-path app/src-tauri/Cargo.toml && cargo check --locked --manifest-path app/src-tauri/Cargo.toml && cargo test --locked --manifest-path app/src-tauri/Cargo.toml",
-    "desktop:build": "npm run tauri:build --prefix app",
-    "desktop:stage-runtime": "node ./scripts/stage-desktop-runtime.mjs",
-    "desktop:release-build": "npm run build && npm run build:native-bundle && npm run desktop:stage-runtime && npm run desktop:build",
-    "desktop:icons": "node ./scripts/generate-desktop-icons.mjs"
-  },
-  "keywords": [
-    "pi-package",
-    "research-agent",
-    "literature-review",
-    "experiments"
-  ],
-  "feynmanReleaseBudget": {
-    "maxTarballBytes": 131072000,
-    "maxUnpackedBytes": 377487360,
-    "maxFileCount": 42000
-  },
-  "pi": {
-    "extensions": [
-      "./extensions"
-    ],
-    "prompts": [
-      "./prompts"
-    ],
-    "skills": [
-      "./skills"
-    ]
-  },
-  "dependencies": {
-    "@advaitpaliwal/alpha-hub": "0.1.4",
-    "@clack/prompts": "^1.7.0",
-    "@earendil-works/pi-agent-core": "0.85.1",
-    "@earendil-works/pi-ai": "0.85.1",
-    "@earendil-works/pi-client": "0.85.1",
-    "@earendil-works/pi-coding-agent": "0.85.1",
-    "@earendil-works/pi-server": "0.85.1",
-    "@earendil-works/pi-tui": "0.85.1",
-    "@opentelemetry/api": "^1.9.1",
-    "@opentelemetry/api-logs": "^0.222.0",
-    "@opentelemetry/otlp-exporter-base": "^0.222.0",
-    "@opentelemetry/otlp-transformer": "^0.222.0",
-    "@opentelemetry/resources": "^2.11.0",
-    "@opentelemetry/sdk-logs": "^0.222.0",
-    "@opentelemetry/sdk-trace-base": "^2.11.0",
-    "@opentelemetry/sdk-trace-node": "^2.11.0",
-    "@opentelemetry/semantic-conventions": "^1.43.0",
-    "brace-expansion": "5.0.9",
-    "esbuild": "0.28.2",
-    "fast-xml-parser": "5.11.1",
-    "katex": "^0.18.7",
-    "marked": "18.0.5",
-    "pdfjs-dist": "^6.3.289",
-    "posthog-node": "^5.51.6",
-    "semver": "^7.8.5",
-    "typebox": "1.3.27",
-    "undici": "8.10.2"
-  },
-  "overrides": {
-    "basic-ftp": "6.2.1",
-    "brace-expansion": "5.0.9",
-    "hono": "4.13.7",
-    "qs": "6.16.0",
-    "ws": "8.21.3",
-    "@modelcontextprotocol/sdk": {
-      "@hono/node-server": "2.1.1",
-      "hono": "4.13.7"
-    },
-    "express-rate-limit": "8.7.0",
-    "ip-address": "10.7.0",
-    "express": {
-      "router": {
-        "path-to-regexp": "8.4.2"
-      }
-    },
-    "proxy-agent": {
-      "pac-proxy-agent": {
-        "get-uri": {
-          "basic-ftp": "6.2.1"
-        }
-      }
-    },
-    "fast-uri": "3.1.7",
-    "esbuild": "0.28.2",
-    "fast-xml-builder": "1.3.1",
-    "nanoid": "3.3.18",
-    "protobufjs": "7.6.6",
-    "undici": "8.10.2"
+    "desktop:build": "npm run tauri:build --prefix app"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
-    "@types/semver": "^7.8.0",
     "@vitejs/plugin-react": "^6.1.1",
     "lucide-react": "^1.41.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "tsx": "^4.23.13",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2",
-    "yaml": "2.9.0"
+    "vite": "^8.2.2"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/advaitpaliwal/feynman.git"
-  },
-  "homepage": "https://github.com/advaitpaliwal/feynman#readme",
-  "bugs": {
-    "url": "https://github.com/advaitpaliwal/feynman/issues"
-  },
-  "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
-  "author": "Advait Paliwal",
-  "publishConfig": {
-    "access": "public"
-  },
-  "optionalDependencies": {
-    "@esbuild/aix-ppc64": "0.28.2",
-    "@esbuild/android-arm": "0.28.2",
-    "@esbuild/android-arm64": "0.28.2",
-    "@esbuild/android-x64": "0.28.2",
-    "@esbuild/darwin-arm64": "0.28.2",
-    "@esbuild/darwin-x64": "0.28.2",
-    "@esbuild/freebsd-arm64": "0.28.2",
-    "@esbuild/freebsd-x64": "0.28.2",
-    "@esbuild/linux-arm": "0.28.2",
-    "@esbuild/linux-arm64": "0.28.2",
-    "@esbuild/linux-ia32": "0.28.2",
-    "@esbuild/linux-loong64": "0.28.2",
-    "@esbuild/linux-mips64el": "0.28.2",
-    "@esbuild/linux-ppc64": "0.28.2",
-    "@esbuild/linux-riscv64": "0.28.2",
-    "@esbuild/linux-s390x": "0.28.2",
-    "@esbuild/linux-x64": "0.28.2",
-    "@esbuild/netbsd-arm64": "0.28.2",
-    "@esbuild/netbsd-x64": "0.28.2",
-    "@esbuild/openbsd-arm64": "0.28.2",
-    "@esbuild/openbsd-x64": "0.28.2",
-    "@esbuild/openharmony-arm64": "0.28.2",
-    "@esbuild/sunos-x64": "0.28.2",
-    "@esbuild/win32-arm64": "0.28.2",
-    "@esbuild/win32-ia32": "0.28.2",
-    "@esbuild/win32-x64": "0.28.2",
-    "@llamaindex/liteparse-darwin-arm64": "2.14.3",
-    "@llamaindex/liteparse-darwin-x64": "2.14.3",
-    "@llamaindex/liteparse-linux-arm64-gnu": "2.14.3",
-    "@llamaindex/liteparse-linux-x64-gnu": "2.14.3",
-    "@llamaindex/liteparse-linux-x64-musl": "2.14.3",
-    "@llamaindex/liteparse-win32-arm64-msvc": "2.14.3",
-    "@llamaindex/liteparse-win32-x64-msvc": "2.14.3"
+  "dependencies": {
+    "@tauri-apps/plugin-opener": "^2.5.5",
+    "katex": "^0.18.9",
+    "marked": "^18.0.5"
   }
 }

@@ -1,0 +1,62 @@
+/* Research content uses open rules; controls, dialogs, and document viewers retain their edges. */
+.rw-app .rw-settings-card,
+.rw-app .rw-reviews-page .rw-project-table,
+.rw-app .rw-run-mode .run-control-bar,
+.rw-app .rw-run-mode .run-flow-steps,
+.rw-app .rw-run-mode .run-timeline-panel,
+.rw-app .rw-run-mode .run-paper-panel,
+.rw-app .rw-material-summary,
+.rw-app .rw-soft-empty,
+.rw-app .rw-question-file-group,
+.rw-app .rw-supplementary-group {
+  border-inline: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.rw-app .rw-reviews-page :is(.rw-table-labels, .rw-project-row) { padding-inline: 0; }
+.rw-app .rw-settings-page :is(.rw-settings-facts, .rw-settings-workspace, .rw-settings-model, .rw-settings-key-note) { padding-inline: 0; }
+.rw-app .rw-settings-page .rw-settings-key-list { padding-left: 0; }
+.rw-app .rw-settings-page .rw-settings-key-form { padding-right: 0; }
+.rw-app .rw-run-mode .run-control-bar { padding-inline: 0; }
+.rw-app .rw-run-mode .run-flow-steps { padding-inline: 0; }
+.rw-app .rw-run-mode :is(.run-timeline-panel, .run-paper-panel) { background: var(--surface); }
+.rw-app .rw-material-summary { padding-inline: 0; }
+
+.rw-app .rv-content { background: var(--surface); }
+.rw-app .rv-stack:not(.rv-overview) :is(.rv-hero, .rv-panel, .rv-card, .rv-study-detail),
+.rw-app :is(.rv-table-wrap, .rv-focus, .rv-empty) {
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.rw-app .rv-stack:not(.rv-overview) :is(.rv-hero, .rv-panel) { padding-inline: 0; }
+.rw-app .rv-stack:not(.rv-overview) .rv-card { padding-inline: 0; }
+.rw-app .rv-stack:not(.rv-overview) .rv-funnel-step {
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.rw-app .rv-stack:not(.rv-overview) .rv-funnel-step:first-child { border-left: 0; padding-left: 0; }
+.rw-app .rv-export-list { gap: 0; border-top: 1px solid var(--line); }
+.rw-app .rv-export-list button {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.rw-app .rv-export-list button:hover { background: var(--soft); }
+.rw-app .rw-message { border-inline: 0; border-radius: 0; }
+
+@media (max-width: 1050px) {
+  .rw-app .rv-stack:not(.rv-overview) .rv-funnel-step:nth-child(4) { border-left: 0; padding-left: 0; }
+}
+
+@media (max-width: 700px) {
+  .rw-app .rv-stack:not(.rv-overview) .rv-funnel-step:nth-child(4) { border-left: 1px solid var(--line); padding-left: 13px; }
+  .rw-app .rv-stack:not(.rv-overview) .rv-funnel-step:nth-child(odd) { border-left: 0; padding-left: 0; }
+  .rw-app .rw-settings-page .rw-settings-key-form { padding-left: 0; }
+}

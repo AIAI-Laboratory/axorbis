@@ -1,0 +1,14 @@
+synthscholar==0.0.11
+# SynthScholar 0.0.11 uses pydantic_ai's OpenAI compatible backend.
+# The slim package avoids unrelated model providers and servers.
+pydantic-ai-slim[openai]==1.94.0
+httpx>=0.25,<1
+json-repair>=0.40,<1
+pydantic>=2,<3
+psycopg>=3.1,<4
+psycopg-pool>=3.1,<4
+pyoxigraph>=0.3,<1
+rapidfuzz>=3,<4
+rdflib>=6,<8
+feedparser>=6,<7
+pymupdf>=1.24,<2

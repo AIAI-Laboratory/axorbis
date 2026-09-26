@@ -1,0 +1,54 @@
+/* Shared type scale for the literature review app. Keep the run monitor's
+   established 13–14px reading size across lists, forms, and saved results. */
+.rw-app {
+  --rw-text-body: 14px;
+  --rw-text-control: 13px;
+  --rw-text-caption: 12px;
+  --rw-text-eyebrow: 11px;
+  font-size: var(--rw-text-body);
+}
+
+/* Navigation and shared page furniture */
+.rw-app :is(.rw-sidebar nav button, .rw-sidebar-projects button, .rw-quick-projects button) { font-size: var(--rw-text-body); }
+.rw-app :is(.rw-brand-subtitle, .rw-local-indicator, .rw-sidebar-footer, .rw-breadcrumb, .rw-section-head > span) { font-size: var(--rw-text-caption); }
+.rw-app :is(.rw-sidebar-heading, .rw-sidebar-section, .rw-kicker) { font-size: var(--rw-text-eyebrow); }
+.rw-app :is(.rw-button, .rw-text-action, .rw-setup-note, .rw-tabbar button) { font-size: var(--rw-text-control); }
+.rw-app .rw-section-head h2 { font-size: 18px; }
+.rw-app .rw-page-intro p { font-size: var(--rw-text-body); }
+.rw-app .rw-soft-empty { font-size: var(--rw-text-body); line-height: 1.55; }
+
+/* Home and project list */
+.rw-app :is(.rw-summary-line span, .rw-project-summary span, .rw-row-copy small, .rw-project-name small, .rw-empty p, .rw-quick-projects p, .rw-home-hero-quote footer) { font-size: var(--rw-text-caption); }
+.rw-app :is(.rw-row-copy strong, .rw-project-name strong) { font-size: var(--rw-text-body); }
+.rw-app .rw-empty h3 { font-size: 17px; }
+.rw-app .rw-table-labels { font-size: var(--rw-text-caption); }
+.rw-app .rw-project-row { font-size: var(--rw-text-control); }
+.rw-app .rw-project-row > span:not(:first-child) { font-size: var(--rw-text-control); }
+.rw-app .rw-question-page:not(.rw-running-page) .rw-question-details { font-size: var(--rw-text-caption); }
+
+/* Review protocol form, search, and source reader */
+.rw-app .rw-dialog h2 { font-size: 21px; }
+.rw-app :is(.rw-dialog label, .rw-dialog p, .rw-dialog-actions > button:first-child, .rw-palette-results button, .rw-source-switch button) { font-size: var(--rw-text-control); }
+.rw-app :is(.rw-dialog input, .rw-dialog textarea, .rw-review-fields .rw-key-select select) { font-size: var(--rw-text-body); }
+.rw-app :is(.rw-review-fields .rw-key-select small, .rw-review-fields .rw-project-field small, .rw-palette-results small, .rw-palette-results p, .rw-palette footer) { font-size: var(--rw-text-caption); }
+.rw-app .rw-form-note { font-size: var(--rw-text-control) !important; }
+.rw-app :is(.rw-review-question, .rw-review-facts > div) { font-size: var(--rw-text-body); }
+.rw-app .rw-review-studies h3 { font-size: 15px; }
+.rw-app .rw-markdown { font-size: var(--rw-text-body); }
+.rw-app .rw-markdown pre { font-size: var(--rw-text-caption); }
+.rw-app :is(.rw-plan-list strong, .rw-compact-rows button > span, .rw-claim-list strong, .rw-message p) { font-size: var(--rw-text-body); }
+.rw-app :is(.rw-plan-list small, .rw-compact-rows button small, .rw-claim-list small, .rw-claim-index, .rw-message > div, .rw-message details) { font-size: var(--rw-text-caption); }
+.rw-app .rw-material-summary { font-size: var(--rw-text-control); }
+.rw-app .run-log-detail-body p { font-size: var(--rw-text-control); }
+.rw-app .run-log-detail-body article > span { font-size: var(--rw-text-caption); }
+
+/* Completed review: summary, evidence, tables, and exports */
+.rw-app :is(.rv-hero p, .rv-view-intro p, .rv-panel p, .rv-list, .rv-study-detail p, .rv-empty) { font-size: var(--rw-text-body); }
+.rw-app :is(.rv-subtle, .rv-note, .rv-context, .rv-card details, .rv-card dl, .rv-study-detail dl, .rv-facts, .rv-card-foot span, .rv-funnel-step span, .rv-big-stats span, .rv-diagnostic-grid span) { font-size: var(--rw-text-caption); }
+.rw-app .rv-note { font-size: var(--rw-text-caption) !important; }
+.rw-app :is(.rv-eyebrow, .rv-funnel-step small, .rv-diagnostic-grid small, .rv-gap-grid small) { font-size: var(--rw-text-eyebrow); }
+.rw-app :is(.rv-badge, .rv-card-foot button, .rv-link, .rv-category-filters button, .rv-filters label) { font-size: var(--rw-text-caption); }
+.rw-app :is(.rv-card h3, .rv-export-list button span) { font-size: var(--rw-text-body); }
+.rw-app :is(.rv-filters input, .rv-filters select, .rv-table td, .rv-focus, .rv-gap-grid p) { font-size: var(--rw-text-control); }
+.rw-app .rv-table th { font-size: var(--rw-text-caption); }
+.rw-app .rv-table td small { font-size: var(--rw-text-caption); }
