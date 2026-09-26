@@ -396,9 +396,9 @@
 
 .rw-run-mode .run-flow-steps {
   display: grid;
-  grid-template-columns: repeat(6, minmax(145px, 1fr));
+  grid-template-columns: repeat(9, minmax(112px, 1fr));
   gap: 0;
-  min-height: 88px;
+  min-height: 84px;
   overflow-x: auto;
   padding: 6px 10px 7px;
   border: 1px solid var(--line);
@@ -413,10 +413,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
   min-height: 0;
-  padding: 2px 8px 0;
+  padding: 2px 4px 0;
   border: 0;
   text-align: center;
 }
@@ -484,7 +484,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   width: 100%;
   padding: 0;
   background: transparent;
@@ -492,20 +492,20 @@
 }
 
 .rw-run-mode .run-flow-copy strong {
-  max-width: 155px;
+  max-width: 148px;
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: var(--rw-text-control);
-  font-weight: 600;
-  line-height: 1.25;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.18;
   white-space: normal;
 }
 
 .rw-run-mode .run-flow-copy small {
   color: var(--muted);
   font-family: var(--font-ui);
-  font-size: var(--rw-text-caption);
-  line-height: 1.2;
+  font-size: 12px;
+  line-height: 1.15;
 }
 
 .rw-run-mode .run-flow-step.done .run-flow-copy small,
@@ -645,7 +645,8 @@
   font-weight: 500;
 }
 
-.rw-run-mode .run-paper-tabs button.include span {
+.rw-run-mode .run-paper-tabs button.include span,
+.rw-run-mode .run-paper-tabs button.core span {
   color: var(--run-complete);
 }
 
@@ -654,14 +655,21 @@
 }
 
 .rw-run-mode .run-paper-tabs button.pending span {
-  color: var(--run-pending);
+  color: var(--muted);
 }
+.rw-run-mode .run-paper-tabs button.manual_review span,
+.rw-run-mode .run-paper-tabs button.background span { color: var(--run-pending); }
 
-.rw-run-mode .run-paper-tabs button.active.include { color: var(--run-complete); }
-.rw-run-mode .run-paper-tabs button.active.include::after { background: var(--run-complete); }
+.rw-run-mode .run-paper-tabs button.active.include,
+.rw-run-mode .run-paper-tabs button.active.core { color: var(--run-complete); }
+.rw-run-mode .run-paper-tabs button.active.include::after,
+.rw-run-mode .run-paper-tabs button.active.core::after { background: var(--run-complete); }
 .rw-run-mode .run-paper-tabs button.active.exclude { color: var(--red); }
-.rw-run-mode .run-paper-tabs button.active.pending { color: var(--run-pending); }
-.rw-run-mode .run-paper-tabs button.active.pending::after { background: var(--run-pending); }
+.rw-run-mode .run-paper-tabs button.active.pending { color: var(--muted); }
+.rw-run-mode .run-paper-tabs button.active.manual_review,
+.rw-run-mode .run-paper-tabs button.active.background { color: var(--run-pending); }
+.rw-run-mode .run-paper-tabs button.active.manual_review::after,
+.rw-run-mode .run-paper-tabs button.active.background::after { background: var(--run-pending); }
 
 .rw-run-mode .run-paper-state {
   display: inline-flex;
@@ -687,7 +695,8 @@
   background: currentColor;
 }
 
-.rw-run-mode .run-paper-state.include {
+.rw-run-mode .run-paper-state.include,
+.rw-run-mode .run-paper-state.core {
   color: var(--run-complete);
 }
 
@@ -695,7 +704,12 @@
   color: var(--red);
 }
 
+.rw-run-mode .run-paper-state.background { color: var(--run-pending); }
+.rw-run-mode .run-paper-state.pending { color: var(--muted); }
+
 .rw-run-mode .run-paper-state.include i,
+.rw-run-mode .run-paper-state.core i,
+.rw-run-mode .run-paper-state.background i,
 .rw-run-mode .run-paper-state.exclude i { background: currentColor; }
 
 /* Reading content follows the app-wide 14 / 13 / 12 px type scale. */
@@ -791,7 +805,7 @@
 
 @media (max-width: 700px) {
   .rw-run-mode .rw-question-heading { padding-block: 12px; }
-  .rw-run-mode .run-flow-steps { grid-template-columns: repeat(6, minmax(136px, 1fr)); }
+  .rw-run-mode .run-flow-steps { grid-template-columns: repeat(9, minmax(112px, 1fr)); }
   .rw-run-mode .run-paper-table-head,
   .rw-run-mode .run-paper-row { grid-template-columns: 24px minmax(0, 1fr) 86px 14px; }
 }

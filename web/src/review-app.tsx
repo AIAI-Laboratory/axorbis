@@ -12,7 +12,7 @@ import { UsageSection } from "./usage-section";
 type Review = {
   id: string;
   title: string;
-  state: "running" | "completed" | "mapping_complete" | "insufficient_evidence" | "failed" | "cancelled" | "interrupted";
+  state: "running" | "completed" | "search_complete" | "screening_complete" | "evidence_mapping_complete" | "study_profiling_complete" | "mapping_complete" | "candidate_gaps_found" | "gap_verification_complete" | "synthesis_complete" | "insufficient_evidence" | "failed" | "cancelled" | "interrupted";
   directory: string;
   updatedAt: number | string;
   startedAt?: number | string;
@@ -23,12 +23,14 @@ type Review = {
   counts?: Record<string, unknown>;
   parallelLimit?: number;
   keyCount?: number;
+  classificationMode?: "gemini" | "jev";
   keyUsage?: Array<{ id: string; state: string; active: boolean; requests: number; tokens: number }>;
-  articles?: Array<{ pmid: string; title: string; abstract: string; year: string; source: string; doi: string; state: string; reason: string }>;
+  articles?: Array<{ pmid: string; title: string; abstract: string; year: string; source: string; doi: string; state: string; scope?: string; text_status?: string; reason: string }>;
   tokenUsage?: { input: number; output: number; total: number; requests: number };
+  gapVerification?: { status?: string; reason?: string; searched_sources?: string[] };
   project?: string;
 };
-type Environment = { python: string; installed: boolean; version: string | null; defaultWorkspace: string; keyCount: number };
+type Environment = { python: string; installed: boolean; version: string | null; defaultWorkspace: string; keyCount: number; jevKeyAvailable: boolean };
 type GoogleKeyInfo = { id: string; source: string; variable: string | null; manageable: boolean };
 type Input = {
   title: string; objective: string; coreConcepts: string; relatedConcepts: string; inclusion: string; exclusion: string;
@@ -37,8 +39,16 @@ type Input = {
 type TauriWindow = Window & { __TAURI__?: { core: { invoke: <T>(name: string, args?: Record<string, unknown>) => Promise<T> } } };
 type ReviewTab = ReviewView | "sources" | "progress" | "visualize";
 type SourceFile = "review.json" | "references.bib" | "protocol.json";
-type PreviewFile = SourceFile | "review.md" | "status.json" | "runner.log";
-const resultReady = (state?: string) => ["completed", "mapping_complete", "insufficient_evidence"].includes(state || "");
+type PreviewFile = SourceFile | "review.md" | "status.json" | "runner.log" | "gemini-calls.jsonl";
+const resultReady = (state?: string) => ["completed", "mapping_complete", "candidate_gaps_found", "gap_verification_complete", "synthesis_complete", "insufficient_evidence"].includes(state || "");
+const isCsIntelligence = (data: ReviewData | null | undefined) => typeof data?.schema === "string" && data.schema.startsWith("cs_literature_intelligence_v");
+const csTabs: Array<{ view: ReviewTab; label: string }> = [
+  { view: "progress", label: "Tiến trình" }, { view: "overview", label: "Tổng quan" },
+  { view: "findings", label: "Khẳng định" }, { view: "gaps", label: "Khoảng trống nghiên cứu" },
+  { view: "evidence", label: "Ma trận bằng chứng" }, { view: "visualize", label: "Bản đồ trích dẫn" },
+  { view: "methodology", label: "Truy vấn & sàng lọc" }, { view: "diagnostics", label: "Chất lượng" },
+  { view: "report", label: "Báo cáo" }, { view: "export", label: "Tệp kết quả" },
+];
 const sourceFiles: SourceFile[] = ["review.json", "references.bib", "protocol.json"];
 const sourceLabels: Record<SourceFile, string> = {
   "review.json": "Evidence",
@@ -106,7 +116,7 @@ function SourcePreview({ file, content, data, onOpenFolder }: {
     return <div className="rw-content-section"><div className="rw-section-head"><h2>Review protocol</h2><button className="rw-text-action" type="button" onClick={onOpenFolder}>Show file <ArrowRight size={14} /></button></div>{protocol ? <div className="rw-review-facts">{Object.entries(protocol).filter(([, value]) => value !== null && value !== "").map(([name, value]) => <div key={name}><strong>{name.replaceAll("_", " ")}</strong><span>{displayValue(value)}</span></div>)}</div> : <div className="rw-markdown"><pre><code>{content}</code></pre></div>}</div>;
   }
   if (!data) return <div className="rw-soft-empty">Could not read the structured review. Open the file to inspect it.</div>;
-  if (data.schema === "cs_literature_intelligence_v1") return <div className="rw-content-section"><div className="rw-section-head"><h2>Structured literature map</h2><button className="rw-text-action" type="button" onClick={onOpenFolder}>Show review.json <ArrowRight size={14} /></button></div><div className="rw-markdown rw-review-report"><pre><code>{content}</code></pre></div></div>;
+  if (isCsIntelligence(data)) return <div className="rw-content-section"><div className="rw-section-head"><h2>Dữ liệu literature intelligence có cấu trúc</h2><button className="rw-text-action" type="button" onClick={onOpenFolder}>Mở review.json <ArrowRight size={14} /></button></div><div className="rw-markdown rw-review-report"><pre><code>{content}</code></pre></div></div>;
   const flow = (data.flow ?? {}) as Record<string, unknown>;
   const articles = (data.included_articles ?? []) as Array<Record<string, unknown>>;
   return <>
@@ -116,23 +126,31 @@ function SourcePreview({ file, content, data, onOpenFolder }: {
   </>;
 }
 
-function SettingsView({ environment, workspace, onChooseWorkspace, onKeyCountChange }: {
+function SettingsView({ environment, workspace, onChooseWorkspace, onKeyCountChange, onJevKeyChange }: {
   environment: Environment | null;
   workspace: string;
   onChooseWorkspace: () => void;
   onKeyCountChange: (count: number) => void;
+  onJevKeyChange: (available: boolean) => void;
 }) {
   const [keys, setKeys] = useState<GoogleKeyInfo[] | null>(null);
   const [newKey, setNewKey] = useState("");
   const [keyError, setKeyError] = useState<string | null>(null);
   const [keyBusy, setKeyBusy] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<GoogleKeyInfo | null>(null);
+  const [jevKey, setJevKey] = useState<GoogleKeyInfo | null>(null);
+  const [newJevKey, setNewJevKey] = useState("");
+  const [jevError, setJevError] = useState<string | null>(null);
+  const [jevBusy, setJevBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
     void invoke<GoogleKeyInfo[]>("list_google_keys")
       .then((result) => { if (active) setKeys(result); })
       .catch((cause) => { if (active) setKeyError(String(cause)); });
+    void invoke<GoogleKeyInfo | null>("jev_key_info")
+      .then((result) => { if (active) setJevKey(result); })
+      .catch((cause) => { if (active) setJevError(String(cause)); });
     return () => { active = false; };
   }, []);
 
@@ -163,11 +181,32 @@ function SettingsView({ environment, workspace, onChooseWorkspace, onKeyCountCha
     finally { setKeyBusy(false); }
   }
 
+  async function saveJevKey(event: FormEvent) {
+    event.preventDefault();
+    if (!newJevKey.trim() || jevBusy) return;
+    setJevBusy(true); setJevError(null);
+    try {
+      const info = await invoke<GoogleKeyInfo>("save_jev_key", { apiKey: newJevKey });
+      setJevKey(info); setNewJevKey(""); onJevKeyChange(true);
+    } catch (cause) { setJevError(String(cause)); }
+    finally { setJevBusy(false); }
+  }
+
+  async function removeJevKey() {
+    setJevBusy(true); setJevError(null);
+    try {
+      await invoke("remove_jev_key");
+      setJevKey(null); onJevKeyChange(false);
+    } catch (cause) { setJevError(String(cause)); }
+    finally { setJevBusy(false); }
+  }
+
   return <div className="rw-page rw-settings-page">
     <div className="rw-page-intro"><span className="rw-kicker">WORKSPACE / SETTINGS</span><div className="rw-page-title-row"><div><h1>Settings</h1><p>Review engine, output folder, and API keys.</p></div></div></div>
     <div className="rw-settings-grid">
       <section className="rw-settings-section"><div className="rw-section-head"><h2>SynthScholar</h2><span>{environment?.installed ? "Ready" : "Setup needed"}</span></div><div className="rw-settings-card rw-settings-facts"><div><span>Python</span><strong>{environment?.python || "Checking..."}</strong></div><div><span>Version</span><strong>{environment?.version || "Not installed"}</strong></div>{!environment?.installed && <p>Run <code>python3 integration/setup.py</code> from this checkout, then restart the desktop app.</p>}</div></section>
       <section className="rw-settings-section"><div className="rw-section-head"><h2>Review output folder</h2></div><div className="rw-settings-card rw-settings-workspace"><p>{workspace}</p><button className="rw-button" type="button" onClick={onChooseWorkspace}><FolderOpen size={14} /> Choose folder</button></div></section>
+      <section className="rw-settings-section rw-settings-keys"><div className="rw-section-head"><h2>Typesafe Jev AI</h2><span>{jevKey ? "Key configured" : "Optional"}</span></div><div className="rw-settings-card"><div className="rw-settings-model"><span>CLASSIFICATION MODE</span><strong>jev-latest</strong><small>When enabled, Jev classifies every paper for core, background, or exclusion. Gemini still plans queries and analyzes evidence.</small></div>{jevKey && <div className="rw-settings-key-row"><span className="rw-settings-key-mark">J</span><span className="rw-settings-key-copy"><strong>Jev AI key</strong><small>{jevKey.variable || jevKey.source} · {jevKey.source}</small></span>{jevKey.manageable ? <button type="button" className="rw-settings-remove-key" onClick={() => void removeJevKey()} disabled={jevBusy} aria-label="Remove Jev key"><Trash2 size={15} /></button> : <span className="rw-settings-readonly">External</span>}</div>}<form className="rw-settings-key-form" onSubmit={(event) => void saveJevKey(event)}><label htmlFor="rw-new-jev-key">{jevKey ? "Replace Jev API key" : "Jev API key"}</label><input id="rw-new-jev-key" type="password" autoComplete="off" spellCheck={false} value={newJevKey} onChange={(event) => setNewJevKey(event.target.value)} placeholder="Paste key" /><small>Stored in the local key file; never included in review outputs.</small><button type="submit" className="rw-button" disabled={jevBusy || !newJevKey.trim()}><Plus size={14} /> {jevKey ? "Replace key" : "Save key"}</button></form>{jevError && <p className="rw-settings-key-error" role="alert">{jevError}</p>}</div></section>
       <section className="rw-settings-section rw-settings-keys"><div className="rw-section-head"><h2>Google Gemini</h2><span>{keys?.length ?? environment?.keyCount ?? 0} keys available</span></div><div className="rw-settings-card"><div className="rw-settings-model"><span>MODEL</span><strong>gemini-3.5-flash-lite</strong><small>Choose one key or automatic rotation when starting a review. Usage is recorded from model responses.</small></div><div className="rw-settings-key-columns"><div className="rw-settings-key-list"><div className="rw-settings-subhead">CONFIGURED KEYS</div>{keys === null ? <p className="rw-settings-key-empty">Loading key sources...</p> : keys.length ? keys.map((key) => <div className="rw-settings-key-row" key={`${key.id}-${key.variable ?? key.source}`}><span className="rw-settings-key-mark">{key.id.replace("Key ", "")}</span><span className="rw-settings-key-copy"><strong>{key.id}</strong><small>{key.variable || key.source} · {key.source}</small></span>{key.manageable ? <button type="button" className="rw-settings-remove-key" onClick={() => setRemoveTarget(key)} aria-label={`Remove ${key.id}`} disabled={keyBusy}><Trash2 size={15} /></button> : <span className="rw-settings-readonly">External</span>}</div>) : <p className="rw-settings-key-empty">No Google keys configured yet.</p>}</div><form className="rw-settings-key-form" onSubmit={(event) => void addKey(event)}><div className="rw-settings-subhead">ADD KEY</div><label htmlFor="rw-new-google-key">Gemini API key</label><input id="rw-new-google-key" type="password" autoComplete="off" spellCheck={false} value={newKey} onChange={(event) => setNewKey(event.target.value)} placeholder="Paste key" aria-describedby="rw-key-storage-note" /><p id="rw-key-storage-note">Saved in <code>~/.axorbis/agent/.env</code>. Key contents are never shown again.</p><button type="submit" className="rw-button" disabled={keyBusy || !newKey.trim()}><Plus size={14} /> Add key</button></form></div><p className="rw-settings-key-note">Keys from the process environment or Axorbis configuration are read only here. Changes to the local key file apply to new reviews.</p></div>{keyError && <p className="rw-settings-key-error" role="alert">{keyError}</p>}</section>
     </div>
     {removeTarget && <div className="rw-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setRemoveTarget(null); }}><div className="rw-dialog rw-confirm-dialog" role="dialog" aria-modal="true" aria-label="Remove API key"><ModalEscape onClose={() => setRemoveTarget(null)} /><div className="rw-dialog-header"><div><span className="rw-kicker">GOOGLE GEMINI</span><h2>Remove {removeTarget.id}?</h2></div><button type="button" className="rw-icon-button" onClick={() => setRemoveTarget(null)} aria-label="Close"><X size={15} /></button></div><p>This removes {removeTarget.variable} from the local key file. Reviews already running continue with their loaded keys.</p><div className="rw-dialog-actions"><button type="button" onClick={() => setRemoveTarget(null)}>Cancel</button><button type="button" className="rw-button rw-danger-button" disabled={keyBusy} onClick={() => void removeKey()}><Trash2 size={14} /> Remove key</button></div></div></div>}
@@ -183,6 +222,7 @@ export function ReviewApp() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Review | null>(null);
   const [keySelection, setKeySelection] = useState("auto");
+  const [jevEnabled, setJevEnabled] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [input, setInput] = useState<Input>(initialInput);
   const [project, setProject] = useState("Literature reviews");
@@ -281,13 +321,13 @@ export function ReviewApp() {
   function change(name: keyof Input, value: string) { setInput((current) => ({ ...current, [name]: value })); }
   const projects = useMemo(() => [...new Set(["Literature reviews", ...reviews.map((review) => review.project || "Literature reviews")])], [reviews]);
   function newReview(projectName = "Literature reviews") {
-    setInput(initialInput); setProject(projectName); setKeySelection("auto"); setFormMode("new"); setFormSourceId(null); setShowForm(true);
+    setInput(initialInput); setProject(projectName); setKeySelection("auto"); setJevEnabled(false); setFormMode("new"); setFormSourceId(null); setShowForm(true);
   }
   async function openReviewForm(review: Review, mode: "edit" | "rerun") {
     setBusy(true); setError(null);
     try {
       const saved = await invoke<Input>("review_input", { workspace, id: review.id });
-      setInput(saved); setProject(review.project || "Literature reviews"); setKeySelection("auto");
+      setInput(saved); setProject(review.project || "Literature reviews"); setKeySelection("auto"); setJevEnabled(review.classificationMode === "jev");
       setFormMode(mode); setFormSourceId(review.id); setShowForm(true);
     } catch (cause) { setError(String(cause)); }
     finally { setBusy(false); }
@@ -304,6 +344,14 @@ export function ReviewApp() {
   }
   async function start(event: FormEvent) {
     event.preventDefault();
+    if (formMode !== "edit" && (environment?.keyCount ?? 0) === 0) {
+      setError("Cần ít nhất một Gemini API key để phân loại bài báo. Hệ thống không còn dùng regex fallback.");
+      return;
+    }
+    if (formMode !== "edit" && jevEnabled && !environment?.jevKeyAvailable) {
+      setError("Cần cấu hình Jev AI key trong Settings trước khi bật chế độ phân loại Jev.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -311,7 +359,7 @@ export function ReviewApp() {
         const updated = await invoke<Review>("update_review", { workspace, id: formSourceId, input, project });
         setSelected(updated); setShowForm(false); await refresh(); return;
       }
-      const review = await invoke<Review>("start_review", { workspace, input, keySelection, project, sourceReviewId: formSourceId });
+      const review = await invoke<Review>("start_review", { workspace, input, keySelection, classificationMode: jevEnabled ? "jev" : "gemini", project, sourceReviewId: formSourceId });
       setShowForm(false);
       setSelected(review);
       setSelectedId(review.id);
@@ -386,13 +434,20 @@ export function ReviewApp() {
     try { return JSON.parse(jsonContent) as ReviewData; }
     catch { return null; }
   }, [jsonContent]);
+  const resultTabs: Array<{ view: ReviewTab; label: string }> = isCsIntelligence(reviewData) ? csTabs : [
+    { view: "progress", label: "Tiến trình" }, { view: "overview", label: "Tổng quan" },
+    { view: "findings", label: "Kết quả chính" }, { view: "gaps", label: "Khoảng trống nghiên cứu" },
+    { view: "evidence", label: "Bằng chứng / Nghiên cứu" }, { view: "visualize", label: "Trực quan hóa" },
+    { view: "methodology", label: "Phương pháp" }, { view: "diagnostics", label: "Chẩn đoán" },
+    { view: "report", label: "Báo cáo" }, { view: "export", label: "Xuất dữ liệu" },
+  ];
   const protocolData = useMemo<Record<string, unknown> | null>(() => { try { return protocolContent ? JSON.parse(protocolContent) as Record<string, unknown> : null; } catch { return null; } }, [protocolContent]);
   function showOutput(file: "review.md" | SourceFile) {
     if (file === "review.md") setTab("report");
     else { setSourceFile(file); setTab("sources"); }
   }
 
-  if (booting) return <div className="rw-app rw-boot" data-theme={theme}><main className="rw-boot-view" aria-live="polite"><img src="/axorbis-loading.svg" alt="" className="rw-boot-mark" /><div className="rw-boot-intro"><h1>{feynmanQuotes[0].en}</h1><p>{feynmanQuotes[0].vi}</p><small>{feynmanQuotes[0].source}</small></div><div className="rw-boot-feedback"><span className="rw-boot-spinner" role="status" aria-label="Đang tải" /></div></main></div>;
+  if (booting) return <div className="rw-app rw-boot" data-theme={theme}><main className="rw-boot-view" aria-live="polite"><img src="/axorbis-loading.svg" alt="" className="rw-boot-mark" /><div className="rw-boot-intro"><h1>{quote.en}</h1><p>{quote.vi}</p><small>{quote.source}</small></div><div className="rw-boot-feedback"><span className="rw-boot-spinner" role="status" aria-label="Đang tải" /></div></main></div>;
 
   return <div className="rw-app" data-theme={theme}>
     <header className="rw-topbar">
@@ -433,23 +488,23 @@ export function ReviewApp() {
           </aside></div>
         </div>}
         {page === "reviews" && <div className="rw-page rw-reviews-page"><div className="rw-page-intro"><span className="rw-kicker">WORKSPACE / REVIEWS</span><div className="rw-page-title-row"><div><h1>Reviews</h1><p>Research questions grouped by project.</p></div><button className="rw-button" type="button" onClick={() => newReview()}><Plus size={15} /> New review</button></div></div>
-          {reviews.length ? projects.filter((name) => (!activeProject || activeProject === name) && reviews.some((review) => (review.project || "Literature reviews") === name)).map((name) => <section className="rw-project-group" key={name}><div className="rw-section-head"><h2><FolderOpen size={17} /> {name}</h2><button type="button" className="rw-text-action" onClick={() => newReview(name)}><Plus size={14} /> Add question</button></div><div className="rw-project-table"><div className="rw-table-labels"><span>QUESTION</span><span>STATUS</span><span>STUDIES</span><span>UPDATED</span></div>{reviews.filter((review) => (review.project || "Literature reviews") === name).map((review) => <button type="button" className="rw-project-row" key={review.id} onClick={() => openReview(review.id)}><span className="rw-project-name"><span className="rw-project-initial"><BookOpen size={15} /></span><span><strong>{review.title}</strong><small title={review.directory}>{review.directory}</small></span></span><span className={`rw-project-status ${review.state}`}><i />{review.state === "running" ? "Running" : review.state === "insufficient_evidence" ? "Insufficient evidence" : resultReady(review.state) ? "Mapped" : review.state === "failed" ? "Failed" : "Stopped"}</span><span>{review.includedArticles ?? "—"}</span><span>{displayListDate(review.updatedAt)}</span></button>)}</div></section>)
+          {reviews.length ? projects.filter((name) => (!activeProject || activeProject === name) && reviews.some((review) => (review.project || "Literature reviews") === name)).map((name) => <section className="rw-project-group" key={name}><div className="rw-section-head"><h2><FolderOpen size={17} /> {name}</h2><button type="button" className="rw-text-action" onClick={() => newReview(name)}><Plus size={14} /> Add question</button></div><div className="rw-project-table"><div className="rw-table-labels"><span>QUESTION</span><span>STATUS</span><span>STUDIES</span><span>UPDATED</span><span aria-hidden="true" /></div>{reviews.filter((review) => (review.project || "Literature reviews") === name).map((review) => <div className="rw-project-item" key={review.id}><button type="button" className="rw-project-row" onClick={() => openReview(review.id)}><span className="rw-project-name"><span className="rw-project-initial"><BookOpen size={15} /></span><span><strong>{review.title}</strong><small title={review.directory}>{review.directory}</small></span></span><span className={`rw-project-status ${review.state}`}><i />{review.state === "running" ? "Running" : review.state === "insufficient_evidence" ? "Insufficient evidence" : resultReady(review.state) ? "Mapped" : review.state === "failed" ? "Failed" : "Stopped"}</span><span>{review.includedArticles ?? "—"}</span><span>{displayListDate(review.updatedAt)}</span></button><button type="button" className="rw-project-delete" aria-label={`Delete review: ${review.title}`} title="Delete review" disabled={busy || review.state === "running"} onClick={() => setDeleteTarget(review)}><Trash2 size={15} /></button></div>)}</div></section>)
             : <div className="rw-empty"><span className="rw-empty-mark"><Plus size={14} /></span><h3>No literature maps yet</h3><p>Start with a Computer Science topic to build a traceable literature map.</p><button className="rw-button" type="button" onClick={() => newReview()}>New review</button></div>}
         </div>}
-        {page === "settings" && <SettingsView environment={environment} workspace={workspace} onChooseWorkspace={() => void chooseWorkspace()} onKeyCountChange={(count) => { setEnvironment((current) => current ? { ...current, keyCount: count } : current); setKeySelection("auto"); }} />}
+        {page === "settings" && <SettingsView environment={environment} workspace={workspace} onChooseWorkspace={() => void chooseWorkspace()} onKeyCountChange={(count) => { setEnvironment((current) => current ? { ...current, keyCount: count } : current); setKeySelection("auto"); }} onJevKeyChange={(available) => { setEnvironment((current) => current ? { ...current, jevKeyAvailable: available } : current); if (!available) setJevEnabled(false); }} />}
         {page === "review" && <div className="rw-question-page rw-running-page"><div className="rw-question-toolbar"><div className="rw-breadcrumb"><button type="button" onClick={() => setPage("reviews")}>Reviews</button><ChevronRight size={13} /><span>{selected?.title || "Opening review"}</span></div><button className="rw-icon-button" type="button" aria-label="Open review files" onClick={() => void openOutput()}><FolderOpen size={15} /></button></div>
           <div className="rw-workspace">
-            <div className="rw-workspace-center rw-run-mode">{selected ? <><div className="rw-question-heading"><div className="rw-heading-copy"><span className="rw-kicker">{selected.project || "Literature reviews"}</span><div className="rw-heading-title-row"><h1>{selected.title}</h1>{!resultReady(selected.state) && <span className={`rw-review-status-badge ${selected.state}`}><i />{selected.state === "running" ? "Đang chạy" : selected.state === "failed" ? "Có lỗi" : "Đã dừng"}</span>}</div>{!resultReady(selected.state) && typeof protocolData?.objective === "string" && protocolData.objective.trim() && protocolData.objective.trim().toLocaleLowerCase() !== selected.title.trim().toLocaleLowerCase() && <p className="rw-review-objective">{protocolData.objective}</p>}<div className="rw-question-details"><span className="rw-red-dot" />{selected.state === "running" ? "Đang thực hiện" : selected.state === "insufficient_evidence" ? "Thiếu bằng chứng" : resultReady(selected.state) ? "Đã lập bản đồ" : selected.state === "failed" ? "Có lỗi" : "Đã dừng"}<span className="rw-detail-separator">/</span>{selected.includedArticles ?? "—"} tài liệu được chọn{resultReady(selected.state) && selected.tokenUsage && <><span className="rw-detail-separator">/</span>{new Intl.NumberFormat("vi-VN").format(selected.tokenUsage.total)} token</>}<span className="rw-detail-separator">/</span>Cập nhật {displayDate(selected.updatedAt)}</div></div><div className="rw-question-actions"><button type="button" onClick={() => void openOutput()}><FolderOpen size={14} /> Mở thư mục</button>{selected.state === "running" ? <button type="button" className="rw-question-delete" disabled={busy} onClick={() => void cancel()}><Square size={14} /> Dừng</button> : <><button type="button" disabled={busy} onClick={() => void openReviewForm(selected, "edit")}><Pencil size={14} /> Sửa</button><button type="button" disabled={busy || running} onClick={() => void openReviewForm(selected, "rerun")}><RotateCcw size={14} /> {resultReady(selected.state) ? "Chạy lại" : "Tiếp tục"}</button><button type="button" className="rw-question-delete" disabled={busy} onClick={() => setDeleteTarget(selected)}><Trash2 size={14} /> Xóa</button></>}</div></div>
-                {resultReady(selected.state) ? <><div className="rw-tabbar" role="tablist" aria-label="Review views">{(["progress", "overview", "findings", "gaps", "evidence", "visualize", "methodology", "diagnostics", "report", "export"] as const).map((view) => <button type="button" role="tab" aria-selected={tab === view} className={tab === view ? "active" : ""} key={view} onClick={() => { setTab(view); setSourceFile("review.json"); }}>{view === "progress" ? "Tiến trình" : view === "visualize" ? "Visualize" : view === "findings" ? "Key Findings" : view === "gaps" ? "Research Gaps" : view === "evidence" ? "Evidence / Studies" : view === "report" ? "Full Report" : view.charAt(0).toUpperCase() + view.slice(1)}</button>)}</div>
+            <div className="rw-workspace-center rw-run-mode">{selected ? <><div className="rw-question-heading"><div className="rw-heading-copy">{!resultReady(selected.state) && <div className="rw-heading-meta"><span className={`rw-review-status-badge ${selected.state}`}><i />{selected.state === "running" ? "Đang chạy" : selected.state === "failed" ? "Có lỗi" : "Đã dừng"}</span></div>}<div className="rw-heading-title-row"><h1>{selected.title}</h1></div>{!resultReady(selected.state) && typeof protocolData?.objective === "string" && protocolData.objective.trim() && protocolData.objective.trim().toLocaleLowerCase() !== selected.title.trim().toLocaleLowerCase() && <p className="rw-review-objective">{protocolData.objective}</p>}<div className="rw-question-details"><span className="rw-red-dot" />{selected.state === "running" ? "Đang thực hiện" : selected.state === "insufficient_evidence" ? "Thiếu bằng chứng" : resultReady(selected.state) ? "Đã lập bản đồ" : selected.state === "failed" ? "Có lỗi" : "Đã dừng"}<span className="rw-detail-separator">/</span>{selected.includedArticles ?? "—"} tài liệu được chọn{resultReady(selected.state) && selected.tokenUsage && <><span className="rw-detail-separator">/</span>{new Intl.NumberFormat("vi-VN").format(selected.tokenUsage.total)} token</>}<span className="rw-detail-separator">/</span>Cập nhật {displayDate(selected.updatedAt)}</div></div><div className="rw-question-actions"><button type="button" onClick={() => void openOutput()}><FolderOpen size={14} /> Mở thư mục</button>{selected.state === "running" ? <button type="button" className="rw-question-delete" disabled={busy} onClick={() => void cancel()}><Square size={14} /> Dừng</button> : <><button type="button" disabled={busy} onClick={() => void openReviewForm(selected, "edit")}><Pencil size={14} /> Sửa</button><button type="button" disabled={busy || running} onClick={() => void openReviewForm(selected, "rerun")}><RotateCcw size={14} /> {resultReady(selected.state) ? "Chạy lại" : "Tiếp tục"}</button><button type="button" className="rw-question-delete" disabled={busy} onClick={() => setDeleteTarget(selected)}><Trash2 size={14} /> Xóa</button></>}</div></div>
+                {resultReady(selected.state) ? <><div className="rw-tabbar" role="tablist" aria-label="Các phần của kết quả review">{resultTabs.map(({ view, label }) => <button type="button" role="tab" aria-selected={tab === view} className={tab === view ? "active" : ""} key={view} onClick={() => { setTab(view); setSourceFile("review.json"); }}>{label}</button>)}</div>
                 <div className={`rw-workspace-content rv-content${tab === "progress" ? " rw-progress-content" : ""}${tab === "visualize" ? " rw-visualize-content" : ""}`}>
-                  {tab === "progress" && <ReviewRun review={selected} runtime={runtime} onOpenLog={() => void preview("runner.log")} />}
+                  {tab === "progress" && <ReviewRun review={selected} runtime={runtime} onOpenLog={() => void preview("runner.log")} onOpenGeminiLog={() => void preview("gemini-calls.jsonl")} />}
                   {tab === "visualize" && <ReferenceGraph data={reviewData} articles={selected.articles} reviewId={selected.id} workspace={workspace} />}
                   {resultReady(selected.state) && !reviewData && artifactError && tab !== "progress" && tab !== "report" && tab !== "sources" && <div className="rv-warning">Structured review data could not be loaded. Open Export to inspect the saved files.</div>}
-                  {(["overview", "findings", "gaps", "evidence", "methodology", "diagnostics"] as const).includes(tab as "overview") && (reviewData?.schema === "cs_literature_intelligence_v1" ? <CSReviewOutput view={tab as ReviewView} data={reviewData} onView={setTab} onOpenFolder={() => void openOutput()} /> : <ReviewOutput view={tab as ReviewView} data={reviewData} status={selected as unknown as Record<string, unknown>} protocol={protocolData} onView={setTab} onOpenFolder={() => void openOutput()} />)}
-                  {tab === "report" && (reportContent ? <><div className="rw-section-head rw-review-reader-head"><h2>Full Report</h2><button className="rw-text-action" type="button" onClick={() => void openOutput()}>Show review.md <ArrowRight size={14} /></button></div><MarkdownContent content={reportContent} className="rw-markdown rw-review-report" /></> : <div className="rw-soft-empty">{artifactError || (resultReady(selected.state) ? "Loading full report..." : "The report will appear when the review completes.")}</div>)}
-                  {tab === "export" && <ExportFiles files={["review.md", ...sourceFiles, "status.json", "runner.log"]} onSelect={(file) => void preview(file as PreviewFile)} />}
+                  {(["overview", "findings", "gaps", "evidence", "methodology", "diagnostics"] as const).includes(tab as "overview") && (isCsIntelligence(reviewData) ? <CSReviewOutput view={tab as ReviewView} data={reviewData!} onView={setTab} onOpenFolder={() => void openOutput()} /> : <ReviewOutput view={tab as ReviewView} data={reviewData} status={selected as unknown as Record<string, unknown>} protocol={protocolData} onView={setTab} onOpenFolder={() => void openOutput()} />)}
+                  {tab === "report" && (reportContent ? <><div className="rw-section-head rw-review-reader-head"><h2>Báo cáo tổng hợp</h2><button className="rw-text-action" type="button" onClick={() => void openOutput()}>Mở review.md <ArrowRight size={14} /></button></div><MarkdownContent content={reportContent} className="rw-markdown rw-review-report" /></> : <div className="rw-soft-empty">{artifactError || (resultReady(selected.state) ? "Đang tải báo cáo..." : "Báo cáo sẽ xuất hiện khi review hoàn tất.")}</div>)}
+                  {tab === "export" && <ExportFiles files={["review.md", ...sourceFiles, "status.json", "runner.log", "gemini-calls.jsonl"]} onSelect={(file) => void preview(file as PreviewFile)} />}
                   {tab === "sources" && <><button className="rv-link" type="button" onClick={() => setTab("export")}>← Back to Export</button><div className="rw-source-switch" role="tablist" aria-label="Review source files">{sourceFiles.map((file) => <button type="button" role="tab" aria-selected={sourceFile === file} className={sourceFile === file ? "active" : ""} key={file} onClick={() => setSourceFile(file)}>{sourceLabels[file]}</button>)}</div>{artifactError ? <div className="rw-soft-empty" role="alert">{artifactError}</div> : artifactContent === undefined ? <div className="rw-soft-empty">Loading {sourceFile}...</div> : <SourcePreview file={sourceFile} content={artifactContent} data={reviewData} onOpenFolder={() => void openOutput()} />}</>}
-                </div></> : <ReviewRun review={selected} runtime={runtime} onOpenLog={() => void preview("runner.log")} />}</> : <div className="rw-loading">Opening review...</div>}</div>
+                </div></> : <ReviewRun review={selected} runtime={runtime} onOpenLog={() => void preview("runner.log")} onOpenGeminiLog={() => void preview("gemini-calls.jsonl")} />}</> : <div className="rw-loading">Opening review...</div>}</div>
           </div>
         </div>}
       </main>
@@ -461,8 +516,9 @@ export function ReviewApp() {
       <div className="rw-review-fields"><Field label="Research topic" name="title" value={input.title} onChange={change} required placeholder="e.g. Inductive reasoning in temporal knowledge graphs" /><Field label="Research question / objective" name="objective" value={input.objective} onChange={change} placeholder="What should the map investigate?" /><Field label="Core concepts (comma separated)" name="coreConcepts" value={input.coreConcepts} onChange={change} placeholder="temporal knowledge graph, inductive reasoning" /><Field label="Related terms (comma separated)" name="relatedConcepts" value={input.relatedConcepts} onChange={change} placeholder="unseen entities, zero-shot" />
         <label className="field rw-project-field"><span>Project</span><input required maxLength={100} list="rw-project-names" value={project} onChange={(event) => setProject(event.target.value)} placeholder="Choose or enter a project" /><datalist id="rw-project-names">{projects.map((name) => <option value={name} key={name} />)}</datalist><small>Use an existing project name or type a new one.</small></label>
         <label className="field"><span>Maximum results per query</span><input type="number" min="1" max="100" value={input.maxResults} onChange={(event) => setInput((current) => ({ ...current, maxResults: Number(event.target.value) }))} /></label>
-        {formMode !== "edit" && <label className="field rw-key-select"><span>Gemini API key</span><div className="rw-key-control"><select value={keySelection} onChange={(event) => setKeySelection(event.target.value)}><option value="auto">Rotate automatically ({environment?.keyCount ?? 0} keys)</option>{Array.from({ length: environment?.keyCount ?? 0 }, (_, index) => <option value={`key-${index + 1}`} key={index}>Key {index + 1}</option>)}</select><ChevronDown size={15} aria-hidden="true" /></div><small>Selected keys are used for optional AI concept and study profiling. Requests are paced across the pool; no key gives a deterministic run.</small></label>}
-      </div></div><div className="rw-dialog-actions"><button type="button" onClick={() => setShowForm(false)}>Cancel</button><button className="rw-button" type="submit" disabled={busy || (formMode !== "edit" && (running || !environment?.installed))}>{busy ? "Saving..." : formMode === "edit" ? "Save question" : formMode === "rerun" ? "Start new run" : "Start review"}<ArrowRight size={14} /></button></div></form></div>}
+        {formMode !== "edit" && <label className="field"><span>Chế độ phân loại bài báo</span><select value={jevEnabled ? "jev" : "gemini"} onChange={(event) => setJevEnabled(event.target.value === "jev")}><option value="gemini">Gemini (mặc định)</option><option value="jev" disabled={!environment?.jevKeyAvailable}>Jev AI — toàn bộ bài báo</option></select><small>{environment?.jevKeyAvailable ? "Jev phân loại core/background/exclude; Gemini vẫn phân tích bằng chứng." : "Cấu hình Jev AI key trong Settings để bật chế độ này."}</small></label>}
+        {formMode !== "edit" && <label className="field rw-key-select"><span>Gemini API key <b>*</b></span><div className="rw-key-control"><select value={keySelection} onChange={(event) => setKeySelection(event.target.value)}><option value="auto">Rotate automatically ({environment?.keyCount ?? 0} keys)</option>{Array.from({ length: environment?.keyCount ?? 0 }, (_, index) => <option value={`key-${index + 1}`} key={index}>Key {index + 1}</option>)}</select><ChevronDown size={15} aria-hidden="true" /></div><small>Gemini lập kế hoạch và chọn bằng chứng{jevEnabled ? "; Jev phân loại toàn bộ bài báo." : ", đồng thời phân loại bài báo."} Review cần Gemini key ở cả hai chế độ.</small></label>}
+      </div></div><div className="rw-dialog-actions"><button type="button" onClick={() => setShowForm(false)}>Cancel</button><button className="rw-button" type="submit" disabled={busy || (formMode !== "edit" && (running || !environment?.installed || (environment?.keyCount ?? 0) === 0))}>{busy ? "Saving..." : formMode === "edit" ? "Save question" : formMode === "rerun" ? "Start new run" : "Start review"}<ArrowRight size={14} /></button></div></form></div>}
     {deleteTarget && <div className="rw-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setDeleteTarget(null); }}><div className="rw-dialog rw-confirm-dialog" role="dialog" aria-modal="true" aria-label="Delete review"><ModalEscape onClose={() => setDeleteTarget(null)} /><div className="rw-dialog-header"><div><span className="rw-kicker">DELETE</span><h2>Delete this question?</h2></div><button type="button" className="rw-icon-button" onClick={() => setDeleteTarget(null)} aria-label="Close"><X size={15} /></button></div><p>“{deleteTarget.title}” and all files in its review folder will be permanently deleted.</p><div className="rw-dialog-actions"><button type="button" onClick={() => setDeleteTarget(null)}>Cancel</button><button type="button" className="rw-button rw-danger-button" disabled={busy} onClick={() => void removeReview()}><Trash2 size={14} /> Delete</button></div></div></div>}
     {previewFile && <div className="run-log-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setPreviewFile(null); }}><section className="run-log-detail rw-file-preview" role="dialog" aria-modal="true" aria-label={`Preview ${previewFile}`}><ModalEscape onClose={() => setPreviewFile(null)} /><header><div><span className="run-eyebrow">GENERATED FILE</span><h2>{previewFile}</h2></div><button type="button" onClick={() => setPreviewFile(null)} aria-label="Close file"><X size={17} /></button></header><div className="run-log-detail-body">{previewError ? <p role="alert">{previewError}</p> : previewContent ? previewFile === "review.md" ? <MarkdownContent content={previewContent} className="rw-markdown rw-review-report" /> : <pre><code>{previewContent}</code></pre> : <p>Loading file...</p>}</div></section></div>}
   </div>;

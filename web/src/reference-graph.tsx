@@ -240,7 +240,13 @@ function ReferenceGraphView({ data, articles, reviewId, workspace }: ReferenceGr
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [reviewId, workspace, retry]);
-  const graph = useMemo(() => graphData(data?.schema === "cs_literature_intelligence_v1" ? (Array.isArray(data.articles) ? data.articles.filter((article) => object(article).screening_decision === "include") : []) : data?.included_articles, articles, metadata), [articles, data, metadata]);
+  const graph = useMemo(() => {
+    const csSchema = typeof data?.schema === "string" && data.schema.startsWith("cs_literature_intelligence_v");
+    const structuredArticles = csSchema && Array.isArray(data?.articles)
+      ? data.articles.filter((article) => object(article).scope === "core" || (!object(article).scope && object(article).screening_decision === "include"))
+      : data?.included_articles;
+    return graphData(structuredArticles, articles, metadata);
+  }, [articles, data, metadata]);
   const papers = useMemo(() => graph.nodes.filter((node) => node.kind === "paper"), [graph.nodes]);
   const byId = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph.nodes]);
   const selected = selectedId ? byId.get(selectedId) : undefined;
