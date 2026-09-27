@@ -1,3 +1,5 @@
+![Axorbis — literature intelligence](../docs/axorbis-banner.svg)
+
 # Desktop app
 
 Tauri loads the React UI from `web/` and starts `integration/review_runner.py` through `src-tauri/src/commands.rs`. The runner uses SynthScholar 0.0.11 search and full text clients for a Computer Science literature map. See the [root README](../README.md) for installation, supported sources, evidence rules and output files.
