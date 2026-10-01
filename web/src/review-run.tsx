@@ -22,6 +22,7 @@ type RunReview = {
   keyCount?: number;
   tokenUsage?: { input: number; output: number; total: number; requests: number };
   articles?: Article[];
+  stageEvent?: { stage: string; state: string; message: string; timestamp: string };
 };
 type Detail = { type: "all" } | { type: "entry"; message: string; number: number } | { type: "stage"; index: number } | { type: "error"; message: string };
 
@@ -146,7 +147,10 @@ function ArticleDetailDialog({ article, result, onClose }: { article: Article; r
 export function ReviewRun({ review, runtime, onOpenLog, onOpenGeminiLog }: { review: RunReview; runtime: string | null; onOpenLog: () => void; onOpenGeminiLog: () => void }) {
   const running = review.state === "running";
   const progress = review.progress ?? [];
-  const stage = activeStage(progress);
+  const stageIndex = { QUERY_PLANNING: 0, SEARCH: 1, SCREENING: 2, SOURCE_ENRICHMENT: 3,
+    EVIDENCE_MAPPING: 4, STUDY_PROFILING: 5, CROSS_PAPER_ANALYSIS: 6, GAP_DETECTION: 7,
+    GAP_VERIFICATION: 8 } as Record<string, number>;
+  const stage = stageIndex[review.stageEvent?.stage || ""] ?? activeStage(progress);
   const usage = review.tokenUsage;
   const keys = review.keyUsage?.length ? review.keyUsage : Array.from({ length: review.keyCount ?? 0 }, (_, index) => ({ id: `Key ${index + 1}`, state: "idle", active: false, requests: 0, tokens: 0 }));
   const keyRequests = keys.reduce((sum, key) => sum + key.requests, 0);
@@ -255,7 +259,7 @@ export function ReviewRun({ review, runtime, onOpenLog, onOpenGeminiLog }: { rev
         <button type="button" className={`run-control-status ${running ? "running" : ""}`} onClick={() => setDetail(review.error ? { type: "error", message: review.error } : { type: "all" })}><Activity size={15} /><span>{running ? "Đang thực hiện" : review.state === "insufficient_evidence" ? "Thiếu bằng chứng" : review.state === "gap_verification_complete" ? "Đã xác minh khoảng trống" : terminalStates.has(review.state) ? "Đã lập bản đồ" : review.state === "failed" ? "Có lỗi" : "Đã dừng"}</span><ChevronRight size={13} /></button>
         <span className="run-control-metric" title={usage ? `${number.format(usage.input)} token vào · ${number.format(usage.output)} token ra` : "Chưa có dữ liệu token"}><Zap size={15} /><strong className="rw-count-up">{usage ? number.format(totalTokens) : "—"}</strong><span>Token</span></span>
         <span className="run-control-metric"><Cpu size={15} /><strong className="rw-count-up">{usage ? number.format(modelCalls) : "—"}</strong><span>Lượt gọi</span></span>
-        <span className="run-control-metric"><Users size={15} /><strong>{review.parallelLimit ?? "—"}</strong><span>Agent</span></span>
+        <span className="run-control-metric"><Users size={15} /><strong>{review.parallelLimit ?? review.keyCount ?? "—"}</strong><span>Agent</span></span>
       </div>
       <button type="button" className="run-control-keys" onClick={() => setKeyDetail(true)} aria-haspopup="dialog" aria-label={`Xem chi tiết ${keys.length} khóa API`}>
         <strong>Khóa API</strong>

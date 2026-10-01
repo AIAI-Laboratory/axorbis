@@ -1,6 +1,6 @@
 {
   "name": "axorbis-literature-review",
-  "version": "0.1.0",
+  "version": "0.3.52",
   "private": true,
   "description": "Desktop literature review workspace powered by SynthScholar",
   "license": "MIT",
@@ -12,7 +12,10 @@
     "test": "python3 integration/run_tests.py",
     "desktop:dev": "npm run tauri:dev --prefix app",
     "desktop:check": "cargo fmt --check --manifest-path app/src-tauri/Cargo.toml && cargo check --locked --manifest-path app/src-tauri/Cargo.toml && cargo test --locked --manifest-path app/src-tauri/Cargo.toml",
-    "desktop:build": "npm run tauri:build --prefix app"
+    "desktop:build": "npm run tauri:build --prefix app",
+    "desktop:build:dmg": "bash scripts/build-macos-dmg.sh && npm run desktop:verify:dmg",
+    "desktop:verify:dmg": "bash scripts/verify-macos-dmg.sh",
+    "desktop:build:exe": "bash scripts/build-windows-exe.sh"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",

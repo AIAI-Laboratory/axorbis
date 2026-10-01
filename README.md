@@ -39,13 +39,23 @@ python3 integration/setup.py
 npm run desktop:dev
 ```
 
+To create the macOS drag-to-install image, run:
+
+```sh
+npm run desktop:build:dmg
+```
+
+The release artifact is written to `app/src-tauri/target/release/bundle/dmg/`. The build is accepted only when the DMG contains both `Axorbis.app` and the `/Applications` shortcut and the app signature verifies. Local builds use an ad-hoc signature unless `APPLE_SIGNING_IDENTITY` is set; public distribution still requires an Apple Developer ID signature and notarization. Files named `rw.*.dmg` under `bundle/macos/` are temporary images and must not be distributed.
+
+To create the Windows x64 NSIS installer, run `npm run desktop:build:exe`. On Windows this uses the native MSVC toolchain. Cross-building on macOS requires Homebrew `nsis`, `llvm`, and `lld`, the `x86_64-pc-windows-msvc` Rust target, and `cargo-xwin`. The resulting `*-setup.exe` is written under `app/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/`.
+
 Development uses:
 
 ```text
 .venv/bin/python
 ```
 
-For an installed build, set `SYNTHSCHOLAR_PYTHON` to a Python interpreter where `integration/requirements.txt` has been installed.
+The desktop checks this environment at startup and runs the bundled setup automatically when SynthScholar is missing. An installed macOS build creates its private runtime at `~/.axorbis/runtime/.venv`. If the machine has no compatible interpreter, Axorbis downloads a pinned Python 3.11 standalone runtime, verifies its SHA-256 digest, and keeps it under `~/.axorbis/runtime/python`; users do not need to install Python or Homebrew manually. The first launch requires network access. Set `SYNTHSCHOLAR_PYTHON` only when you want to override the managed interpreter with one where `integration/requirements.txt` is already installed.
 
 ---
 
@@ -104,7 +114,10 @@ Enter:
 - a Computer Science topic or research question;
 - optional required concepts;
 - optional related concepts;
-- a publication-date range;
+- a publication-date range, typed or selected from a calendar;
+- optional language, publication type, inclusion and exclusion criteria;
+- search sources, screening template, Gemini audit mode, and source-text retention;
+- optional extraction dimensions and a synthesis objective;
 - a maximum result count per query.
 
 ### 2. Search and deduplicate
@@ -122,6 +135,11 @@ Supported sources include:
 
 Every provider and exact query is recorded for provenance.
 
+The desktop reference graph looks up references for every selected paper in Crossref by DOI or matched title and OpenAlex by DOI or exact title, merges their cited works by DOI or normalized title, then tries Semantic Scholar Academic Graph for papers still missing references. Up to four papers are looked up concurrently, with each paper's source failures handled independently and results returned in review order. OpenAlex expands `referenced_works`; Semantic Scholar resolves papers by DOI, arXiv ID, or exact title and paginates through their cited works. Public OpenReview v2 submission metadata fills missing author, year, abstract, and venue fields and offers OpenReview/PDF links where available; OpenReview profile references are never treated as paper citations. The graph links cited works to their citing paper. Its default overview spaces papers into two rings and shows up to eight prominent references shared by multiple papers, with subdued links. A single click selects a paper and opens its details without changing the graph; the detail panel previews five cited works and opens the complete, scrollable bibliography in a modal. Double-clicking a review paper opens an isolated subgraph centered on it and all the works it cites. Unrelated review papers are hidden from that subgraph, while the sidebar remains available to switch papers. Closing its detail returns to the overview, while “Xem tất cả” reveals the complete graph. Paper and reference nodes show author and year when available; references without authors show a shortened title. Labels that would overlap are hidden until hover or selection. The graph shows reference coverage and per-paper lookup failures. Sources may still lack a bibliography, so the graph never invents connections. Results are cached as `citation-graph.json` in the review folder and can be refreshed from the graph view; incomplete lookups are not cached.
+
+The protocol also offers optional one-hop citation snowballing during the scientific run. It looks backward and forward from up to five seed papers through Semantic Scholar, with up to four neighbors in each direction per seed. New records enter the normal screening and evidence pipeline; `citation_expansion_history` records the stopping rule and lookup results. The post-review reference graph remains an exploratory view and does not alter the finished corpus.
+
+
 Records are merged in the following order:
 
 1. canonical DOI;
@@ -135,7 +153,7 @@ Records with conflicting canonical identifiers are **never** fuzzy-merged.
 
 Retrieved records are screened for relevance to the review protocol.
 
-Papers can be classified as:
+New reviews use protocol-based relevance screening. The optional temporal knowledge-graph template retains the earlier three specialized dimensions for that research area. Papers can be classified as:
 
 ```text
 core
@@ -143,7 +161,9 @@ background
 exclude
 ```
 
-Axorbis then enriches relevant records with abstracts and full text where available.
+`background` records need adjudication. The report distinguishes the strict core corpus from an expanded sensitivity analysis that includes uncertain records. Axorbis then enriches relevant records with abstracts and full text where available.
+
+In the result's Methodology tab, a reviewer can mark a background record Include or Exclude. Axorbis rebuilds the structured result from saved evidence, records the decision in `adjudication_history`, and leaves any newly generated gap candidate awaiting a separate counter-search.
 
 ### 4. Map evidence
 
@@ -159,17 +179,20 @@ Axorbis constructs:
 - cross-paper claims;
 - study profiles;
 - an evidence matrix;
-- coverage metrics.
+- research directions with maturity and confidence;
+- topic-relative coverage metrics.
 
 This supports comparisons across experimental and evaluation settings.
 
+Direction coverage is calculated as deep-reviewed relevant studies divided by identified relevant studies for that direction. It is independent of raw paper count, so a small direction can still have high coverage. Directions are classified as `established`, `developing`, `emerging`, `sparse`, or `uncertain`.
+
 ### 6. Detect and verify research gaps
 
-Sparse or unsupported combinations in the evidence matrix can become **candidate gaps**.
+Sparse combinations are first reported as emerging areas, sparse areas, or underexplored intersections. They are not automatically treated as research gaps. A scoped combination with direct supporting evidence can become a **candidate gap**.
 
 Each candidate gap triggers a targeted counter-search.
 
-A candidate gap is promoted to a verified gap only when the evidence and counter-search requirements are satisfied.
+A candidate with a completed counter-search may be labeled `no_counterevidence_found` within the recorded providers, queries and search date. This is not a claim that no study exists anywhere. Up to three candidates are checked per run.
 
 If no candidate gap is found, the pipeline may safely finish at:
 
@@ -184,6 +207,8 @@ Otherwise, gap verification is required.
 ## Screening rules
 
 ### Gemini screening
+
+General reviews score relevance against the review question and user-defined inclusion/exclusion criteria (`100` explicit yes, `50` uncertain, `0` explicit no). The specialized temporal knowledge-graph template keeps the three-dimension schema below for older and deliberately specialized reviews.
 
 Gemini scope screening uses a strict JSON schema.
 
@@ -203,7 +228,7 @@ Axorbis maps these values to:
 |  `50` | `UNKNOWN` |
 |   `0` | `NO`      |
 
-A paper qualifies as `core` only when **all three screening dimensions are `YES`**.
+In the specialized template, a paper qualifies as `core` only when **all three screening dimensions are `YES`**.
 
 The dimensions are:
 
@@ -226,13 +251,13 @@ Jev also:
 
 The following constraints are applied separately from scientific relevance classification:
 
-- publication date;
+- publication year from the requested date range (the current search clients supply year-level metadata);
 - language;
 - publication type.
 
 These are protocol checks, not regex-based scientific screening.
 
-Axorbis has **no regex paper-classification fallback**.
+Axorbis has **no regex paper-classification fallback**. Malformed Gemini screening batches are retried and split; an unresolved single paper remains in `background` for adjudication.
 
 ---
 
@@ -242,14 +267,14 @@ Axorbis separates source retrieval from model interpretation.
 
 ### Exact source spans
 
-The extractor preserves exact sentences from the saved:
+The extractor preserves exact sentences with neighboring context from the saved:
 
 - full text or
 - abstracts.
 
 Each evidence span stores source-relative character offsets.
 
-This allows accepted claims to be traced back to the exact source text.
+Candidates across the available source text are assessed in windows of up to 40 sentences. This allows accepted claims to be traced back to the exact source text while reducing the earlier fixed 60-sentence sampling limit. The full-text resolver currently caps parsed text at 100,000 characters per paper.
 
 ### Model-assisted evidence classification
 
@@ -261,7 +286,7 @@ Gemini selects relevant extracted spans and classifies:
 
 Fragments and unsupported promotional claims are rejected.
 
-Every accepted paper claim must still point to an exact saved source span.
+Every accepted paper claim points to an exact extracted span. Keeping source text lets a reviewer verify its offsets against the local original; choosing deletion retains the selected span and context in `review.json` but removes that local verification path.
 
 ### Source levels
 
@@ -375,13 +400,15 @@ Axorbis can compare findings across study settings such as:
 
 Cross-paper claims describe relationships between grounded paper-level evidence rather than introducing unsupported conclusions.
 
+Evidence requirements depend on claim type: one directly supporting paper is enough for a paper-level observation, repeated findings require multiple studies, and trend or dominance claims require broad corpus evidence. A low paper count does not by itself establish a gap.
+
 ---
 
 ## Research-gap verification
 
-Candidate gaps are derived from sparse combinations in the evidence matrix.
+Candidate gaps are derived from scoped, evidence-supported combinations in the evidence matrix. Every promoted candidate records its claim, supporting evidence, counterevidence, alternative terminology, counter-search provenance, verification status, and confidence.
 
-For every gap, Axorbis reports separate coverage metrics.
+For every direction or gap, Axorbis reports separate coverage metrics.
 
 ### Basic coverage
 
@@ -396,12 +423,18 @@ Evidence from:
 
 - full text only.
 
-A candidate gap can become verified only when:
+A candidate can receive `no_counterevidence_found` only when:
 
-1. sufficient deep coverage is available; and
-2. targeted counter-search validation succeeds.
+1. topic-relative deep coverage is sufficient for that candidate;
+2. alternative terminology is searched;
+3. three alternative-term counter-searches complete across the available arXiv, Semantic Scholar and OpenAlex sources; and
+4. no screened counter-paper directly addresses the candidate in the retrieved evidence.
+
+The engine records whether related-work metadata is available, but the post-review citation graph is not a scientific corpus expansion step.
 
 This prevents a gap from being declared solely because relevant evidence was unavailable or missing from abstracts.
+
+Possible outcomes include `already_addressed`, `partially_addressed`, `candidate_gap`, `no_counterevidence_found`, and `inconclusive`. The latter counter-search finding is bounded by the saved search protocol. Emerging and sparse directions remain visible regardless.
 
 ---
 
@@ -451,19 +484,25 @@ A review folder contains:
 ```text
 protocol.json
 status.json
+execution-state.json
 review.json
 review.md
 references.bib
 runner.log
 gemini-calls.jsonl
+run-manifest.json
+runtime-manifest.json
+search-checkpoint.json
 source-text/
 ```
 
-Retrieved full texts are stored under:
+When source-text retention is set to `keep`, retrieved full texts are stored under:
 
 ```text
 source-text/*.txt
 ```
+
+The start form can instead delete `source-text/` after the final report. The selected evidence spans remain in `review.json`, but their offsets cannot subsequently be checked against the retrieved text. A failed run with this setting also removes any downloaded source text; continuing it must fetch that text again.
 
 ### `review.json`
 
@@ -479,12 +518,16 @@ It contains:
 - the evidence matrix;
 - paper claims;
 - cross-paper claims;
+- literature landscape and research directions;
+- emerging or sparse areas;
+- underexplored intersections;
+- candidate-gap assessments;
 - candidate gaps;
 - verified gaps;
 - quality metrics;
 - pipeline status.
 
-The Markdown report is generated from this structured result.
+The Markdown report is generated from this structured result. `review_quality` separately reports search completeness, unresolved screening, full-text coverage, evidence coverage and gap-search completeness; `quality_gate.passed` only describes the evidence-production threshold.
 
 ### Compatibility aliases
 
@@ -507,7 +550,7 @@ Stopping a review does not discard completed work.
 
 Everything already written to the review folder is preserved.
 
-Starting the review again creates a **new, unique run folder** rather than overwriting the previous one.
+Starting the review again creates a **new, unique run folder** rather than overwriting the previous one. “Continue” on an interrupted or failed review reuses an identical-protocol checkpoint: completed queries, matching full text, completed screening decisions and saved evidence spans can be reused, while missing or failed work is retried. Synthesis and gap verification are rebuilt. “Run again” on a completed review starts fresh. Editing a question saves a separate next-run draft and does not mutate the historical protocol. `run-manifest.json` and `protocol.json` are immutable snapshots; `execution-state.json` is mutable, while `status.json` remains a compatibility view for the current desktop reader.
 
 ---
 
@@ -524,7 +567,7 @@ Gemini keys are transferred to Python only through stdin.
 
 ### `gemini-calls.jsonl`
 
-For debugging and auditability, Axorbis records Gemini request and raw response bodies in:
+The start form offers `full`, `redacted`, and `off` Gemini audit modes. `full` records request and raw response bodies in:
 
 ```text
 gemini-calls.jsonl
@@ -532,7 +575,7 @@ gemini-calls.jsonl
 
 This includes failed JSON-generation attempts.
 
-Credentials and Authorization headers are not recorded.
+`redacted` keeps call metadata and content hashes; `off` creates no audit entries. Credentials and Authorization headers are not recorded in any mode.
 
 However, request and response bodies may contain paper text or other review content.
 

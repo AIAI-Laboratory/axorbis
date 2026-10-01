@@ -1,6 +1,6 @@
 {
   "productName": "Axorbis",
-  "version": "0.1.0",
+  "version": "0.3.52",
   "identifier": "com.axorbis.literature-review",
   "build": {
     "beforeDevCommand": {
@@ -26,6 +26,18 @@
       "icons/32x32.png", "icons/64x64.png", "icons/128x128.png",
       "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"
     ],
-    "resources": { "../../integration/review_runner.py": "integration/review_runner.py", "../../integration/cs_engine.py": "integration/cs_engine.py" }
+    "resources": {
+      "../../integration/review_runner.py": "integration/review_runner.py",
+      "../../integration/cs_engine.py": "integration/cs_engine.py",
+      "../../integration/setup.py": "integration/setup.py",
+      "../../integration/requirements.txt": "integration/requirements.txt"
+    },
+    "macOS": {
+      "dmg": {
+        "windowSize": { "width": 660, "height": 400 },
+        "appPosition": { "x": 180, "y": 170 },
+        "applicationFolderPosition": { "x": 480, "y": 170 }
+      }
+    }
   }
 }

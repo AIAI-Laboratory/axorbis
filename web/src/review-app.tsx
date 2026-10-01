@@ -34,12 +34,12 @@ type Environment = { python: string; installed: boolean; version: string | null;
 type GoogleKeyInfo = { id: string; source: string; variable: string | null; manageable: boolean };
 type Input = {
   title: string; objective: string; coreConcepts: string; relatedConcepts: string; inclusion: string; exclusion: string;
-  dateStart: string; dateEnd: string; maxResults: number;
+  dateStart: string; dateEnd: string; language: string; publicationType: string; sources: string[]; screeningTemplate: string; auditLogging: string; citationSnowballing: boolean; extractionDimensions: string; synthesisObjective: string; sourceTextRetention: string; maxResults: number;
 };
 type TauriWindow = Window & { __TAURI__?: { core: { invoke: <T>(name: string, args?: Record<string, unknown>) => Promise<T> } } };
 type ReviewTab = ReviewView | "sources" | "progress" | "visualize";
 type SourceFile = "review.json" | "references.bib" | "protocol.json";
-type PreviewFile = SourceFile | "review.md" | "status.json" | "runner.log" | "gemini-calls.jsonl";
+type PreviewFile = SourceFile | "review.md" | "status.json" | "runner.log" | "gemini-calls.jsonl" | "run-manifest.json" | "runtime-manifest.json" | "search-checkpoint.json" | "execution-state.json";
 const resultReady = (state?: string) => ["completed", "mapping_complete", "candidate_gaps_found", "gap_verification_complete", "synthesis_complete", "insufficient_evidence"].includes(state || "");
 const isCsIntelligence = (data: ReviewData | null | undefined) => typeof data?.schema === "string" && data.schema.startsWith("cs_literature_intelligence_v");
 const csTabs: Array<{ view: ReviewTab; label: string }> = [
@@ -75,7 +75,8 @@ function displayRuntime(start: number, end: number): string {
 
 const initialInput: Input = {
   title: "", objective: "", coreConcepts: "", relatedConcepts: "",
-  inclusion: "", exclusion: "", dateStart: "", dateEnd: "",
+  inclusion: "", exclusion: "", dateStart: "", dateEnd: "", language: "", publicationType: "",
+  sources: ["semantic_scholar", "openalex", "arxiv", "openreview", "crossref", "core"], screeningTemplate: "general", auditLogging: "redacted", citationSnowballing: false, extractionDimensions: "", synthesisObjective: "", sourceTextRetention: "keep",
   maxResults: 20,
 };
 
@@ -96,13 +97,13 @@ function displayListDate(value: number | string): string {
   return `${date.toLocaleDateString("vi-VN")} · ${date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-function Field({ label, name, value, onChange, placeholder, required, rows }: {
+function Field({ label, name, value, onChange, placeholder, required, rows, type = "text", min, max }: {
   label: string; name: keyof Input; value: string; onChange: (name: keyof Input, value: string) => void;
-  placeholder?: string; required?: boolean; rows?: number;
+  placeholder?: string; required?: boolean; rows?: number; type?: "text" | "date"; min?: string; max?: string;
 }) {
   return <label className="field"><span>{label}{required && <b> *</b>}</span>
     {rows ? <textarea value={value} rows={rows} placeholder={placeholder} required={required} onChange={(event) => onChange(name, event.target.value)} />
-      : <input value={value} placeholder={placeholder} required={required} onChange={(event) => onChange(name, event.target.value)} />}
+      : <input type={type} value={value} placeholder={placeholder} required={required} min={min || undefined} max={max || undefined} onChange={(event) => onChange(name, event.target.value)} />}
   </label>;
 }
 
@@ -204,7 +205,7 @@ function SettingsView({ environment, workspace, onChooseWorkspace, onKeyCountCha
   return <div className="rw-page rw-settings-page">
     <div className="rw-page-intro"><span className="rw-kicker">WORKSPACE / SETTINGS</span><div className="rw-page-title-row"><div><h1>Settings</h1><p>Review engine, output folder, and API keys.</p></div></div></div>
     <div className="rw-settings-grid">
-      <section className="rw-settings-section"><div className="rw-section-head"><h2>SynthScholar</h2><span>{environment?.installed ? "Ready" : "Setup needed"}</span></div><div className="rw-settings-card rw-settings-facts"><div><span>Python</span><strong>{environment?.python || "Checking..."}</strong></div><div><span>Version</span><strong>{environment?.version || "Not installed"}</strong></div>{!environment?.installed && <p>Run <code>python3 integration/setup.py</code> from this checkout, then restart the desktop app.</p>}</div></section>
+      <section className="rw-settings-section"><div className="rw-section-head"><h2>SynthScholar</h2><span>{environment?.installed ? "Ready" : "Setting up"}</span></div><div className="rw-settings-card rw-settings-facts"><div><span>Python</span><strong>{environment?.python || "Checking..."}</strong></div><div><span>Version</span><strong>{environment?.version || "Preparing runtime"}</strong></div>{!environment?.installed && <p>Axorbis downloads a private Python 3.11 runtime when needed, then installs the review engine automatically. No system Python installation is required.</p>}</div></section>
       <section className="rw-settings-section"><div className="rw-section-head"><h2>Review output folder</h2></div><div className="rw-settings-card rw-settings-workspace"><p>{workspace}</p><button className="rw-button" type="button" onClick={onChooseWorkspace}><FolderOpen size={14} /> Choose folder</button></div></section>
       <section className="rw-settings-section rw-settings-keys"><div className="rw-section-head"><h2>Typesafe Jev AI</h2><span>{jevKey ? "Key configured" : "Optional"}</span></div><div className="rw-settings-card"><div className="rw-settings-model"><span>CLASSIFICATION MODE</span><strong>jev-latest</strong><small>When enabled, Jev classifies every paper for core, background, or exclusion. Gemini still plans queries and analyzes evidence.</small></div>{jevKey && <div className="rw-settings-key-row"><span className="rw-settings-key-mark">J</span><span className="rw-settings-key-copy"><strong>Jev AI key</strong><small>{jevKey.variable || jevKey.source} · {jevKey.source}</small></span>{jevKey.manageable ? <button type="button" className="rw-settings-remove-key" onClick={() => void removeJevKey()} disabled={jevBusy} aria-label="Remove Jev key"><Trash2 size={15} /></button> : <span className="rw-settings-readonly">External</span>}</div>}<form className="rw-settings-key-form" onSubmit={(event) => void saveJevKey(event)}><label htmlFor="rw-new-jev-key">{jevKey ? "Replace Jev API key" : "Jev API key"}</label><input id="rw-new-jev-key" type="password" autoComplete="off" spellCheck={false} value={newJevKey} onChange={(event) => setNewJevKey(event.target.value)} placeholder="Paste key" /><small>Stored in the local key file; never included in review outputs.</small><button type="submit" className="rw-button" disabled={jevBusy || !newJevKey.trim()}><Plus size={14} /> {jevKey ? "Replace key" : "Save key"}</button></form>{jevError && <p className="rw-settings-key-error" role="alert">{jevError}</p>}</div></section>
       <section className="rw-settings-section rw-settings-keys"><div className="rw-section-head"><h2>Google Gemini</h2><span>{keys?.length ?? environment?.keyCount ?? 0} keys available</span></div><div className="rw-settings-card"><div className="rw-settings-model"><span>MODEL</span><strong>gemini-3.5-flash-lite</strong><small>Choose one key or automatic rotation when starting a review. Usage is recorded from model responses.</small></div><div className="rw-settings-key-columns"><div className="rw-settings-key-list"><div className="rw-settings-subhead">CONFIGURED KEYS</div>{keys === null ? <p className="rw-settings-key-empty">Loading key sources...</p> : keys.length ? keys.map((key) => <div className="rw-settings-key-row" key={`${key.id}-${key.variable ?? key.source}`}><span className="rw-settings-key-mark">{key.id.replace("Key ", "")}</span><span className="rw-settings-key-copy"><strong>{key.id}</strong><small>{key.variable || key.source} · {key.source}</small></span>{key.manageable ? <button type="button" className="rw-settings-remove-key" onClick={() => setRemoveTarget(key)} aria-label={`Remove ${key.id}`} disabled={keyBusy}><Trash2 size={15} /></button> : <span className="rw-settings-readonly">External</span>}</div>) : <p className="rw-settings-key-empty">No Google keys configured yet.</p>}</div><form className="rw-settings-key-form" onSubmit={(event) => void addKey(event)}><div className="rw-settings-subhead">ADD KEY</div><label htmlFor="rw-new-google-key">Gemini API key</label><input id="rw-new-google-key" type="password" autoComplete="off" spellCheck={false} value={newKey} onChange={(event) => setNewKey(event.target.value)} placeholder="Paste key" aria-describedby="rw-key-storage-note" /><p id="rw-key-storage-note">Saved in <code>~/.axorbis/agent/.env</code>. Key contents are never shown again.</p><button type="submit" className="rw-button" disabled={keyBusy || !newKey.trim()}><Plus size={14} /> Add key</button></form></div><p className="rw-settings-key-note">Keys from the process environment or Axorbis configuration are read only here. Changes to the local key file apply to new reviews.</p></div>{keyError && <p className="rw-settings-key-error" role="alert">{keyError}</p>}</section>
@@ -258,10 +259,19 @@ export function ReviewApp() {
     let active = true;
     void (async () => {
       try {
-        const [value] = await Promise.all([
+        const [detected] = await Promise.all([
           invoke<Environment>("review_environment"),
           new Promise((resolve) => window.setTimeout(resolve, 2500)),
         ]);
+        if (!active) return;
+        let value = detected;
+        if (!value.installed) {
+          try {
+            value = await invoke<Environment>("install_review_environment");
+          } catch (cause) {
+            if (active) setError(`Automatic SynthScholar setup failed: ${String(cause)}`);
+          }
+        }
         if (!active) return;
         setEnvironment(value);
         const folder = localStorage.getItem("axorbis.review.workspace") || value.defaultWorkspace;
@@ -327,7 +337,9 @@ export function ReviewApp() {
     setBusy(true); setError(null);
     try {
       const saved = await invoke<Input>("review_input", { workspace, id: review.id });
-      setInput(saved); setProject(review.project || "Literature reviews"); setKeySelection("auto"); setJevEnabled(review.classificationMode === "jev");
+      setInput({ ...initialInput, ...saved, sources: saved.sources?.length ? saved.sources : initialInput.sources,
+        screeningTemplate: saved.screeningTemplate || "temporal_kg", auditLogging: saved.auditLogging || "redacted",
+        sourceTextRetention: saved.sourceTextRetention || "keep" }); setProject(review.project || "Literature reviews"); setKeySelection("auto"); setJevEnabled(review.classificationMode === "jev");
       setFormMode(mode); setFormSourceId(review.id); setShowForm(true);
     } catch (cause) { setError(String(cause)); }
     finally { setBusy(false); }
@@ -359,7 +371,9 @@ export function ReviewApp() {
         const updated = await invoke<Review>("update_review", { workspace, id: formSourceId, input, project });
         setSelected(updated); setShowForm(false); await refresh(); return;
       }
-      const review = await invoke<Review>("start_review", { workspace, input, keySelection, classificationMode: jevEnabled ? "jev" : "gemini", project, sourceReviewId: formSourceId });
+      const source = reviews.find((review) => review.id === formSourceId);
+      const review = await invoke<Review>("start_review", { workspace, input, keySelection, classificationMode: jevEnabled ? "jev" : "gemini", project, sourceReviewId: formSourceId,
+        resumeCheckpoint: Boolean(source && !resultReady(source.state)) });
       setShowForm(false);
       setSelected(review);
       setSelectedId(review.id);
@@ -374,6 +388,19 @@ export function ReviewApp() {
     setBusy(true);
     try {
       await invoke<void>("cancel_review", { id: selected.id });
+      await refresh();
+    } catch (cause) { setError(String(cause)); }
+    finally { setBusy(false); }
+  }
+  async function adjudicate(articleId: string, decision: "include" | "exclude") {
+    if (!selected) return;
+    setBusy(true); setError(null);
+    try {
+      const updated = await invoke<Review>("adjudicate_review", { workspace, id: selected.id, articleId, decision });
+      setSelected(updated);
+      const prefix = `${workspace}/${selected.id}/`;
+      setArtifacts((current) => Object.fromEntries(Object.entries(current).filter(([key]) =>
+        !key.startsWith(prefix) || !["review.json", "review.md", "references.bib", "status.json"].some((file) => key.endsWith(`/${file}`)))));
       await refresh();
     } catch (cause) { setError(String(cause)); }
     finally { setBusy(false); }
@@ -500,9 +527,9 @@ export function ReviewApp() {
                   {tab === "progress" && <ReviewRun review={selected} runtime={runtime} onOpenLog={() => void preview("runner.log")} onOpenGeminiLog={() => void preview("gemini-calls.jsonl")} />}
                   {tab === "visualize" && <ReferenceGraph data={reviewData} articles={selected.articles} reviewId={selected.id} workspace={workspace} />}
                   {resultReady(selected.state) && !reviewData && artifactError && tab !== "progress" && tab !== "report" && tab !== "sources" && <div className="rv-warning">Structured review data could not be loaded. Open Export to inspect the saved files.</div>}
-                  {(["overview", "findings", "gaps", "evidence", "methodology", "diagnostics"] as const).includes(tab as "overview") && (isCsIntelligence(reviewData) ? <CSReviewOutput view={tab as ReviewView} data={reviewData!} onView={setTab} onOpenFolder={() => void openOutput()} /> : <ReviewOutput view={tab as ReviewView} data={reviewData} status={selected as unknown as Record<string, unknown>} protocol={protocolData} onView={setTab} onOpenFolder={() => void openOutput()} />)}
+                  {(["overview", "findings", "gaps", "evidence", "methodology", "diagnostics"] as const).includes(tab as "overview") && (isCsIntelligence(reviewData) ? <CSReviewOutput view={tab as ReviewView} data={reviewData!} onView={setTab} onOpenFolder={() => void openOutput()} onAdjudicate={(articleId, decision) => void adjudicate(articleId, decision)} adjudicationBusy={busy} /> : <ReviewOutput view={tab as ReviewView} data={reviewData} status={selected as unknown as Record<string, unknown>} protocol={protocolData} onView={setTab} onOpenFolder={() => void openOutput()} />)}
                   {tab === "report" && (reportContent ? <><div className="rw-section-head rw-review-reader-head"><h2>Báo cáo tổng hợp</h2><button className="rw-text-action" type="button" onClick={() => void openOutput()}>Mở review.md <ArrowRight size={14} /></button></div><MarkdownContent content={reportContent} className="rw-markdown rw-review-report" /></> : <div className="rw-soft-empty">{artifactError || (resultReady(selected.state) ? "Đang tải báo cáo..." : "Báo cáo sẽ xuất hiện khi review hoàn tất.")}</div>)}
-                  {tab === "export" && <ExportFiles files={["review.md", ...sourceFiles, "status.json", "runner.log", "gemini-calls.jsonl"]} onSelect={(file) => void preview(file as PreviewFile)} />}
+                  {tab === "export" && <ExportFiles files={["review.md", ...sourceFiles, "status.json", "execution-state.json", "run-manifest.json", "runtime-manifest.json", "search-checkpoint.json", "runner.log", "gemini-calls.jsonl"]} onSelect={(file) => void preview(file as PreviewFile)} />}
                   {tab === "sources" && <><button className="rv-link" type="button" onClick={() => setTab("export")}>← Back to Export</button><div className="rw-source-switch" role="tablist" aria-label="Review source files">{sourceFiles.map((file) => <button type="button" role="tab" aria-selected={sourceFile === file} className={sourceFile === file ? "active" : ""} key={file} onClick={() => setSourceFile(file)}>{sourceLabels[file]}</button>)}</div>{artifactError ? <div className="rw-soft-empty" role="alert">{artifactError}</div> : artifactContent === undefined ? <div className="rw-soft-empty">Loading {sourceFile}...</div> : <SourcePreview file={sourceFile} content={artifactContent} data={reviewData} onOpenFolder={() => void openOutput()} />}</>}
                 </div></> : <ReviewRun review={selected} runtime={runtime} onOpenLog={() => void preview("runner.log")} onOpenGeminiLog={() => void preview("gemini-calls.jsonl")} />}</> : <div className="rw-loading">Opening review...</div>}</div>
           </div>
@@ -511,9 +538,23 @@ export function ReviewApp() {
     </div>
     {paletteOpen && <div className="rw-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setPaletteOpen(false); }}><div className="rw-palette" role="dialog" aria-modal="true" aria-label="Search reviews"><ModalEscape onClose={() => setPaletteOpen(false)} /><div className="rw-palette-input"><Search size={16} /><input autoFocus value={paletteQuery} onChange={(event) => setPaletteQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && filtered[0]) openReview(filtered[0].id); }} placeholder="Search reviews..." /><kbd>ESC</kbd></div><div className="rw-palette-results">{filtered.map((review) => <button type="button" key={review.id} onClick={() => openReview(review.id)}><span>{review.title}</span><small>{review.state}</small></button>)}{!filtered.length && <p>No results</p>}</div><footer>Search to navigate · Enter opens the first result</footer></div></div>}
     {showForm && <div className="rw-overlay rw-review-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowForm(false); }}><form className="rw-dialog rw-review-dialog" role="dialog" aria-modal="true" aria-label={formMode === "edit" ? "Edit research question" : "Literature review"} onSubmit={(event) => void start(event)}><ModalEscape onClose={() => setShowForm(false)} /><div className="rw-dialog-header"><div><span className="rw-kicker">{formMode === "edit" ? "EDIT" : formMode === "rerun" ? "RESUME / RERUN" : "CREATE"}</span><h2>{formMode === "edit" ? "Edit research question" : formMode === "rerun" ? "Run saved question" : "New literature review"}</h2></div><button className="rw-icon-button" type="button" aria-label="Close" onClick={() => setShowForm(false)}><X size={15} /></button></div><div className="rw-review-scroll">
-      {formMode === "rerun" && <p className="rw-form-note">{resultReady(reviews.find((review) => review.id === formSourceId)?.state) ? "This starts a fresh run from the saved protocol." : "A new run starts from the saved topic and searches again."} The original run stays available.</p>}
+      {formMode === "rerun" && <p className="rw-form-note">{resultReady(reviews.find((review) => review.id === formSourceId)?.state) ? "This starts a fresh run from the saved protocol." : "A new run starts from the saved protocol. Completed search queries may be reused when a matching checkpoint exists."} The original run stays available.</p>}
       {formMode === "edit" && <p className="rw-form-note">Changes update the saved question for future runs. Existing reports remain snapshots of their original run.</p>}
       <div className="rw-review-fields"><Field label="Research topic" name="title" value={input.title} onChange={change} required placeholder="e.g. Inductive reasoning in temporal knowledge graphs" /><Field label="Research question / objective" name="objective" value={input.objective} onChange={change} placeholder="What should the map investigate?" /><Field label="Core concepts (comma separated)" name="coreConcepts" value={input.coreConcepts} onChange={change} placeholder="temporal knowledge graph, inductive reasoning" /><Field label="Related terms (comma separated)" name="relatedConcepts" value={input.relatedConcepts} onChange={change} placeholder="unseen entities, zero-shot" />
+        <Field label="Inclusion criteria" name="inclusion" value={input.inclusion} onChange={change} placeholder="Studies that directly address the research question" />
+        <Field label="Exclusion criteria" name="exclusion" value={input.exclusion} onChange={change} placeholder="Surveys, duplicate versions, or out-of-scope settings" />
+        <Field label="Start date" name="dateStart" type="date" value={input.dateStart} onChange={change} max={input.dateEnd} />
+        <Field label="End date" name="dateEnd" type="date" value={input.dateEnd} onChange={change} min={input.dateStart} />
+        <small className="rw-date-note">You can type a date or choose one from the calendar. Search metadata currently provides publication years, so screening compares years when applying this range.</small>
+        <Field label="Language" name="language" value={input.language} onChange={change} placeholder="Optional, e.g. English" />
+        <Field label="Publication type" name="publicationType" value={input.publicationType} onChange={change} placeholder="Optional, e.g. conference paper" />
+        <Field label="Extraction dimensions (comma separated)" name="extractionDimensions" value={input.extractionDimensions} onChange={change} placeholder="e.g. model robustness, deployment cost" />
+        <Field label="Synthesis objective" name="synthesisObjective" value={input.synthesisObjective} onChange={change} placeholder="Which comparisons should the review emphasize?" />
+        <label className="field"><span>Screening template</span><select value={input.screeningTemplate} onChange={(event) => setInput((current) => ({ ...current, screeningTemplate: event.target.value }))}><option value="general">General protocol</option><option value="temporal_kg">Temporal KG / inductive</option></select><small>Choose the specialized template only for temporal knowledge graph reviews.</small></label>
+        <label className="field"><span>Gemini audit log</span><select value={input.auditLogging} onChange={(event) => setInput((current) => ({ ...current, auditLogging: event.target.value }))}><option value="redacted">Metadata + hashes</option><option value="full">Full request + response</option><option value="off">Off</option></select><small>Full audit includes paper text. Choose source-text retention separately below.</small></label>
+        <label className="field"><span>Source text retention</span><select value={input.sourceTextRetention} onChange={(event) => setInput((current) => ({ ...current, sourceTextRetention: event.target.value }))}><option value="keep">Keep source text for traceability</option><option value="delete_after_review">Delete after final report</option></select><small>Deleting source text keeps selected spans in JSON, but their offsets cannot be checked against the original local text later.</small></label>
+        <fieldset className="field rw-source-field"><legend>Search sources</legend><div className="rw-source-options">{([['semantic_scholar', 'Semantic Scholar'], ['openalex', 'OpenAlex'], ['arxiv', 'arXiv'], ['openreview', 'OpenReview'], ['crossref', 'Crossref'], ['core', 'CORE']] as const).map(([source, name]) => <label key={source}><input type="checkbox" checked={input.sources.includes(source)} onChange={(event) => setInput((current) => ({ ...current, sources: event.target.checked ? [...current.sources, source] : current.sources.filter((value) => value !== source) }))} /><span>{name}</span></label>)}</div></fieldset>
+        <label className="field rw-citation-field"><span className="rw-checkbox-line"><input type="checkbox" checked={input.citationSnowballing} onChange={(event) => setInput((current) => ({ ...current, citationSnowballing: event.target.checked }))} /> Expand backward and forward citations</span><small>One bounded hop from up to five seed papers. New records enter screening and evidence analysis.</small></label>
         <label className="field rw-project-field"><span>Project</span><input required maxLength={100} list="rw-project-names" value={project} onChange={(event) => setProject(event.target.value)} placeholder="Choose or enter a project" /><datalist id="rw-project-names">{projects.map((name) => <option value={name} key={name} />)}</datalist><small>Use an existing project name or type a new one.</small></label>
         <label className="field"><span>Maximum results per query</span><input type="number" min="1" max="100" value={input.maxResults} onChange={(event) => setInput((current) => ({ ...current, maxResults: Number(event.target.value) }))} /></label>
         {formMode !== "edit" && <label className="field"><span>Chế độ phân loại bài báo</span><select value={jevEnabled ? "jev" : "gemini"} onChange={(event) => setJevEnabled(event.target.value === "jev")}><option value="gemini">Gemini (mặc định)</option><option value="jev" disabled={!environment?.jevKeyAvailable}>Jev AI — toàn bộ bài báo</option></select><small>{environment?.jevKeyAvailable ? "Jev phân loại core/background/exclude; Gemini vẫn phân tích bằng chứng." : "Cấu hình Jev AI key trong Settings để bật chế độ này."}</small></label>}

@@ -1,4 +1,3 @@
-import React from "react";
 import { createRoot } from "react-dom/client";
 import { ReviewApp } from "./review-app";
 import "./styles/research-app.css";
@@ -14,4 +13,4 @@ import "./styles/open-surfaces.css";
 import "./styles/motion.css";
 import "./styles/reference-graph.css";
 
-createRoot(document.getElementById("root")!).render(<React.StrictMode><ReviewApp /></React.StrictMode>);
+createRoot(document.getElementById("root")!).render(<ReviewApp />);

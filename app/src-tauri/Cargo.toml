@@ -1,6 +1,6 @@
 [package]
 name = "axorbis-desktop"
-version = "0.1.0"
+version = "0.3.52"
 description = "Desktop literature review workspace powered by SynthScholar"
 authors = ["Axorbis contributors"]
 edition = "2021"
