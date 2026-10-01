@@ -1,17 +1,225 @@
 import sys
 import unittest
 import tempfile
+import subprocess
 import json
 import re
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).parent))
-from cs_engine import SCREEN_RESPONSE_FORMAT, OpenReviewProvider, build_outputs, concepts_from_input, evidence_candidates, jev_screen_articles, llm_refine_studies, llm_screen_articles, search_strategy, run
-from review_runner import GeminiKeyRouter, JevClassifier, author_names, build_citation_metadata, crossref_references
+from cs_engine import SCREEN_RESPONSE_FORMAT, OpenReviewProvider, build_outputs, concepts_from_input, evidence_candidates, jev_screen_articles, llm_refine_studies, llm_screen_articles, report, search_strategy, run
+from review_runner import GeminiKeyRouter, JevClassifier, author_names, build_citation_metadata, crossref_references, openreview_metadata, openalex_references, semantic_scholar_references
 
 
 class IntelligenceTests(unittest.TestCase):
+    def test_general_protocol_screening_uses_question_not_temporal_kg(self):
+        article = {"id": "A-1", "title": "Compiler optimization", "abstract": "A compiler optimization study", "year": "2024"}
+        concepts = concepts_from_input({"title": "Compiler optimization", "screening_template": "general",
+                                        "inclusion_criteria": "Compiler studies"})
+        rows = llm_screen_articles([article], concepts, lambda prompt: {
+            "studies": [{"article_id": "A-1", "topic_relevance_score": 100}]})
+        self.assertEqual(rows[0]["scope"], "core")
+        self.assertEqual(rows[0]["criteria"][0]["criterion"], "topic_relevance")
+
+    def test_general_synthesis_avoids_temporal_kg_dimensions(self):
+        article = {"id": "A-1", "title": "Compiler optimization", "year": "2024", "venue": "V", "source": "arxiv",
+                   "doi": "", "source_url": "", "screening_decision": "include", "scope": "core", "text_status": "abstract_only"}
+        result = build_outputs([article], [{"article_id": "A-1", "decision": "include", "scope": "core"}], [],
+                               {}, [], 0, "2026", {"screening_template": "general"})
+        self.assertIn("method", result["evidence_matrix"][0]["dimensions"])
+        self.assertNotIn("unseen_entity", result["evidence_matrix"][0]["dimensions"])
+
+    def test_custom_extraction_dimension_enters_general_matrix(self):
+        concepts = concepts_from_input({"title": "Compiler optimization", "screening_template": "general",
+                                        "extraction_dimensions": "Deployment cost"})
+        article = {"id": "A-1", "title": "Compiler optimization", "year": "2024", "venue": "V", "source": "arxiv",
+                   "doi": "", "source_url": "", "screening_decision": "include", "scope": "core", "text_status": "abstract_only"}
+        candidate = {"id": "E-1", "article_id": "A-1", "exact_text": "This compiler optimization method reduces deployment cost while preserving accuracy on a public benchmark.",
+                     "text": "This compiler optimization method reduces deployment cost while preserving accuracy on a public benchmark.",
+                     "source_level": "abstract", "grounded": True}
+        spans = llm_refine_studies([article], [candidate], concepts,
+            lambda _: {"evidence": [{"id": "E-1", "type": "result", "dimensions": ["deployment_cost"], "claim_worthy": True}]},
+            preserve_scope=True)
+        result = build_outputs([article], [], spans, {}, [], 0, "2026", concepts)
+        self.assertEqual(result["evidence_matrix"][0]["dimensions"]["deployment_cost"]["value"], "YES")
+
+    def test_malformed_screening_is_unresolved_after_batch_split(self):
+        articles = [{"id": "A-1", "title": "One", "abstract": "One"},
+                    {"id": "A-2", "title": "Two", "abstract": "Two"}]
+        calls = []
+        def assist(prompt):
+            calls.append(prompt)
+            if '"article_id": "A-1"' in prompt and '"article_id": "A-2"' not in prompt:
+                return {"studies": [{"article_id": "A-1", "topic_relevance_score": 100}]}
+            return {"invalid": True}
+        rows = llm_screen_articles(articles, {"topic": "One", "screening_template": "general"}, assist)
+        self.assertEqual([row["scope"] for row in rows], ["core", "background"])
+        self.assertIn("unresolved", rows[1]["reason"])
+        self.assertGreaterEqual(len(calls), 4)
+
+    def test_evidence_candidates_cover_late_source_passages_with_context(self):
+        source = "\n".join(f"This study reports a complete evaluated observation number {index} using a clear method and benchmark."
+                           for index in range(75))
+        candidates = evidence_candidates("A-1", source)
+        self.assertEqual(len(candidates), 75)
+        self.assertIn("number 74", candidates[-1]["exact_text"])
+        self.assertEqual(source[candidates[-1]["start_position"]:candidates[-1]["end_position"]], candidates[-1]["exact_text"])
+        self.assertIn("number 73", candidates[-1]["context_before"])
+
+    def test_adjudication_rebuilds_strict_corpus_without_new_model_call(self):
+        article = {"id": "A-1", "title": "Uncertain study", "year": "2024", "venue": "V", "source": "arxiv",
+                   "doi": "", "source_url": "", "screening_decision": "manual_review", "scope": "background",
+                   "text_status": "abstract_only", "authors": "Author"}
+        span = {"id": "E-1", "article_id": "A-1", "exact_text": "This study evaluates a complete compiler optimization method on a public benchmark with explicit measured results.",
+                "text": "This study evaluates a complete compiler optimization method on a public benchmark with explicit measured results.",
+                "source_level": "abstract", "evidence_type": "method", "grounded": True, "confidence": "medium",
+                "claim_worthy": True}
+        protocol = {"title": "Compiler optimization", "screening_template": "general"}
+        original = build_outputs([article], [{"article_id": "A-1", "scope": "background", "decision": "manual_review"}],
+                                 [span], {}, [], 0, "2026", concepts_from_input(protocol))
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            (folder / "protocol.json").write_text(json.dumps(protocol), encoding="utf-8")
+            (folder / "review.json").write_text(json.dumps(original), encoding="utf-8")
+            (folder / "status.json").write_text(json.dumps({"id": "test", "state": "mapping_complete"}), encoding="utf-8")
+            result = subprocess.run([sys.executable, str(Path(__file__).parent / "review_runner.py"), "--adjudicate", str(folder)],
+                                    input=json.dumps({"articleId": "A-1", "decision": "include"}), text=True,
+                                    capture_output=True, check=False)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            rebuilt = json.loads((folder / "review.json").read_text(encoding="utf-8"))
+            self.assertEqual(rebuilt["articles"][0]["scope"], "core")
+            self.assertEqual(len(rebuilt["study_profiles"]), 1)
+            self.assertEqual(rebuilt["adjudication_history"][0]["decision"], "include")
+
+    def test_search_failure_and_unresolved_screening_are_visible_in_quality(self):
+        core = {"id": "A-1", "title": "A", "year": "2024", "venue": "V", "source": "arxiv", "doi": "",
+                "source_url": "", "screening_decision": "include", "scope": "core", "text_status": "abstract_only"}
+        uncertain = {**core, "id": "A-2", "title": "B", "screening_decision": "manual_review", "scope": "background"}
+        result = build_outputs([core, uncertain], [], [], {}, [
+            {"provider": "arxiv", "query": "q1", "records": 2, "error": ""},
+            {"provider": "openalex", "query": "q2", "records": 0, "error": "TimeoutError"}], 1, "2026")
+        self.assertEqual(result["review_quality"]["search_completeness"], "degraded")
+        self.assertEqual(result["review_quality"]["screening_completeness"], "needs_adjudication")
+        self.assertEqual(result["screening_sensitivity"]["expanded_corpus_ids"], ["A-1", "A-2"])
+
+    def test_identical_protocol_reuses_completed_search_queries(self):
+        from synthscholar.clients import Publication
+        publication = Publication(source="arxiv", title="Compiler optimization", abstract="A study of compiler optimization.",
+                                  authors=["Author"], year=2024, doi="10.1000/compiler", url="https://example.test/paper")
+        provider = Mock(search=Mock(return_value=[publication]))
+        fetcher = Mock(providers={"arxiv": provider})
+        resolver = Mock(resolve=Mock(return_value="This compiler study evaluates a complete optimization method on a public benchmark dataset."))
+        protocol = {"title": "Compiler optimization", "screening_template": "general", "sources": ["arxiv"]}
+        model_calls = []
+        def model(prompt):
+            model_calls.append(prompt)
+            if "Return JSON with core_concepts" in prompt:
+                return {"core_concepts": ["compiler optimization"], "related_concepts": []}
+            if "topic_relevance_score" in prompt:
+                return {"studies": [{"article_id": "A-1", "topic_relevance_score": 100}]}
+            if "Return JSON with evidence" in prompt:
+                evidence_ids = re.findall(r'"id": "(E-[^"]+)"', prompt)
+                return {"evidence": [{"id": evidence_ids[0], "type": "method", "dimensions": [],
+                                      "claim_worthy": True}]} if evidence_ids else {"evidence": []}
+            return {"evidence": []}
+        with tempfile.TemporaryDirectory() as temporary:
+            first, second, third = (Path(temporary) / name for name in ("first", "second", "third"))
+            first.mkdir(); second.mkdir(); third.mkdir()
+            (first / "protocol.json").write_text(json.dumps(protocol), encoding="utf-8")
+            run(protocol, 2, first, lambda *_: None, fetcher=fetcher, resolver=resolver,
+                abstract_enricher=lambda _: {}, model_assist=model)
+            searched = provider.search.call_count
+            resolved = resolver.resolve.call_count
+            called = len(model_calls)
+            self.assertGreater(searched, 0)
+            run(protocol, 2, second, lambda *_: None, fetcher=fetcher, resolver=resolver,
+                abstract_enricher=lambda _: {}, model_assist=model, resume_from=first)
+            self.assertEqual(provider.search.call_count, searched)
+            self.assertEqual(resolver.resolve.call_count, resolved)
+            self.assertEqual(len(model_calls), called)
+            self.assertTrue((second / "search-checkpoint.json").is_file())
+            (first / "runtime-manifest.json").write_text(json.dumps({"engineSha256": "older-engine"}), encoding="utf-8")
+            run(protocol, 2, third, lambda *_: None, fetcher=fetcher, resolver=resolver,
+                abstract_enricher=lambda _: {}, model_assist=model, resume_from=first)
+            self.assertEqual(provider.search.call_count, searched)
+            self.assertGreater(len(model_calls), called)
+
+    def test_citation_expansion_enters_screened_corpus(self):
+        from synthscholar.clients import Publication
+        seed = Publication(source="arxiv", title="Compiler optimization", abstract="A compiler study.",
+                           year=2024, doi="10.1000/seed")
+        cited = Publication(source="citation_snowballing", title="Earlier compiler study",
+                            abstract="An earlier compiler study.", year=2023, doi="10.1000/cited")
+        provider = Mock(search=Mock(return_value=[seed]))
+        fetcher = Mock(providers={"arxiv": provider})
+        resolver = Mock(resolve=Mock(return_value=""))
+        def model(prompt):
+            if "Return JSON with core_concepts" in prompt:
+                return {"core_concepts": ["compiler optimization"]}
+            if "topic_relevance_score" in prompt:
+                ids = re.findall(r'"article_id": "(A-\d+)"', prompt)
+                return {"studies": [{"article_id": article_id, "topic_relevance_score": 100} for article_id in ids]}
+            return {"evidence": []}
+        with tempfile.TemporaryDirectory() as temporary:
+            result = run({"title": "Compiler optimization", "screening_template": "general",
+                          "sources": ["arxiv"], "citation_snowballing": True}, 2, Path(temporary),
+                         lambda *_: None, fetcher=fetcher, resolver=resolver, abstract_enricher=lambda _: {},
+                         model_assist=model, citation_fetcher=lambda *_: ([('backward', cited)], {"status": "complete"}))
+        self.assertEqual(len(result["articles"]), 2)
+        self.assertEqual(result["articles"][1]["screening_decision"], "include")
+        self.assertEqual(result["citation_expansion_history"][0]["new_article_ids"], ["A-2"])
+
+    def test_source_retention_can_delete_full_text_after_report(self):
+        from synthscholar.clients import Publication
+        publication = Publication(source="arxiv", title="Compiler optimization", abstract="A compiler study.",
+                                  year=2024, doi="10.1000/retention")
+        fetcher = Mock(providers={"arxiv": Mock(search=Mock(return_value=[publication]))})
+        resolver = Mock(resolve=Mock(return_value="This compiler study evaluates a complete optimization method on a public benchmark dataset."))
+        def model(prompt):
+            if "Return JSON with core_concepts" in prompt:
+                return {"core_concepts": ["compiler optimization"]}
+            if "topic_relevance_score" in prompt:
+                return {"studies": [{"article_id": "A-1", "topic_relevance_score": 100}]}
+            return {"evidence": []}
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            result = run({"title": "Compiler optimization", "screening_template": "general", "sources": ["arxiv"],
+                          "source_text_retention": "delete_after_review"}, 2, folder, lambda *_: None,
+                         fetcher=fetcher, resolver=resolver, abstract_enricher=lambda _: {}, model_assist=model)
+            self.assertFalse((folder / "source-text").exists())
+            self.assertEqual(result["review_quality"]["source_text_retention"], "deleted_after_review")
+            self.assertEqual(result["articles"][0]["source_text_file"], "")
+
+    def test_gemini_router_enforces_per_key_interval(self):
+        import httpx
+        import time
+        router = GeminiKeyRouter(["secret"], interval_seconds=5,
+                                 transport=httpx.MockTransport(lambda _: httpx.Response(200, json={"choices": [{"message": {"content": "{}"}}]})))
+        try:
+            router.last_request_at[0] = time.monotonic()
+            with patch("review_runner.time.sleep") as sleeper:
+                router.complete("topic", "model")
+            self.assertGreater(sleeper.call_args.args[0], 4.9)
+        finally:
+            router.close()
+
+    def test_redacted_audit_keeps_hashes_without_paper_text(self):
+        import httpx
+        with tempfile.TemporaryDirectory() as temporary:
+            log = Path(temporary) / "gemini-calls.jsonl"
+            router = GeminiKeyRouter(["secret"], interval_seconds=0, audit_path=log, audit_mode="redacted",
+                transport=httpx.MockTransport(lambda _: httpx.Response(200, json={"choices": [{"message": {"content": "{}"}}]})))
+            try:
+                router.complete("confidential paper passage", "model")
+            finally:
+                router.close()
+            entry = json.loads(log.read_text(encoding="utf-8"))
+            self.assertIn("requestBodySha256", entry)
+            self.assertNotIn("request", entry)
+            self.assertNotIn("responseBody", entry)
+            self.assertNotIn("confidential paper passage", str(entry))
+
     def test_jev_classifies_every_paper_and_keeps_unknown_in_background(self):
         import httpx
         observed = []
@@ -49,6 +257,66 @@ class IntelligenceTests(unittest.TestCase):
         self.assertEqual(article["scope"], "background")
         self.assertEqual(article["llm_scope_assessment"]["inductive_generalization"], "UNKNOWN")
 
+    def test_malformed_evidence_rows_do_not_abort_review(self):
+        article = {"id": "A-1", "title": "A", "scope": "core", "screening_decision": "include"}
+        candidate = {"id": "E-1", "article_id": "A-1", "exact_text": "A complete grounded result sentence.",
+                     "text": "A complete grounded result sentence.", "source_level": "abstract"}
+        response = {"evidence": [
+            {"id": "E-1", "type": ["result"], "dimensions": []},
+            {"id": ["E-1"], "type": "result", "dimensions": []},
+            {"id": "E-1", "type": "result", "dimensions": [["unseen_entity"], "unseen_entity"], "claim_worthy": True},
+        ]}
+        spans = llm_refine_studies([article], [candidate], {"topic": "Inductive TKG"},
+                                   lambda _: response, preserve_scope=True)
+        self.assertEqual(len(spans), 1)
+        self.assertEqual(spans[0]["llm_dimensions"], ["unseen_entity"])
+
+    def test_gemini_evidence_analysis_runs_four_studies_in_parallel(self):
+        from threading import Barrier
+
+        started = Barrier(4)
+        articles = [{"id": f"A-{index}", "title": f"Paper {index}", "scope": "core"}
+                    for index in range(1, 5)]
+        candidates = [{"id": f"E-{index}", "article_id": f"A-{index}",
+                       "exact_text": f"This complete evidence sentence describes the evaluated method for paper {index} with sufficient grounded detail.",
+                       "text": f"Evidence {index}", "source_level": "full_text"}
+                      for index in range(1, 5)]
+
+        def assist(prompt):
+            started.wait(timeout=3)
+            evidence_id = re.search(r'"id": "(E-\d+)"', prompt).group(1)
+            return {"evidence": [{"id": evidence_id, "type": "task", "dimensions": [], "claim_worthy": True}],
+                    "task": "evaluation", "method_family": "transformer", "main_contribution": "result"}
+
+        selected = llm_refine_studies(articles, candidates, {"topic": "Parallel evidence"}, assist,
+                                      preserve_scope=True, max_workers=4)
+
+        self.assertEqual([row["id"] for row in selected], ["E-1", "E-2", "E-3", "E-4"])
+
+    def test_gemini_assigns_one_concurrent_agent_per_key(self):
+        import httpx
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier
+
+        started = Barrier(2)
+        observed = []
+
+        def respond(request):
+            observed.append(request.headers["Authorization"])
+            started.wait(timeout=3)
+            return httpx.Response(200, json={"choices": [{"message": {"content": '{}'}}]})
+
+        router = GeminiKeyRouter(["secret-one", "secret-two"], interval_seconds=0,
+                                 transport=httpx.MockTransport(respond))
+        try:
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                results = list(executor.map(lambda _: router.complete("topic", "test-model"), range(2)))
+        finally:
+            router.close()
+
+        self.assertEqual(results, [{}, {}])
+        self.assertEqual(set(observed), {"Bearer secret-one", "Bearer secret-two"})
+
     def test_gemini_key_rotation_and_reported_tokens(self):
         import httpx
         observed = []
@@ -69,6 +337,43 @@ class IntelligenceTests(unittest.TestCase):
         self.assertEqual([(row["requests"], row["tokens"], row["active"]) for row in snapshots[-1][0]],
                          [(1, 15, False), (1, 15, False)])
         self.assertNotIn("secret-one", str(snapshots))
+
+    def test_gemini_retries_read_timeout_and_succeeds(self):
+        import httpx
+        requests = []
+        def respond(request):
+            requests.append(request)
+            if len(requests) < 3:
+                raise httpx.ReadTimeout("The read operation timed out", request=request)
+            return httpx.Response(200, json={"choices": [{"message": {"content": '{"studies":[]}'}}]})
+        router = GeminiKeyRouter(["secret-key"], interval_seconds=0, transport=httpx.MockTransport(respond))
+        try:
+            with patch("review_runner.time.sleep"):
+                self.assertEqual(router.complete("Score papers", "test-model"), {"studies": []})
+        finally:
+            router.close()
+        self.assertEqual(len(requests), 3)
+        self.assertEqual(router.usage["requests"], 3)
+
+    def test_jev_retries_read_timeout_and_succeeds(self):
+        import httpx
+        requests = []
+        def respond(request):
+            requests.append(request)
+            if len(requests) == 1:
+                raise httpx.ReadTimeout("The read operation timed out", request=request)
+            return httpx.Response(200, json={"answers": {
+                "temporal_kg": {"choice": "YES"},
+                "inductive_generalization": {"choice": "UNKNOWN"},
+                "relevant_task": {"choice": "YES"}}})
+        classifier = JevClassifier("test-key", transport=httpx.MockTransport(respond))
+        try:
+            with patch("review_runner.time.sleep"):
+                result = classifier.classify({"title": "A", "abstract": "B"}, "Topic")
+        finally:
+            classifier.close()
+        self.assertEqual(result["temporal_kg"], "YES")
+        self.assertEqual(len(requests), 2)
 
     def test_gemini_screening_schema_and_full_io_audit_survive_bad_json(self):
         import httpx
@@ -220,6 +525,37 @@ class IntelligenceTests(unittest.TestCase):
         self.assertEqual(output["atomic_claims"], [])
         self.assertEqual(output["research_gaps"], [])
 
+    def test_direction_coverage_is_topic_relative_even_for_one_study(self):
+        article = {"id": "A-1", "title": "Emerging direction", "year": "2025", "venue": "V", "source": "arxiv",
+                   "doi": "", "source_url": "", "screening_decision": "include", "scope": "core", "text_status": "full_text"}
+        span = {"id": "E-1", "article_id": "A-1",
+                "exact_text": "We evaluate inductive temporal knowledge graph completion for unseen entities using a public benchmark dataset.",
+                "text": "We evaluate inductive temporal knowledge graph completion for unseen entities using a public benchmark dataset.",
+                "section": "full_text", "source_level": "full_text", "evidence_type": "task", "grounded": True, "confidence": "high"}
+        output = build_outputs([article], [{"article_id": "A-1", "decision": "include", "scope": "core"}], [span], {}, [], 0, "2026")
+        direction = next(row for row in output["research_directions"] if row["dimension"] == "unseen_entity")
+        self.assertEqual(direction["identified_study_count"], 1)
+        self.assertEqual(direction["deep_reviewed_study_count"], 1)
+        self.assertEqual(direction["coverage"], 1.0)
+        self.assertIn(direction["maturity"], ("emerging", "sparse"))
+        self.assertTrue(output["quality_gate"]["deep_evidence_sufficient"])
+
+    def test_report_separates_sparse_areas_candidates_and_verified_gaps(self):
+        article = {"id": "A-1", "title": "One supported study", "year": "2025", "venue": "V", "source": "arxiv",
+                   "doi": "", "source_url": "", "screening_decision": "include", "scope": "core", "text_status": "full_text"}
+        span = {"id": "E-1", "article_id": "A-1",
+                "exact_text": "We propose an inductive temporal knowledge graph method for unseen entities and evaluate it on a public benchmark.",
+                "text": "We propose an inductive temporal knowledge graph method for unseen entities and evaluate it on a public benchmark.",
+                "section": "full_text", "source_level": "full_text", "evidence_type": "method", "grounded": True, "confidence": "high"}
+        output = build_outputs([article], [{"article_id": "A-1", "decision": "include", "scope": "core"}], [span], {}, [], 0, "2026")
+        markdown = report(output)
+        for heading in ("## Literature Landscape", "## Research Directions", "## Cross-paper Findings",
+                        "## Emerging / Sparse Areas", "## Underexplored Intersections",
+                        "## Candidate Research Gaps", "## Counter-search findings"):
+            self.assertIn(heading, markdown)
+        self.assertIn("[single-study observation]", markdown)
+        self.assertIn("No candidate had a completed counter-search", markdown)
+
     def test_end_to_end_exports_only_grounded_claims(self):
         from synthscholar.clients import Publication
         from synthscholar.models import Article
@@ -285,35 +621,228 @@ class IntelligenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             data = run({"title": "temporal knowledge graph", "related_concepts": "zero-shot"}, 3, Path(temporary), lambda *_: None, fetcher=fetcher, resolver=resolver, model_assist=model)
             gap = data["research_gaps"][0]
-            self.assertEqual(gap["verification_status"], "verified")
+            self.assertEqual(gap["verification_status"], "no_counterevidence_found")
+            self.assertEqual(gap["status"], "no_counterevidence_found")
             self.assertIn("UNKNOWN", gap["statement"])
             self.assertGreaterEqual(len(gap["supporting_claim_ids"]), 1)
             self.assertEqual(len(gap["counter_queries"]), 3)
             self.assertTrue(all(row["query_kind"] == "gap_counter_search" for row in gap["counter_queries"]))
+            self.assertEqual(len({row["alternative_term"] for row in gap["counter_queries"]}), 3)
+            self.assertEqual(data["bounded_gap_findings"][0]["id"], gap["id"])
 
-    def test_crossref_graph_metadata_uses_doi_references(self):
+    def test_crossref_graph_metadata_keeps_and_deduplicates_references(self):
         import httpx
         requested = []
         def respond(request):
             requested.append(str(request.url))
             return httpx.Response(200, json={"message": {"reference": [
                 {"DOI": "https://doi.org/10.1000/SHARED", "article-title": "Shared paper"},
-                {"unstructured": "No DOI"},
+                {"DOI": "10.1000/shared", "article-title": "Shared paper", "author": "Nguyen T", "year": "2022", "journal-title": "Journal of Examples"},
+                {"article-title": "Another paper"},
+                {"unstructured": "Another paper"},
+                {"unstructured": "A cited work. doi:10.1000/UNSTRUCTURED."},
             ]}})
         references, complete = crossref_references("10.1000/example", transport=httpx.MockTransport(respond))
         self.assertTrue(complete)
-        self.assertEqual(references, [{"doi": "10.1000/shared", "title": "Shared paper"}])
+        self.assertEqual(references, [
+            {"doi": "10.1000/shared", "title": "Shared paper", "authors": "Nguyen T", "year": "2022", "journal": "Journal of Examples"},
+            {"doi": "", "title": "Another paper", "authors": "", "year": "", "journal": ""},
+            {"doi": "10.1000/unstructured", "title": "A cited work. doi:10.1000/UNSTRUCTURED.", "authors": "", "year": "", "journal": ""},
+        ])
         self.assertEqual(requested, ["https://api.crossref.org/works/10.1000%2Fexample"])
         looked_up = []
-        def fetch(doi, email):
+        def fetch(doi, email, title=""):
             looked_up.append(doi)
             return [{"doi": "10.1000/shared"}], True
         metadata = build_citation_metadata([
             {"doi": "10.1000/EXAMPLE"}, {"doi": "https://doi.org/10.1000/example"},
             {"doi": ""}, {"doi": "10.1000/other"},
-        ], fetcher=fetch)
+        ], fetcher=fetch, metadata_fetcher=lambda _title, _url: {}, reference_fetcher=lambda *_: ([], "not_found"),
+           openalex_fetcher=lambda *_: ([], "not_found"))
         self.assertEqual(set(looked_up), {"10.1000/example", "10.1000/other"})
         self.assertEqual(metadata["queried"], 2)
+        self.assertEqual(metadata["failed"], 0)
+
+    def test_crossref_graph_matches_title_when_doi_is_missing(self):
+        import httpx
+        def respond(request):
+            self.assertEqual(request.url.path, "/works")
+            return httpx.Response(200, json={"message": {"items": [
+                {"title": ["Different paper"], "reference": [{"DOI": "10.1000/wrong"}]},
+                {"title": ["Paper Without DOI"], "reference": [{"article-title": "Cited work"}]},
+            ]}})
+        references, complete = crossref_references("", title="Paper Without DOI", transport=httpx.MockTransport(respond))
+        self.assertTrue(complete)
+        self.assertEqual(references, [{"doi": "", "title": "Cited work", "authors": "", "year": "", "journal": ""}])
+        unmatched, complete = crossref_references("", title="Unrelated topic", transport=httpx.MockTransport(respond))
+        self.assertTrue(complete)
+        self.assertEqual(unmatched, [])
+        lookups = []
+        def fetch(doi, email, title=""):
+            lookups.append((doi, title))
+            return references, True
+        metadata = build_citation_metadata([
+            {"title": "Paper Without DOI"}, {"title": "Paper Without DOI"},
+            {"doi": "10.1000/known", "title": "Known work"},
+        ], fetcher=fetch, metadata_fetcher=lambda _title, _url: {}, reference_fetcher=lambda *_: ([], "not_found"),
+           openalex_fetcher=lambda *_: ([], "not_found"))
+        self.assertEqual(set(lookups), {("", "Paper Without DOI"), ("10.1000/known", "Known work")})
+        self.assertEqual(metadata["queried"], 2)
+        self.assertEqual(metadata["papers"][0]["title"], "Paper Without DOI")
+
+    def test_crossref_graph_retries_by_title_when_doi_is_not_in_crossref(self):
+        import httpx
+        requested = []
+        def respond(request):
+            requested.append(request.url.path)
+            if request.url.path.startswith("/works/"):
+                return httpx.Response(404)
+            return httpx.Response(200, json={"message": {"items": [
+                {"title": ["OpenReview paper"], "reference": [{"DOI": "10.1000/cited"}]},
+            ]}})
+        references, complete = crossref_references("10.1000/not-crossref", title="OpenReview paper", transport=httpx.MockTransport(respond))
+        self.assertTrue(complete)
+        self.assertEqual(requested, ["/works/10.1000/not-crossref", "/works"])
+        self.assertEqual(references[0]["doi"], "10.1000/cited")
+
+    def test_openreview_graph_enriches_only_exact_public_note(self):
+        import httpx
+        observed = []
+        def respond(request):
+            observed.append((request.url.path, dict(request.url.params)))
+            return httpx.Response(200, json={"notes": [
+                {"id": "other", "content": {"title": {"value": "Another paper"}}},
+                {"id": "note-123", "pdate": 1735689600000, "content": {
+                    "title": {"value": "OpenReview paper"}, "authors": {"value": ["Ada Lovelace"]},
+                    "abstract": {"value": "Abstract text"}, "venue": {"value": "ICLR"},
+                    "pdf": {"value": "/pdf/note-123.pdf"}}},
+            ]})
+        transport = httpx.MockTransport(respond)
+        found = openreview_metadata("OpenReview paper", transport=transport)
+        self.assertEqual(found["authors"], "Ada Lovelace")
+        self.assertEqual(found["year"], "2025")
+        self.assertEqual(found["pdf_url"], "https://openreview.net/pdf/note-123.pdf")
+        self.assertEqual(observed[0][0], "/notes/search")
+        by_id = openreview_metadata("Old title", "https://openreview.net/forum?id=note-123", transport=transport)
+        self.assertEqual(by_id["url"], "https://openreview.net/forum?id=note-123")
+        self.assertEqual(observed[1][0], "/notes")
+        self.assertEqual(openreview_metadata("Unrelated title", transport=transport), {})
+
+        metadata = build_citation_metadata([{"doi": "10.1000/example", "title": "OpenReview paper",
+                                            "source_url": "https://openreview.net/forum?id=note-123"}],
+                                           fetcher=lambda _doi, _email, title="": ([], True),
+                                           metadata_fetcher=lambda title, url: openreview_metadata(title, url, transport=transport),
+                                           reference_fetcher=lambda *_: ([], "not_found"),
+                                           openalex_fetcher=lambda *_: ([], "not_found"))
+        self.assertEqual(metadata["version"], 9)
+        self.assertEqual(metadata["papers"][0]["openreview"]["abstract"], "Abstract text")
+
+    def test_semantic_scholar_fills_missing_crossref_references_with_all_pages(self):
+        import httpx
+        requests = []
+        def respond(request):
+            requests.append((request.url.path, dict(request.url.params)))
+            if request.url.path.endswith("/references"):
+                offset = int(request.url.params.get("offset", "0"))
+                item = {"citedPaper": {"title": "Shared cited paper" if offset == 0 else "Second cited paper",
+                                        "year": 2024, "authors": [{"name": "Ada Lovelace"}],
+                                        "externalIds": {"DOI": "10.1000/shared" if offset == 0 else "10.1000/second"}}}
+                return httpx.Response(200, json={"data": [item], "next": 1 if offset == 0 else None})
+            return httpx.Response(404)
+        refs, status = semantic_scholar_references("10.1000/source", title="Source paper", transport=httpx.MockTransport(respond))
+        self.assertEqual(status, "found")
+        self.assertEqual([ref["doi"] for ref in refs], ["10.1000/shared", "10.1000/second"])
+        self.assertEqual(refs[0]["authors"], "Ada Lovelace")
+        self.assertEqual([params.get("offset") for path, params in requests if path.endswith("/references")], ["0", "1"])
+
+        metadata = build_citation_metadata([{"doi": "10.1000/source", "title": "Source paper"}],
+                                           fetcher=lambda _doi, _email, title="": ([], True),
+                                           metadata_fetcher=lambda _title, _url: {},
+                                           reference_fetcher=lambda *_: (refs, "found"),
+                                           openalex_fetcher=lambda *_: ([], "not_found"))
+        self.assertEqual(metadata["papers"][0]["lookup_status"], "found")
+        self.assertEqual(metadata["papers"][0]["semantic_scholar_count"], 2)
+
+    def test_semantic_scholar_rejects_nonexact_title_match(self):
+        import httpx
+        def respond(request):
+            if request.url.path == "/graph/v1/paper/search/match":
+                return httpx.Response(200, json={"data": [{"paperId": "wrong", "title": "Another paper"}]})
+            self.fail("A non-exact title must not fetch references")
+        refs, status = semantic_scholar_references(title="Target paper", transport=httpx.MockTransport(respond))
+        self.assertEqual((refs, status), ([], "not_found"))
+
+    def test_openalex_fills_missing_references_and_preserves_cited_ids(self):
+        import httpx
+        paths = []
+        def respond(request):
+            paths.append(request.url.path)
+            if request.url.path.startswith("/works/"):
+                return httpx.Response(200, json={"id": "https://openalex.org/W1", "title": "Source paper",
+                                                 "referenced_works": ["https://openalex.org/W2", "https://openalex.org/W3"]})
+            return httpx.Response(200, json={"results": [{"id": "https://openalex.org/W2", "title": "Cited paper",
+                                                         "doi": "https://doi.org/10.1000/cited", "publication_year": 2022,
+                                                         "authorships": [{"author": {"display_name": "Ada Lovelace"}}],
+                                                         "primary_location": {"source": {"display_name": "Test Journal"}}}]})
+        refs, status = openalex_references("10.1000/source", "Source paper", transport=httpx.MockTransport(respond))
+        self.assertEqual(status, "found")
+        self.assertEqual([ref["id"] for ref in refs], ["W2", "W3"])
+        self.assertEqual(refs[0]["authors"], "Ada Lovelace")
+        self.assertEqual(refs[0]["doi"], "10.1000/cited")
+        self.assertEqual(refs[1]["title"], "OpenAlex W3")
+        self.assertEqual(paths, ["/works/https://doi.org/10.1000/source", "/works"])
+
+        metadata = build_citation_metadata([{"doi": "10.1000/source", "title": "Source paper"}],
+                                           fetcher=lambda _doi, _email, title="": ([], True),
+                                           metadata_fetcher=lambda _title, _url: {},
+                                           openalex_fetcher=lambda *_: (refs, "found"),
+                                           reference_fetcher=lambda *_: self.fail("Semantic Scholar should not run when OpenAlex has references"))
+        self.assertEqual(metadata["papers"][0]["openalex_count"], 2)
+        self.assertEqual(metadata["failed"], 0)
+
+        union = build_citation_metadata([{"doi": "10.1000/source", "title": "Source paper"}],
+                                        fetcher=lambda _doi, _email, title="": ([{"doi": "10.1000/cited", "title": "Cited paper"}], True),
+                                        metadata_fetcher=lambda _title, _url: {},
+                                        openalex_fetcher=lambda *_: (refs, "found"),
+                                        reference_fetcher=lambda *_: self.fail("Semantic Scholar should not run when references exist"))
+        self.assertEqual(len(union["papers"][0]["references"]), 2)
+        self.assertEqual(union["papers"][0]["reference_source"], "Crossref + OpenAlex")
+
+    def test_graph_looks_up_every_paper_even_without_doi(self):
+        attempted = []
+        def openalex(doi, title, key):
+            attempted.append((doi, title))
+            return [], "not_found"
+        metadata = build_citation_metadata([
+            {"doi": "10.1000/one", "title": "Paper one"},
+            {"doi": "", "title": "Paper two"},
+            {"doi": "", "title": "", "arxiv_id": "2501.12345"},
+        ], fetcher=lambda _doi, _email, title="": ([], True),
+            metadata_fetcher=lambda _title, _url: {},
+            openalex_fetcher=openalex,
+            reference_fetcher=lambda *_: ([], "not_found"))
+        self.assertEqual(metadata["queried"], 3)
+        self.assertEqual(len(attempted), 3)
+        self.assertEqual([paper["lookup_status"] for paper in metadata["papers"]], ["no_refs_found"] * 3)
+
+    def test_graph_looks_up_papers_concurrently_and_preserves_order(self):
+        from threading import Barrier
+
+        started = Barrier(3)
+        def openalex(doi, _title, _key):
+            started.wait(timeout=3)
+            suffix = doi.rsplit("/", 1)[-1]
+            return [{"doi": f"10.2000/{suffix}", "title": f"Cited {suffix}"}], "found"
+
+        metadata = build_citation_metadata(
+            [{"doi": f"10.1000/{index}", "title": f"Paper {index}"} for index in range(3)],
+            fetcher=lambda _doi, _email, title="": ([], True),
+            metadata_fetcher=lambda _title, _url: {},
+            openalex_fetcher=openalex,
+            reference_fetcher=lambda *_: self.fail("Semantic Scholar should not run"),
+        )
+        self.assertEqual([paper["doi"] for paper in metadata["papers"]], [f"10.1000/{index}" for index in range(3)])
+        self.assertEqual([paper["references"][0]["doi"] for paper in metadata["papers"]], [f"10.2000/{index}" for index in range(3)])
         self.assertEqual(metadata["failed"], 0)
 
 

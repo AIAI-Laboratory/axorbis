@@ -17,6 +17,7 @@ use tauri_plugin_dialog::DialogExt;
 use std::os::unix::fs::OpenOptionsExt;
 
 static KEY_FILE_LOCK: Mutex<()> = Mutex::new(());
+static RUNTIME_SETUP_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Default)]
 struct ActiveReview {
@@ -69,14 +70,47 @@ pub struct ReviewInput {
     date_start: String,
     date_end: String,
     max_results: u32,
+    #[serde(default)]
+    language: String,
+    #[serde(default)]
+    publication_type: String,
+    #[serde(default)]
+    sources: Vec<String>,
+    #[serde(default)]
+    screening_template: String,
+    #[serde(default)]
+    audit_logging: String,
+    #[serde(default)]
+    citation_snowballing: bool,
+    #[serde(default)]
+    extraction_dimensions: String,
+    #[serde(default)]
+    synthesis_objective: String,
+    #[serde(default)]
+    source_text_retention: String,
+}
+
+fn user_home_dir() -> Option<PathBuf> {
+    #[cfg(windows)]
+    {
+        if let Some(profile) = env::var_os("USERPROFILE").filter(|value| !value.is_empty()) {
+            return Some(PathBuf::from(profile));
+        }
+        if let (Some(drive), Some(path)) = (env::var_os("HOMEDRIVE"), env::var_os("HOMEPATH")) {
+            let mut home = PathBuf::from(drive);
+            home.push(path);
+            return Some(home);
+        }
+    }
+    env::var_os("HOME")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
 }
 
 fn default_workspace() -> PathBuf {
     env::var_os("SYNTHSCHOLAR_WORKSPACE")
         .map(PathBuf::from)
-        .or_else(|| {
-            env::var_os("HOME").map(|home| PathBuf::from(home).join("SynthScholar Reviews"))
-        })
+        .or_else(|| user_home_dir().map(|home| home.join("SynthScholar Reviews")))
         .unwrap_or_else(|| PathBuf::from("SynthScholar Reviews"))
 }
 
@@ -105,10 +139,10 @@ fn axorbis_env_key(agent_dir: &Path, name: &str) -> Option<GoogleKeyEntry> {
 }
 
 fn axorbis_google_key_entries() -> Vec<GoogleKeyEntry> {
-    let Some(home) = env::var_os("HOME") else {
+    let Some(home) = user_home_dir() else {
         return Vec::new();
     };
-    let agent_dir = PathBuf::from(home).join(".axorbis/agent");
+    let agent_dir = home.join(".axorbis/agent");
     let path = agent_dir.join("models.json");
     let mut keys = Vec::new();
     if let Ok(bytes) = fs::read(path) {
@@ -175,12 +209,12 @@ fn axorbis_google_keys() -> Vec<String> {
 }
 
 fn openalex_api_key() -> Option<String> {
-    let agent_dir = PathBuf::from(env::var_os("HOME")?).join(".axorbis/agent");
+    let agent_dir = user_home_dir()?.join(".axorbis/agent");
     axorbis_env_key(&agent_dir, "OPENALEX_API_KEY").map(|entry| entry.value)
 }
 
 fn provider_api_key(name: &str) -> Option<String> {
-    let agent_dir = PathBuf::from(env::var_os("HOME")?).join(".axorbis/agent");
+    let agent_dir = user_home_dir()?.join(".axorbis/agent");
     axorbis_env_key(&agent_dir, name).map(|entry| entry.value)
 }
 
@@ -198,8 +232,8 @@ fn google_key_info() -> Vec<GoogleKeyInfo> {
 }
 
 fn agent_key_file() -> Result<PathBuf, String> {
-    let home = env::var_os("HOME").ok_or("Home folder is unavailable.")?;
-    Ok(PathBuf::from(home).join(".axorbis/agent/.env"))
+    let home = user_home_dir().ok_or("Home folder is unavailable.")?;
+    Ok(home.join(".axorbis/agent/.env"))
 }
 
 fn read_managed_key_file(path: &Path) -> Result<String, String> {
@@ -259,6 +293,24 @@ fn select_google_keys(configured: Vec<String>, selection: &str) -> Result<Vec<St
         .clone()])
 }
 
+fn managed_environment_dir() -> Option<PathBuf> {
+    user_home_dir().map(|home| home.join(".axorbis/runtime/.venv"))
+}
+
+fn install_environment_dir() -> Result<PathBuf, String> {
+    if cfg!(debug_assertions) {
+        return Ok(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.venv"));
+    }
+    managed_environment_dir().ok_or("Could not locate the user home directory.".into())
+}
+
+fn environment_python(environment: &Path) -> PathBuf {
+    #[cfg(windows)]
+    return environment.join("Scripts/python.exe");
+    #[cfg(not(windows))]
+    environment.join("bin/python")
+}
+
 fn python_program() -> PathBuf {
     if let Some(path) = env::var_os("SYNTHSCHOLAR_PYTHON") {
         return PathBuf::from(path);
@@ -272,11 +324,19 @@ fn python_program() -> PathBuf {
             return local;
         }
     }
+    if let Some(managed) = managed_environment_dir()
+        .map(|environment| environment_python(&environment))
+        .filter(|path| path.is_file())
+    {
+        return managed;
+    }
     PathBuf::from("python3")
 }
 
-fn runner_path(app: &AppHandle) -> Result<PathBuf, String> {
-    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../integration/review_runner.py");
+fn integration_path(app: &AppHandle, filename: &str) -> Result<PathBuf, String> {
+    let source = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../integration")
+        .join(filename);
     if cfg!(debug_assertions) && source.is_file() {
         return Ok(source);
     }
@@ -284,12 +344,176 @@ fn runner_path(app: &AppHandle) -> Result<PathBuf, String> {
         .path()
         .resource_dir()
         .map_err(|error| error.to_string())?
-        .join("integration/review_runner.py");
+        .join("integration")
+        .join(filename);
     if bundled.is_file() {
         Ok(bundled)
     } else {
-        Err("The SynthScholar runner is missing from this desktop build.".into())
+        Err(format!(
+            "The bundled integration file {filename} is missing."
+        ))
     }
+}
+
+fn runner_path(app: &AppHandle) -> Result<PathBuf, String> {
+    integration_path(app, "review_runner.py")
+}
+
+fn compatible_python(path: &Path) -> bool {
+    Command::new(path)
+        .args([
+            "-c",
+            "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)",
+        ])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok_and(|status| status.success())
+}
+
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+fn standalone_python_source() -> Option<(&'static str, &'static str)> {
+    Some((
+        "https://github.com/astral-sh/python-build-standalone/releases/download/20260924/cpython-3.11.16%2B20260924-aarch64-apple-darwin-install_only_stripped.tar.gz",
+        "e1d745b07b6acc0641dbb3237d3c5953deeeed182141bab2242684076fd86547",
+    ))
+}
+
+#[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+fn standalone_python_source() -> Option<(&'static str, &'static str)> {
+    Some((
+        "https://github.com/astral-sh/python-build-standalone/releases/download/20260924/cpython-3.11.16%2B20260924-x86_64-apple-darwin-install_only_stripped.tar.gz",
+        "47d7e9f51487ecc328eea0c83206ff2e49dbf7200ac27732e74b92c997995310",
+    ))
+}
+
+#[cfg(not(target_os = "macos"))]
+fn standalone_python_source() -> Option<(&'static str, &'static str)> {
+    None
+}
+
+fn install_standalone_python() -> Result<PathBuf, String> {
+    let (url, expected_digest) = standalone_python_source()
+        .ok_or("Python 3.11 or newer is required on this platform.".to_string())?;
+    let runtime = managed_environment_dir()
+        .and_then(|environment| environment.parent().map(Path::to_path_buf))
+        .ok_or("Could not locate the Axorbis runtime directory.".to_string())?;
+    fs::create_dir_all(&runtime)
+        .map_err(|error| format!("Could not create the Axorbis runtime directory: {error}"))?;
+    let python_home = runtime.join("python");
+    let python = python_home.join("bin/python3");
+    if compatible_python(&python) {
+        return Ok(python);
+    }
+    let unique = format!("{}-{}", std::process::id(), now_ms());
+    let archive = env::temp_dir().join(format!("axorbis-python-{unique}.tar.gz"));
+    let staging = runtime.join(format!("python-staging-{unique}"));
+    fs::create_dir(&staging)
+        .map_err(|error| format!("Could not prepare the Python runtime: {error}"))?;
+    let download = Command::new("curl")
+        .args([
+            "--fail",
+            "--location",
+            "--silent",
+            "--show-error",
+            "--output",
+        ])
+        .arg(&archive)
+        .arg(url)
+        .output()
+        .map_err(|error| format!("Could not start the Python runtime download: {error}"))?;
+    if !download.status.success() {
+        let _ = fs::remove_file(&archive);
+        let _ = fs::remove_dir_all(&staging);
+        return Err(format!(
+            "Could not download the managed Python runtime: {}",
+            String::from_utf8_lossy(&download.stderr).trim()
+        ));
+    }
+    let checksum = Command::new("shasum")
+        .args(["-a", "256"])
+        .arg(&archive)
+        .output()
+        .map_err(|error| format!("Could not verify the Python runtime: {error}"))?;
+    let actual_digest = String::from_utf8_lossy(&checksum.stdout)
+        .split_whitespace()
+        .next()
+        .unwrap_or_default()
+        .to_string();
+    if !checksum.status.success() || actual_digest != expected_digest {
+        let _ = fs::remove_file(&archive);
+        let _ = fs::remove_dir_all(&staging);
+        return Err("The downloaded Python runtime failed its SHA-256 check.".into());
+    }
+    let extract = Command::new("tar")
+        .arg("-xzf")
+        .arg(&archive)
+        .arg("-C")
+        .arg(&staging)
+        .output()
+        .map_err(|error| format!("Could not extract the Python runtime: {error}"))?;
+    let _ = fs::remove_file(&archive);
+    if !extract.status.success() {
+        let _ = fs::remove_dir_all(&staging);
+        return Err(format!(
+            "Could not extract the managed Python runtime: {}",
+            String::from_utf8_lossy(&extract.stderr).trim()
+        ));
+    }
+    if python_home.exists() {
+        fs::remove_dir_all(&python_home)
+            .map_err(|error| format!("Could not replace the Python runtime: {error}"))?;
+    }
+    fs::rename(staging.join("python"), &python_home)
+        .map_err(|error| format!("Could not activate the Python runtime: {error}"))?;
+    let _ = fs::remove_dir(&staging);
+    if compatible_python(&python) {
+        Ok(python)
+    } else {
+        Err("The managed Python runtime could not be started.".into())
+    }
+}
+
+fn bootstrap_python() -> Result<PathBuf, String> {
+    if let Some(path) = env::var_os("SYNTHSCHOLAR_BOOTSTRAP_PYTHON") {
+        let path = PathBuf::from(path);
+        return compatible_python(&path)
+            .then_some(path)
+            .ok_or("SYNTHSCHOLAR_BOOTSTRAP_PYTHON must point to Python 3.11 or newer.".into());
+    }
+    if let Some(path) = managed_environment_dir()
+        .and_then(|environment| {
+            environment
+                .parent()
+                .map(|runtime| runtime.join("python/bin/python3"))
+        })
+        .filter(|path| compatible_python(path))
+    {
+        return Ok(path);
+    }
+    #[cfg(windows)]
+    let candidates = [
+        "python.exe",
+        "python3.exe",
+        "python3.13.exe",
+        "python3.12.exe",
+        "python3.11.exe",
+    ];
+    #[cfg(not(windows))]
+    let candidates = [
+        "python3.13",
+        "python3.12",
+        "python3.11",
+        "python3",
+        "python",
+    ];
+    for candidate in candidates {
+        let candidate = PathBuf::from(candidate);
+        if compatible_python(&candidate) {
+            return Ok(PathBuf::from(candidate));
+        }
+    }
+    install_standalone_python()
 }
 
 fn workspace_path(value: Option<String>) -> Result<PathBuf, String> {
@@ -350,14 +574,31 @@ fn read_status(directory: &Path) -> Result<Value, String> {
     )
     .map_err(|error| error.to_string())
 }
+fn write_json_atomic(path: &Path, value: &Value) -> Result<(), String> {
+    let temporary = path.with_extension("tmp");
+    let mut file = fs::File::create(&temporary).map_err(|error| error.to_string())?;
+    file.write_all(&serde_json::to_vec_pretty(value).map_err(|error| error.to_string())?)
+        .map_err(|error| error.to_string())?;
+    file.sync_all().map_err(|error| error.to_string())?;
+    fs::rename(temporary, path).map_err(|error| error.to_string())
+}
 fn write_status(directory: &Path, status: &Value) -> Result<(), String> {
-    let temporary = directory.join("status.tmp");
-    fs::write(
-        &temporary,
-        serde_json::to_vec_pretty(status).map_err(|error| error.to_string())?,
-    )
-    .map_err(|error| error.to_string())?;
-    fs::rename(temporary, directory.join("status.json")).map_err(|error| error.to_string())
+    write_json_atomic(&directory.join("status.json"), status)?;
+    let mut execution = status.clone();
+    if let Some(fields) = execution.as_object_mut() {
+        for name in [
+            "title",
+            "input",
+            "project",
+            "workspace",
+            "directory",
+            "sourceReviewId",
+            "keySelection",
+        ] {
+            fields.remove(name);
+        }
+    }
+    write_json_atomic(&directory.join("execution-state.json"), &execution)
 }
 
 fn sync_active(state: &ReviewState) {
@@ -409,13 +650,55 @@ pub fn review_environment() -> ReviewEnvironment {
 }
 
 #[command]
+pub async fn install_review_environment(app: AppHandle) -> Result<ReviewEnvironment, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let _setup = RUNTIME_SETUP_LOCK
+            .lock()
+            .map_err(|_| "The review-engine installer is unavailable.".to_string())?;
+        let current = review_environment();
+        if current.installed {
+            return Ok(current);
+        }
+        let setup = integration_path(&app, "setup.py")?;
+        let environment = install_environment_dir()?;
+        let output = Command::new(bootstrap_python()?)
+            .arg(setup)
+            .arg("--venv")
+            .arg(&environment)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .map_err(|error| format!("Could not start automatic setup: {error}"))?;
+        if !output.status.success() {
+            let details = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            return Err(if details.is_empty() {
+                format!("Automatic setup exited with {}.", output.status)
+            } else {
+                format!("Automatic setup failed: {details}")
+            });
+        }
+        let ready = review_environment();
+        if ready.installed {
+            Ok(ready)
+        } else {
+            Err(format!(
+                "Setup completed, but SynthScholar could not be loaded from {}.",
+                environment_python(&environment).display()
+            ))
+        }
+    })
+    .await
+    .map_err(|error| format!("Automatic setup task failed: {error}"))?
+}
+
+#[command]
 pub fn list_google_keys() -> Vec<GoogleKeyInfo> {
     google_key_info()
 }
 
 #[command]
 pub fn jev_key_info() -> Option<GoogleKeyInfo> {
-    let agent_dir = PathBuf::from(env::var_os("HOME")?).join(".axorbis/agent");
+    let agent_dir = user_home_dir()?.join(".axorbis/agent");
     axorbis_env_key(&agent_dir, "TYPESAFE_API_KEY").map(|entry| GoogleKeyInfo {
         id: "Jev AI".into(),
         source: entry.source.into(),
@@ -617,7 +900,6 @@ pub fn start_review(
     if input.title.trim().is_empty() {
         return Err("Enter a review title.".into());
     }
-    let _ = resume_checkpoint;
     let selection = key_selection.unwrap_or_else(|| "auto".into());
     let configured_keys = axorbis_google_keys();
     let api_keys = if configured_keys.is_empty() && selection == "auto" {
@@ -652,6 +934,16 @@ pub fn start_review(
     if !(1..=100).contains(&input.max_results) {
         return Err("Max results must be between 1 and 100.".into());
     }
+    if input.sources.is_empty()
+        || input.sources.iter().any(|source| {
+            !matches!(
+                source.as_str(),
+                "semantic_scholar" | "openalex" | "arxiv" | "openreview" | "crossref" | "core"
+            )
+        })
+    {
+        return Err("Select at least one supported search source.".into());
+    }
     let mut active = state
         .active
         .lock()
@@ -671,21 +963,43 @@ pub fn start_review(
     let started_at = now_ms();
     let status = json!({ "id": id, "title": input.title.trim(), "state": "running", "startedAt": started_at, "updatedAt": started_at,
         "workspace": workspace, "directory": directory, "progress": [], "error": null,
-        "keySelection": selection, "keyCount": api_keys.len(), "classificationMode": classification_mode,
+        "keySelection": selection, "keyCount": api_keys.len(), "parallelLimit": api_keys.len(), "classificationMode": classification_mode,
         "keyUsage": key_labels.iter().map(|label| json!({ "id": label, "state": "idle", "active": false, "requests": 0, "tokens": 0 })).collect::<Vec<_>>(),
         "project": project, "input": input, "sourceReviewId": source_review_id });
     write_status(&directory, &status)?;
+    let manifest = json!({"schema": "axorbis_run_manifest_v1", "id": id, "createdAt": started_at,
+        "appVersion": env!("CARGO_PKG_VERSION"), "title": input.title.trim(), "input": input,
+        "project": project, "sourceReviewId": source_review_id,
+        "screeningTemplate": if input.screening_template == "temporal_kg" { "temporal_kg" } else { "general" }});
+    write_json_atomic(&directory.join("run-manifest.json"), &manifest)?;
+    let resume_source = source_review_id
+        .as_ref()
+        .filter(|_| resume_checkpoint.unwrap_or(false))
+        .and_then(|source_id| {
+            review_directory(Some(workspace.to_string_lossy().into_owned()), source_id)
+                .ok()
+                .map(|path| path.to_string_lossy().into_owned())
+        });
     let payload = json!({ "apiKeys": api_keys, "keyLabels": key_labels, "model": "gemini-3.5-flash-lite",
         "classificationMode": classification_mode, "typesafeApiKey": jev_key,
         "openalexApiKey": openalex_api_key(),
         "semanticScholarApiKey": provider_api_key("SEMANTIC_SCHOLAR_API_KEY"),
         "coreApiKey": provider_api_key("CORE_API_KEY"),
         "maxResults": input.max_results,
+        "resumeSource": resume_source,
         "protocol": { "title": input.title.trim(), "objective": input.objective.trim(),
             "core_concepts": input.core_concepts.trim(), "related_concepts": input.related_concepts.trim(),
             "inclusion_criteria": input.inclusion.trim(), "exclusion_criteria": input.exclusion.trim(),
             "date_range_start": input.date_start,
-            "date_range_end": input.date_end
+            "date_range_end": input.date_end,
+            "language": input.language.trim(), "publication_type": input.publication_type.trim(),
+            "sources": if input.sources.is_empty() { vec!["semantic_scholar", "openalex", "arxiv", "openreview", "crossref", "core"] } else { input.sources.iter().map(String::as_str).collect() },
+            "screening_template": if input.screening_template == "temporal_kg" { "temporal_kg" } else { "general" }
+            ,"audit_logging": if matches!(input.audit_logging.as_str(), "full" | "redacted" | "off") { input.audit_logging.as_str() } else { "redacted" },
+            "citation_snowballing": input.citation_snowballing
+            ,"extraction_dimensions": input.extraction_dimensions.trim(),
+            "synthesis_objective": input.synthesis_objective.trim()
+            ,"source_text_retention": if input.source_text_retention == "delete_after_review" { "delete_after_review" } else { "keep" }
         }
     });
     let log = fs::File::create(directory.join("runner.log")).map_err(|error| error.to_string())?;
@@ -738,6 +1052,10 @@ pub fn start_review(
 #[command]
 pub fn review_input(workspace: Option<String>, id: String) -> Result<ReviewInput, String> {
     let directory = review_directory(workspace, &id)?;
+    if let Ok(draft) = fs::read(directory.join("next-run-draft.json")) {
+        let draft: Value = serde_json::from_slice(&draft).map_err(|error| error.to_string())?;
+        return serde_json::from_value(draft["input"].clone()).map_err(|error| error.to_string());
+    }
     let status = read_status(&directory)?;
     if let Some(input) = status.get("input") {
         return serde_json::from_value(input.clone()).map_err(|error| error.to_string());
@@ -757,6 +1075,23 @@ pub fn review_input(workspace: Option<String>, id: String) -> Result<ReviewInput
         exclusion: field("exclusion_criteria"),
         date_start: field("date_range_start"),
         date_end: field("date_range_end"),
+        language: field("language"),
+        publication_type: field("publication_type"),
+        sources: protocol["sources"]
+            .as_array()
+            .map(|items| {
+                items
+                    .iter()
+                    .filter_map(|item| item.as_str().map(str::to_owned))
+                    .collect()
+            })
+            .unwrap_or_default(),
+        screening_template: field("screening_template"),
+        audit_logging: field("audit_logging"),
+        citation_snowballing: protocol["citation_snowballing"].as_bool().unwrap_or(false),
+        extraction_dimensions: field("extraction_dimensions"),
+        synthesis_objective: field("synthesis_objective"),
+        source_text_retention: field("source_text_retention"),
         max_results: 20,
     })
 }
@@ -772,8 +1107,19 @@ pub async fn reference_graph(
         let directory = review_directory(workspace, &id)?;
         let cache = directory.join("citation-graph.json");
         if !refresh.unwrap_or(false) && cache.is_file() {
-            return serde_json::from_slice(&fs::read(&cache).map_err(|error| error.to_string())?)
-                .map_err(|error| error.to_string());
+            if let Ok(graph) = serde_json::from_slice::<Value>(
+                &fs::read(&cache).map_err(|error| error.to_string())?,
+            ) {
+                if graph["version"].as_u64() == Some(9)
+                    && graph["papers"].as_array().is_some_and(|papers| {
+                        papers
+                            .iter()
+                            .all(|paper| paper["lookup_status"] != "lookup_failed")
+                    })
+                {
+                    return Ok(graph);
+                }
+            }
         }
         let status = read_status(&directory)?;
         let mut articles: Vec<Value> = status["articles"]
@@ -788,12 +1134,23 @@ pub async fn reference_graph(
             .unwrap_or_default();
         if let Ok(bytes) = fs::read(directory.join("review.json")) {
             if let Ok(review) = serde_json::from_slice::<Value>(&bytes) {
+                if let Some(rows) = review["articles"].as_array() {
+                    articles.extend(
+                        rows.iter()
+                            .filter(|item| {
+                                item["scope"] == "core" || item["screening_decision"] == "include"
+                            })
+                            .cloned(),
+                    );
+                }
                 if let Some(included) = review["included_articles"].as_array() {
                     articles.extend(included.iter().cloned());
                 }
             }
         }
-        let payload = json!({ "articles": articles });
+        let payload = json!({ "articles": articles,
+            "semanticScholarApiKey": provider_api_key("SEMANTIC_SCHOLAR_API_KEY"),
+            "openalexApiKey": openalex_api_key() });
         let mut child = Command::new(python_program())
             .arg(runner_path(&app)?)
             .arg("--citation-graph")
@@ -816,10 +1173,14 @@ pub async fn reference_graph(
         }
         let graph: Value = serde_json::from_slice(&output.stdout)
             .map_err(|_| "Crossref returned invalid graph metadata.".to_string())?;
-        if graph["failed"].as_u64() == Some(0) {
-            let temporary = directory.join("citation-graph.tmp");
-            fs::write(&temporary, &output.stdout).map_err(|error| error.to_string())?;
-            fs::rename(temporary, cache).map_err(|error| error.to_string())?;
+        if graph["failed"].as_u64() == Some(0)
+            && graph["papers"].as_array().is_some_and(|papers| {
+                papers
+                    .iter()
+                    .all(|paper| paper["lookup_status"] != "lookup_failed")
+            })
+        {
+            write_json_atomic(&cache, &graph)?;
         }
         Ok(graph)
     })
@@ -879,12 +1240,53 @@ pub fn update_review(
     if project.is_empty() || project.len() > 100 {
         return Err("Enter a project name up to 100 characters.".into());
     }
-    status["title"] = input.title.trim().into();
-    status["input"] = serde_json::to_value(input).map_err(|error| error.to_string())?;
-    status["project"] = project.into();
-    status["updatedAt"] = json!(now_ms());
-    write_status(&directory, &status)?;
+    let draft = json!({"title": input.title.trim(), "input": input, "project": project,
+        "updatedAt": now_ms()});
+    write_json_atomic(&directory.join("next-run-draft.json"), &draft)?;
+    status["draft"] = draft;
     Ok(status)
+}
+
+#[command]
+pub fn adjudicate_review(
+    app: AppHandle,
+    state: State<'_, ReviewState>,
+    workspace: Option<String>,
+    id: String,
+    article_id: String,
+    decision: String,
+) -> Result<Value, String> {
+    sync_active(&state);
+    if !matches!(decision.as_str(), "include" | "exclude") {
+        return Err("Choose include or exclude.".into());
+    }
+    let directory = review_directory(workspace, &id)?;
+    let status = read_status(&directory)?;
+    if status["state"] == "running" {
+        return Err("Stop the review before adjudicating papers.".into());
+    }
+    let mut child = Command::new(python_program())
+        .arg(runner_path(&app)?)
+        .arg("--adjudicate")
+        .arg(&directory)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|error| error.to_string())?;
+    child
+        .stdin
+        .take()
+        .ok_or("Could not send the adjudication decision.")?
+        .write_all(
+            &serde_json::to_vec(&json!({"articleId": article_id, "decision": decision}))
+                .map_err(|error| error.to_string())?,
+        )
+        .map_err(|error| error.to_string())?;
+    if !child.wait().map_err(|error| error.to_string())?.success() {
+        return Err("Could not rebuild the review after adjudication.".into());
+    }
+    read_status(&directory)
 }
 
 #[command]
@@ -970,6 +1372,10 @@ pub fn read_review_artifact(
             | "status.json"
             | "runner.log"
             | "gemini-calls.jsonl"
+            | "run-manifest.json"
+            | "runtime-manifest.json"
+            | "search-checkpoint.json"
+            | "execution-state.json"
     ) {
         return Err("This review file cannot be previewed.".into());
     }
